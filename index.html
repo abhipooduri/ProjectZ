@@ -386,7 +386,7 @@
             setConnectionStatus('Connecting to signaling server...', 'text-amber-300');
             try {
                 peer = new Peer({
-                    host: 'cloud.peerjs.com',
+                    host: '0.peerjs.com',
                     secure: true,
                     port: 443,
                     debug: 3,
@@ -411,7 +411,15 @@
 
                 peer.on('error', (err) => {
                     console.error("PeerJS error:", err);
-                    setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-400');
+                    if (err.type === 'server-error') {
+                        setConnectionStatus('Server error. Retrying in 3s...', 'text-amber-400');
+                        setTimeout(() => {
+                            if (peer) peer.destroy();
+                            initPeerJS();
+                        }, 3000);
+                    } else {
+                        setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-400');
+                    }
                 });
 
                 peer.on('call', (call) => {
