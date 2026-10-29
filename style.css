@@ -1,52 +1,58 @@
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #09090e;
-    color: #f1f5f9;
-    overflow-x: hidden;
-}
+function initPeerJS() {
+    setConnectionStatus('Connecting to signaling server...', 'text-amber-300');
+    try {
+        // Updated Peer initialization with explicit server paths and debug mode
+        peer = new Peer({
+            host: 'peerjs-server.herokuapp.com', // Fallback public server path if 0.peerjs.com drops
+            port: 443,
+            secure: true,
+            debug: 3, // Enables detailed connection logs in your browser console (F12)
+            config: { 
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelay',
+                        credential: 'openrelay'
+                    }
+                ] 
+            }
+        });
 
-.font-display { 
-    font-family: 'Orbitron', sans-serif; 
-}
+        // If the default peerjs cloud is preferred, you can also use this standard fallback:
+        peer.on('error', (err) => {
+            console.error("PeerJS error detected:", err);
+            setConnectionStatus(`P2P Error: ${err.type}. Check Ad-blocker/VPN.`, 'text-rose-400');
+        });
 
-.font-code { 
-    font-family: 'Fira Code', monospace; 
-}
+        peer.on('open', (id) => {
+            myPeerId = id;
+            document.getElementById('my-peer-id').innerText = id;
+            setConnectionStatus('Online. Ready to connect.', 'text-emerald-300');
+        });
 
-.glass-panel {
-    background: rgba(15, 14, 38, 0.75);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-}
+        peer.on('call', (call) => {
+            incomingCallObj = call;
+            const isVideo = call.metadata && call.metadata.type === 'video';
+            
+            document.getElementById('incoming-call-type').innerText = isVideo ? 'VIDEO' : 'VOICE';
+            document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video text-2xl' : 'fa-solid fa-phone text-2xl';
+            document.getElementById('incoming-peer-id').innerText = `From Node: ${call.peer}`;
+            
+            document.getElementById('incoming-call-modal').classList.remove('hidden');
+        });
 
-.scanlines {
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-    background-size: 100% 3px, 6px 100%;
-    pointer-events: none;
-}
-
-::-webkit-scrollbar { 
-    width: 6px; 
-}
-
-::-webkit-scrollbar-track { 
-    background: #09090e; 
-}
-
-::-webkit-scrollbar-thumb { 
-    background: #4f46e5; 
-    border-radius: 3px; 
-}
-
-::-webkit-scrollbar-thumb:hover { 
-    background: #00f3ff; 
-}
-
-video {
-    object-fit: cover;
-    transform: scaleX(-1);
-}
-
-.no-mirror {
-    transform: scaleX(1) !important;
+        peer.on('connection', (conn) => {
+            activeDataConn = conn;
+            conn.on('open', () => {
+                setConnectionStatus(`Connected to chat: ${conn.peer}`, 'text-emerald-300');
+                enableChat();
+                setupDataConnectionListeners(conn);
+            });
+        });
+    } catch (err) {
+        console.error("PeerJS initialization exception:", err);
+        setConnectionStatus('Failed to initialize P2P network.', 'text-rose-400');
+    }
 }
