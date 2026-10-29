@@ -233,7 +233,7 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL & FILE TRANSFER -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
             <div class="p-3 bg-slate-950/90 border-b border-indigo-900/40 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-200">
@@ -245,12 +245,21 @@
 
             <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                 <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
-                    -- P2P ENCRYPTED TEXT STREAM --
+                    -- P2P ENCRYPTED TEXT & FILE STREAM --
                 </div>
             </div>
 
-            <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex gap-2">
+            <!-- CHAT & FILE ATTACHMENT FORM -->
+            <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex items-center gap-2">
+                <!-- Hidden file input -->
+                <input id="file-input" type="file" class="hidden">
+                
+                <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-400 border border-slate-700 text-xs transition flex items-center justify-center">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+
                 <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none font-mono">
+                
                 <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 hover:bg-cyan-500 text-white hover:text-slate-950 font-bold rounded-xl text-xs transition">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
@@ -289,8 +298,8 @@
             </div>
             <div class="space-y-4 text-xs leading-relaxed text-slate-300 font-mono">
                 <div class="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30">
-                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Video Transmission</h4>
-                    <p>Audio/video streams flow directly browser-to-browser with low latency using public STUN & TURN relay servers.</p>
+                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Video & File Transmission</h4>
+                    <p>Audio, video, and attachments flow directly browser-to-browser with low latency using public STUN & TURN relay servers.</p>
                 </div>
             </div>
             <button id="modal-ack-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 font-bold text-white text-xs hover:bg-indigo-500 transition">
@@ -409,6 +418,11 @@
                     setConnectionStatus('Online. Ready to connect.', 'text-emerald-300');
                 });
 
+                peer.on('disconnected', () => {
+                    setConnectionStatus('Reconnecting to peer server...', 'text-amber-400');
+                    peer.reconnect();
+                });
+
                 peer.on('error', (err) => {
                     console.error("PeerJS error:", err);
                     if (err.type === 'server-error') {
@@ -449,7 +463,11 @@
 
         function setupDataConnectionListeners(conn) {
             conn.on('data', (data) => {
-                appendChatMessage("Peer", data, false);
+                if (typeof data === 'object' && data.type === 'file') {
+                    appendFileMessage("Peer", data, false);
+                } else {
+                    appendChatMessage("Peer", data, false);
+                }
                 playMessageSound();
             });
             conn.on('close', () => {
@@ -488,6 +506,7 @@
         function enableChat() {
             document.getElementById('chat-input').removeAttribute('disabled');
             document.getElementById('chat-send-btn').removeAttribute('disabled');
+            document.getElementById('file-attach-btn').removeAttribute('disabled');
             document.getElementById('chat-status').innerText = "ONLINE";
             document.getElementById('chat-status').className = "text-[10px] font-mono text-emerald-400";
         }
@@ -495,6 +514,7 @@
         function disableChat() {
             document.getElementById('chat-input').setAttribute('disabled', 'true');
             document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
+            document.getElementById('file-attach-btn').setAttribute('disabled', 'true');
             document.getElementById('chat-status').innerText = "OFFLINE";
             document.getElementById('chat-status').className = "text-[10px] font-mono text-slate-500";
         }
@@ -508,12 +528,72 @@
             box.scrollTop = box.scrollHeight;
         }
 
+        function appendFileMessage(sender, fileData, isSelf) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            
+            const isImage = fileData.fileType.startsWith('image/');
+            let contentHtml = '';
+
+            if (isImage) {
+                contentHtml = `
+                    <div class="mb-1 rounded-lg overflow-hidden border border-slate-700 max-w-[200px]">
+                        <img src="${fileData.fileContent}" alt="${fileData.fileName}" class="w-full object-cover">
+                    </div>
+                `;
+            }
+
+            contentHtml += `
+                <a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold text-cyan-300 hover:text-cyan-200">
+                    <i class="fa-solid fa-file-arrow-down"></i> ${fileData.fileName}
+                </a>
+            `;
+
+            div.innerHTML = `
+                <span class="text-[9px] text-slate-500 mb-0.5">${sender} (File Attached)</span>
+                <div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-900/80 border border-indigo-500/50 text-white' : 'bg-slate-900 border border-slate-700 text-slate-200'}">
+                    ${contentHtml}
+                </div>
+            `;
+
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
         function setupUIEventListeners() {
             document.getElementById('copy-id-btn').addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
                     alert("Copied your Peer ID to clipboard!");
                 }
+            });
+
+            // File Attachment trigger
+            document.getElementById('file-attach-btn').addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+
+            // File selection listener
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file || !activeDataConn) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const filePayload = {
+                        type: 'file',
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileContent: event.target.result
+                    };
+
+                    activeDataConn.send(filePayload);
+                    appendFileMessage("You", filePayload, true);
+                };
+
+                reader.readAsDataURL(file);
+                e.target.value = ''; // Reset file input
             });
 
             document.getElementById('tab-video-call').addEventListener('click', async () => {
