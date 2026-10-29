@@ -58,40 +58,26 @@
         .font-display { font-family: 'Orbitron', sans-serif; }
         .font-code { font-family: 'Fira Code', monospace; }
 
-        /* Neon & Glassmorphism Effects */
         .glass-panel {
             background: rgba(15, 14, 38, 0.75);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(99, 102, 241, 0.25);
         }
 
-        .glass-panel-glow {
-            background: rgba(15, 14, 38, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(0, 243, 255, 0.4);
-            box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
-        }
-
-        .glow-cyan-text { text-shadow: 0 0 12px rgba(0, 243, 255, 0.6); }
-        .glow-pink-text { text-shadow: 0 0 12px rgba(255, 0, 127, 0.6); }
-
-        /* Scanline Overlay for Sci-Fi Vibe */
         .scanlines {
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             background-size: 100% 3px, 6px 100%;
             pointer-events: none;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #09090e; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
 
-        /* Video Object Cover */
         video {
             object-fit: cover;
-            transform: scaleX(-1); /* Mirror self view */
+            transform: scaleX(-1);
         }
         .no-mirror {
             transform: scaleX(1) !important;
@@ -100,11 +86,9 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between text-slate-100 bg-[#09090e] selection:bg-indigo-500 selection:text-white">
 
-    <!-- TOP HEADER / NAV -->
+    <!-- TOP HEADER -->
     <header class="w-full border-b border-indigo-900/40 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            
-            <!-- Brand & Tagline -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                     <i class="fa-solid fa-satellite-dish text-white text-lg animate-pulse"></i>
@@ -117,16 +101,14 @@
                 </div>
             </div>
 
-            <!-- 24/7 Status Banner -->
             <div id="window-status-banner" class="flex items-center gap-3 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-300 text-xs font-mono">
                 <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
                 <div>
                     <span class="text-slate-400">NETWORK STATUS:</span>
-                    <span id="window-status-text" class="font-bold text-emerald-400 ml-1">ONLINE 24/7 // INSTANT CONNECT</span>
+                    <span id="window-status-text" class="font-bold text-emerald-400 ml-1">ONLINE // P2P READY</span>
                 </div>
             </div>
 
-            <!-- Header Controls -->
             <div class="flex items-center gap-2">
                 <button id="btn-show-arch" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5">
                     <i class="fa-solid fa-code-branch text-pink-400"></i>
@@ -136,92 +118,31 @@
         </div>
     </header>
 
-    <!-- MAIN DASHBOARD CONTENT -->
+    <!-- MAIN CONTENT -->
     <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT COLUMN: LOCALITY PROFILE & MATCHING PREFERENCES (3 Cols) -->
+        <!-- LEFT COLUMN: CONTROLS & PEER ID -->
         <section class="lg:col-span-3 flex flex-col gap-4">
             
-            <!-- Hyper-Local Region Selection Card -->
             <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
                 <div class="flex items-center gap-2 text-indigo-400 font-display text-sm font-bold border-b border-indigo-900/40 pb-2">
-                    <i class="fa-solid fa-location-crosshairs text-neon-cyan"></i>
+                    <i class="fa-solid fa-location-crosshairs text-cyan-400"></i>
                     <span>SELECT YOUR NEXUS ZONE</span>
                 </div>
-
-                <!-- Region Selector -->
                 <div>
                     <label class="text-[11px] font-mono text-slate-400 mb-1 block">Campus / Region Hub</label>
-                    <select id="select-campus" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none focus:border-cyan-400 font-semibold">
-                        <option value="cmr_ec">CMR Engineering College (Kandlakoya)</option>
-                        <option value="vnr_vjiet">VNR VJIET (Bachupally)</option>
-                        <option value="iit_hyd">IIT Hyderabad (Kandi)</option>
-                        <option value="village_zone_1">Kandlakoya Village Zone</option>
-                        <option value="tech_hub_hyd">Gachibowli Tech Corridor</option>
+                    <select id="select-campus" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none font-semibold">
+                        <option value="cmr_ec">CMR Engineering College</option>
+                        <option value="vnr_vjiet">VNR VJIET</option>
+                        <option value="iit_hyd">IIT Hyderabad</option>
                     </select>
-                </div>
-
-                <!-- Role / Batch Filter -->
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Your Role / Batch</label>
-                    <select id="select-role" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none focus:border-cyan-400 font-semibold">
-                        <option value="junior">Junior (1st / 2nd Year)</option>
-                        <option value="senior">Senior (3rd / 4th Year)</option>
-                        <option value="alumni">Alumnus / Graduate</option>
-                        <option value="faculty">Faculty / Mentor</option>
-                        <option value="resident">Local Resident</option>
-                    </select>
-                </div>
-
-                <!-- Target Peer Preference -->
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Prefer to Match With</label>
-                    <select id="select-target-role" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none focus:border-cyan-400 font-semibold">
-                        <option value="any">Anyone in Same Zone</option>
-                        <option value="senior">Seniors Only (Advice/Projects)</option>
-                        <option value="junior">Juniors Only (Guidance)</option>
-                        <option value="alumni">Alumni Only (Career/Placement)</option>
-                    </select>
-                </div>
-
-                <!-- Interest Tags -->
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Topic / Interest Filter</label>
-                    <div class="flex flex-wrap gap-1.5 mt-1" id="tag-container">
-                        <button class="tag-btn active px-2.5 py-1 rounded-lg border text-[11px] font-medium transition bg-indigo-600 border-indigo-400 text-white" data-tag="All">All</button>
-                        <button class="tag-btn px-2.5 py-1 rounded-lg border text-[11px] font-medium transition bg-slate-900 border-slate-700 text-slate-300 hover:border-indigo-500" data-tag="Coding">Coding</button>
-                        <button class="tag-btn px-2.5 py-1 rounded-lg border text-[11px] font-medium transition bg-slate-900 border-slate-700 text-slate-300 hover:border-indigo-500" data-tag="Placements">Placements</button>
-                        <button class="tag-btn px-2.5 py-1 rounded-lg border text-[11px] font-medium transition bg-slate-900 border-slate-700 text-slate-300 hover:border-indigo-500" data-tag="Canteen">Canteen/Hangouts</button>
-                    </div>
                 </div>
             </div>
 
-            <!-- Campus Heatmap & Peer Concentration Bar -->
-            <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
-                <div class="flex items-center justify-between border-b border-indigo-900/40 pb-2">
-                    <span class="text-xs font-display font-bold text-slate-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-fire text-amber-400"></i> ZONE HEATMAP
-                    </span>
-                    <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
-                        LIVE
-                    </span>
-                </div>
-
-                <div class="space-y-2">
-                    <div class="flex justify-between text-xs text-slate-300 font-mono">
-                        <span>Active Nodes Online</span>
-                        <span id="active-peers-count" class="font-bold text-cyan-400">24/7 ACTIVE</span>
-                    </div>
-                    <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                        <div id="activity-bar" class="bg-gradient-to-r from-indigo-500 via-pink-500 to-cyan-400 h-full w-[85%] transition-all duration-500"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PeerJS My ID Display -->
+            <!-- MY PEER ID -->
             <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
                 <div class="truncate mr-2">
-                    <span class="text-slate-500">MY P2P NODE:</span>
+                    <span class="text-slate-500">MY NODE:</span>
                     <span id="my-peer-id" class="text-indigo-300 font-bold ml-1">Initializing...</span>
                 </div>
                 <button id="copy-id-btn" class="text-slate-400 hover:text-cyan-300 transition text-xs px-2 py-1 bg-slate-800 rounded">
@@ -229,30 +150,40 @@
                 </button>
             </div>
 
-            <!-- REAL PEER CONNECTION CONTROLS -->
-            <div class="glass-panel rounded-2xl p-3 space-y-2">
-                <div class="text-xs font-display font-bold text-cyan-300">CONNECT TO A FRIEND</div>
-                <p class="text-[11px] text-slate-400">Both users open this page, copy their P2P Node ID, then enter the other person's ID here.</p>
-                <div class="flex gap-2">
-                    <input id="target-peer-id" type="text" autocomplete="off" placeholder="Paste friend's Peer ID" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400">
-                    <button id="btn-connect-peer" class="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-2 text-xs font-bold">CONNECT</button>
+            <!-- CONNECT & CALL CONTROLS -->
+            <div class="glass-panel rounded-2xl p-3 space-y-3">
+                <div class="text-xs font-display font-bold text-cyan-300">PEER CONNECTION</div>
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="Paste friend's Peer ID" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400 font-mono">
+                <button id="btn-connect-peer" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2 text-xs font-bold transition">CONNECT TEXT CHAT</button>
+                
+                <!-- CALL MODE TABS -->
+                <div class="pt-2 border-t border-slate-800">
+                    <label class="text-[11px] font-mono text-slate-400 mb-1.5 block">Call Type Mode</label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button id="tab-video-call" class="py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-video text-xs"></i> Video Call
+                        </button>
+                        <button id="tab-voice-call" class="py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-phone text-xs"></i> Voice Call
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="btn-start-call" class="flex-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 py-2 text-xs font-bold transition">START CALL</button>
+                        <button id="btn-end-call" class="rounded-lg bg-red-900 hover:bg-red-800 px-3 text-xs font-bold transition">END</button>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button id="btn-start-call" class="flex-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 px-3 py-2 text-xs font-bold"><i class="fa-solid fa-phone mr-1"></i> START CALL</button>
-                    <button id="btn-end-call" class="rounded-lg bg-red-900 hover:bg-red-800 px-3 py-2 text-xs font-bold">END</button>
-                </div>
-                <p id="connection-status" class="text-[11px] text-amber-300">Initializing PeerJS...</p>
+
+                <p id="connection-status" class="text-[11px] text-amber-300 font-mono">Initializing PeerJS...</p>
             </div>
 
         </section>
 
-        <!-- CENTER COLUMN: VIDEO STREAMS & MATCHING CONTROLS (6 Cols) -->
+        <!-- CENTER COLUMN: VIDEO STREAMS -->
         <section class="lg:col-span-6 flex flex-col gap-4">
-
-            <!-- MAIN VIDEO GRID CONTAINER -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 relative min-h-[320px] sm:min-h-[380px]">
                 
-                <!-- REMOTE PEER VIDEO CARD -->
+                <!-- REMOTE VIDEO -->
                 <div class="relative glass-panel rounded-2xl overflow-hidden flex flex-col justify-between aspect-video sm:aspect-auto h-full min-h-[220px]">
                     <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror"></video>
                     
@@ -260,8 +191,8 @@
                         <div class="w-16 h-16 rounded-full bg-indigo-950 border border-indigo-500/30 flex items-center justify-center mb-3 text-indigo-400 animate-pulse">
                             <i class="fa-solid fa-satellite text-2xl"></i>
                         </div>
-                        <h3 id="placeholder-title" class="font-display font-bold text-sm text-indigo-200">NO PEER CONNECTED</h3>
-                        <p id="placeholder-desc" class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's Peer ID on the left and hit 'CONNECT' to start chatting!</p>
+                        <h3 class="font-display font-bold text-sm text-indigo-200">NO PEER CONNECTED</h3>
+                        <p class="text-xs text-slate-400 max-w-xs mt-1">Connect with a peer and start a video or voice call.</p>
                     </div>
 
                     <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -272,13 +203,13 @@
                     </div>
                 </div>
 
-                <!-- LOCAL WEBCAM CARD -->
+                <!-- LOCAL WEBCAM -->
                 <div class="relative glass-panel rounded-2xl overflow-hidden flex flex-col justify-between aspect-video sm:aspect-auto h-full min-h-[220px]">
                     <video id="local-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
                     
                     <div id="local-cam-off" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-950/95 text-slate-500">
                         <i class="fa-solid fa-video-slash text-3xl mb-2 text-slate-600"></i>
-                        <span class="text-xs font-mono">Camera Muted</span>
+                        <span class="text-xs font-mono">Camera Muted / Audio Only</span>
                     </div>
 
                     <div class="absolute top-3 left-3 z-10 pointer-events-none">
@@ -299,24 +230,10 @@
                 </div>
 
             </div>
-
-            <!-- ACTION BUTTONS -->
-            <div class="flex items-center gap-3">
-                <button id="btn-start-match" class="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 hover:opacity-90 font-display font-extrabold text-sm tracking-wider text-white shadow-lg shadow-indigo-500/25 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-bolt"></i>
-                    <span id="match-btn-text">CONNECT TO PEER</span>
-                </button>
-                <button id="btn-skip-peer" class="px-5 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700 transition flex items-center gap-1.5">
-                    <span>RESET</span>
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
-            </div>
-
         </section>
 
-        <!-- RIGHT COLUMN: ICEBREAKER CHAT TERMINAL (3 Cols) -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
-            
             <div class="p-3 bg-slate-950/90 border-b border-indigo-900/40 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-200">
                     <i class="fa-solid fa-comments text-cyan-400"></i>
@@ -325,78 +242,61 @@
                 <span id="chat-status" class="text-[10px] font-mono text-slate-500">OFFLINE</span>
             </div>
 
-            <div class="p-2 bg-slate-900/60 border-b border-indigo-950 flex gap-1.5 overflow-x-auto text-[11px] font-mono scrollbar-none">
-                <button class="ice-btn shrink-0 px-2.5 py-1 rounded-lg bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
-                    💬 What branch?
-                </button>
-                <button class="ice-btn shrink-0 px-2.5 py-1 rounded-lg bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600 hover:text-white transition">
-                    🍕 Best canteen food?
-                </button>
-            </div>
-
             <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                 <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
-                    -- NEXUS LOCAL P2P TEXT STREAM --<br>
-                    Connected peers can send instant encrypted text messages here.
+                    -- P2P ENCRYPTED TEXT STREAM --
                 </div>
             </div>
 
             <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex gap-2">
-                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 disabled:opacity-40 font-mono">
-                <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 hover:bg-cyan-500 text-white hover:text-slate-950 font-bold rounded-xl text-xs transition disabled:opacity-40">
+                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none font-mono">
+                <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 hover:bg-cyan-500 text-white hover:text-slate-950 font-bold rounded-xl text-xs transition">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
-
         </section>
 
     </main>
 
-    <!-- ARCHITECTURE MODAL -->
-    <div id="arch-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-indigo-900/60 pb-3">
-                <h3 class="font-display font-bold text-lg text-cyan-300 flex items-center gap-2">
-                    <i class="fa-solid fa-network-wired"></i> NEXUS LOCAL - ARCHITECTURE
-                </h3>
-                <button id="close-modal-btn" class="text-slate-400 hover:text-white text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+    <!-- INCOMING CALL MODAL -->
+    <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-cyan-500/50 flex flex-col items-center gap-4 text-center animate-pulse">
+            <div class="w-16 h-16 rounded-full bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-300 text-2xl">
+                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
             </div>
-            <div class="space-y-4 text-xs leading-relaxed text-slate-300 font-mono">
-                <div class="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30">
-                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Video Transmission</h4>
-                    <p>Audio/video streams flow directly browser-to-browser with low latency using public STUN servers. Video data never touches a central server.</p>
-                </div>
+            <div>
+                <h3 class="font-display font-bold text-base text-cyan-300">INCOMING <span id="incoming-call-type">VIDEO</span> CALL</h3>
+                <p id="incoming-peer-id" class="text-xs text-slate-400 font-mono mt-1">From Peer: ...</p>
             </div>
-            <button id="modal-ack-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 font-bold text-white text-xs hover:bg-indigo-500 transition">
-                GOT IT - BACK TO APP
-            </button>
+            <div class="flex gap-3 w-full mt-2">
+                <button id="btn-decline-call" class="flex-1 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 font-bold text-white text-xs transition">DECLINE</button>
+                <button id="btn-accept-call" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition">ACCEPT</button>
+            </div>
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="w-full border-t border-indigo-900/30 bg-slate-950/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
-        NEXUS LOCAL // Built for Hyper-Local Campus Connections • WebRTC P2P PeerJS Engine
-    </footer>
-
-    <!-- APP ENGINE LOGIC -->
+    <!-- SCRIPT -->
     <script>
         let peer = null;
         let myPeerId = null;
         let activeCall = null;
         let activeDataConn = null;
         let localStream = null;
+        let incomingCallObj = null;
+        let selectedCallMode = 'video'; // 'video' or 'voice'
 
         window.addEventListener('DOMContentLoaded', () => {
             initPeerJS();
             setupUIEventListeners();
-            initLocalWebcam();
+            initLocalWebcam(true, true);
         });
 
-        async function initLocalWebcam() {
+        async function initLocalWebcam(videoOn, audioOn) {
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                }
+                localStream = await navigator.mediaDevices.getUserMedia({ video: videoOn, audio: audioOn });
                 const localVideo = document.getElementById('local-video');
                 if (localVideo) {
                     localVideo.srcObject = localStream;
@@ -409,18 +309,16 @@
 
         function setConnectionStatus(message, color = "text-amber-300") {
             const el = document.getElementById('connection-status');
-            if (el) { el.textContent = message; el.className = `text-[11px] ${color}`; }
+            if (el) { el.textContent = message; el.className = `text-[11px] ${color} font-mono`; }
         }
 
         function initPeerJS() {
             setConnectionStatus('Connecting to signaling server...', 'text-amber-300');
             try {
-                // Explicit configuration pointing to the public PeerJS cloud signaling broker
                 peer = new Peer({
                     host: '0.peerjs.com',
                     port: 443,
                     secure: true,
-                    debug: 3,
                     config: { iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' }
@@ -430,7 +328,7 @@
                 peer.on('open', (id) => {
                     myPeerId = id;
                     document.getElementById('my-peer-id').innerText = id;
-                    setConnectionStatus('Online. Share your Node ID to connect.', 'text-emerald-300');
+                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-300');
                 });
 
                 peer.on('error', (err) => {
@@ -438,14 +336,16 @@
                     setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-400');
                 });
 
-                peer.on('call', async (call) => {
-                    const accept = confirm(`Incoming call from ${call.peer}. Accept?`);
-                    if (!accept) { call.close(); return; }
-                    if (!localStream) {
-                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    }
-                    call.answer(localStream);
-                    handleCallStream(call);
+                // INCOMING CALL HANDLER
+                peer.on('call', (call) => {
+                    incomingCallObj = call;
+                    const isVideo = call.metadata && call.metadata.type === 'video';
+                    
+                    document.getElementById('incoming-call-type').innerText = isVideo ? 'VIDEO' : 'VOICE';
+                    document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video text-2xl' : 'fa-solid fa-phone text-2xl';
+                    document.getElementById('incoming-peer-id').innerText = `From Node: ${call.peer}`;
+                    
+                    document.getElementById('incoming-call-modal').classList.remove('hidden');
                 });
 
                 peer.on('connection', (conn) => {
@@ -496,6 +396,7 @@
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
             document.getElementById('peer-info-label').innerText = "Awaiting Peer...";
             setConnectionStatus('Call ended.', 'text-amber-300');
+            if (activeCall) { activeCall.close(); activeCall = null; }
         }
 
         function enableChat() {
@@ -529,7 +430,24 @@
                 }
             });
 
-            document.getElementById('btn-connect-peer').addEventListener('click', async () => {
+            // Call Mode Tabs
+            document.getElementById('tab-video-call').addEventListener('click', async () => {
+                selectedCallMode = 'video';
+                document.getElementById('tab-video-call').className = "py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5";
+                document.getElementById('tab-voice-call').className = "py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5";
+                await initLocalWebcam(true, true);
+                document.getElementById('local-cam-off').classList.add('hidden');
+            });
+
+            document.getElementById('tab-voice-call').addEventListener('click', async () => {
+                selectedCallMode = 'voice';
+                document.getElementById('tab-voice-call').className = "py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5";
+                document.getElementById('tab-video-call').className = "py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5";
+                await initLocalWebcam(false, true);
+                document.getElementById('local-cam-off').classList.remove('hidden');
+            });
+
+            document.getElementById('btn-connect-peer').addEventListener('click', () => {
                 const targetId = document.getElementById('target-peer-id').value.trim();
                 if (!targetId) { alert("Please enter a valid Peer ID."); return; }
                 
@@ -543,32 +461,46 @@
                 });
             });
 
+            // Start Outgoing Call
             document.getElementById('btn-start-call').addEventListener('click', async () => {
                 const targetId = document.getElementById('target-peer-id').value.trim();
                 if (!targetId) { alert("Please enter a target Peer ID to call."); return; }
+                
+                const useVideo = selectedCallMode === 'video';
                 if (!localStream) {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    await initLocalWebcam(useVideo, true);
                 }
-                setConnectionStatus(`Calling ${targetId}...`, 'text-cyan-300');
-                const call = peer.call(targetId, localStream);
+                
+                setConnectionStatus(`Calling ${targetId} (${selectedCallMode})...`, 'text-cyan-300');
+                const call = peer.call(targetId, localStream, {
+                    metadata: { type: selectedCallMode }
+                });
                 handleCallStream(call);
             });
 
-            document.getElementById('btn-start-match').addEventListener('click', () => {
-                const targetInput = document.getElementById('target-peer-id');
-                if (!targetInput.value.trim()) {
-                    alert("Please enter a friend's P2P Node ID to connect!");
-                    targetInput.focus();
-                    return;
+            // Accept Call Modal
+            document.getElementById('btn-accept-call').addEventListener('click', async () => {
+                document.getElementById('incoming-call-modal').classList.add('hidden');
+                if (incomingCallObj) {
+                    const isVideo = incomingCallObj.metadata && incomingCallObj.metadata.type === 'video';
+                    await initLocalWebcam(isVideo, true);
+                    incomingCallObj.answer(localStream);
+                    handleCallStream(incomingCallObj);
+                    incomingCallObj = null;
                 }
-                document.getElementById('btn-connect-peer').click();
+            });
+
+            // Decline Call Modal
+            document.getElementById('btn-decline-call').addEventListener('click', () => {
+                document.getElementById('incoming-call-modal').classList.add('hidden');
+                if (incomingCallObj) {
+                    incomingCallObj.close();
+                    incomingCallObj = null;
+                }
             });
 
             document.getElementById('btn-end-call').addEventListener('click', () => {
-                if (activeCall) { activeCall.close(); }
-                if (activeDataConn) { activeDataConn.close(); }
                 resetCallUI();
-                disableChat();
             });
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
@@ -579,16 +511,6 @@
                 activeDataConn.send(msg);
                 appendChatMessage("You", msg, true);
                 input.value = '';
-            });
-
-            document.getElementById('btn-show-arch').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.remove('hidden');
-            });
-            document.getElementById('close-modal-btn').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.add('hidden');
-            });
-            document.getElementById('modal-ack-btn').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.add('hidden');
             });
         }
     </script>
