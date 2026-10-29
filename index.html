@@ -180,7 +180,6 @@
             <div class="glass-panel rounded-2xl p-3 space-y-3">
                 <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
-                <!-- Call and chat actions are available as soon as a friend ID is entered. -->
                 <div class="grid grid-cols-2 gap-2">
                     <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-video"></i> Video Call
@@ -189,6 +188,12 @@
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
+                
+                <!-- GROUP CALL BUTTON -->
+                <button id="btn-open-group-modal" class="w-full rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-users-viewfinder"></i> Group Call (Max 5)
+                </button>
+
                 <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-comments"></i> Chat Session
                 </button>
@@ -198,20 +203,23 @@
 
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL SCREEN -->
+        <!-- CENTER COLUMN: MAIN CALL / GROUP GRID SCREEN -->
         <section class="lg:col-span-6 flex flex-col gap-4">
             <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-900 dark:bg-slate-950">
                 
-                <!-- MAIN DISPLAY VIDEO -->
+                <!-- SINGLE 1-ON-1 CALL DISPLAY VIDEO -->
                 <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror absolute inset-0"></video>
                 
+                <!-- GROUP MESH GRID CONTAINER -->
+                <div id="group-video-grid" class="hidden absolute inset-0 p-3 grid gap-2.5 w-full h-full overflow-y-auto bg-slate-950 z-10"></div>
+
                 <!-- PLACEHOLDER WHEN NO CALL ACTIVE -->
-                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 scanlines">
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 scanlines z-10">
                     <div class="w-20 h-20 rounded-full bg-slate-800/80 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend’s Peer ID, then start a chat, voice call, or video call. Chat stays available during calls.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter a friend’s Peer ID or start a Group Call with up to 5 online participants.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
@@ -226,7 +234,7 @@
                     </button>
                 </div>
 
-                <!-- PIP SECONDARY SCREEN -->
+                <!-- PIP SECONDARY SCREEN (FOR 1-ON-1 CALLS) -->
                 <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     
@@ -323,6 +331,33 @@
         </section>
 
     </main>
+
+    <!-- GROUP CALL SETUP MODAL (UP TO 5 PARTICIPANTS) -->
+    <div id="group-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-purple-500/50 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
+                    <i class="fa-solid fa-users-viewfinder"></i> START GROUP CALL
+                </h3>
+                <button id="close-group-modal-btn" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300">Select online friends to include in the mesh group video call (Max limit: <strong>5 participants</strong>).</p>
+
+            <div id="group-peers-selector" class="max-h-60 overflow-y-auto space-y-2 font-mono text-xs my-1">
+                <!-- Checkbox list of online peers populated dynamically -->
+            </div>
+
+            <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+                <span id="group-selection-count" class="text-xs font-mono dynamic-text font-bold">Selected: 0 / 5</span>
+                <button id="btn-start-group-call" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-white text-xs transition shadow-lg flex items-center gap-1.5">
+                    <i class="fa-solid fa-video"></i> Launch Call
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- AUTHENTICATION MODAL (REGISTER / LOGIN) -->
     <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -494,6 +529,11 @@
         let incomingCallObj = null;
         let micMuted = false;
         let camOff = false;
+
+        // Group Mesh Call Structures (Max 5 targets + self)
+        let isGroupCallActive = false;
+        let activeGroupCalls = new Map(); // peerId -> callObj
+        let groupRemoteStreams = new Map(); // peerId -> streamObj
 
         let acceptedConnections = new Set();
         let pendingIncomingRequestId = null;
@@ -734,11 +774,22 @@
                 });
 
                 peer.on('call', (call) => {
+                    const isGroupCall = call.metadata && call.metadata.type === 'group-video';
+                    
+                    if (isGroupCall && isGroupCallActive) {
+                        // Dynamically accept incoming mesh call during group call
+                        if (localStream) {
+                            call.answer(localStream);
+                            setupGroupCallPeer(call);
+                        }
+                        return;
+                    }
+
                     incomingCallObj = call;
                     currentFriendId = call.peer;
-                    const isVideo = call.metadata && call.metadata.type === 'video';
+                    const isVideo = call.metadata && (call.metadata.type === 'video' || call.metadata.type === 'group-video');
                     
-                    document.getElementById('incoming-call-title').innerText = isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL';
+                    document.getElementById('incoming-call-title').innerText = isGroupCall ? 'INCOMING GROUP CALL' : (isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL');
                     document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
                     document.getElementById('incoming-peer-id').innerText = `From Peer ID: ${call.peer}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
@@ -746,8 +797,6 @@
                 });
 
                 peer.on('connection', (conn) => {
-                    // Keep the data channel independent from the media call so chat
-                    // can continue while voice or video is active.
                     activeDataConn = conn;
                     currentFriendId = conn.peer;
                     conn.on('open', () => {
@@ -770,11 +819,23 @@
             refreshLocalMembersDirectory();
         }
 
+        function getActiveOnlinePeersList() {
+            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
+            const now = Date.now();
+            const list = [];
+            Object.values(activePeers).forEach(p => {
+                if (p.peerId !== myPeerId && (now - p.timestamp <= 30000)) {
+                    list.push(p);
+                }
+            });
+            return list;
+        }
+
         function refreshLocalMembersDirectory() {
             const container = document.getElementById('members-list-container');
             if (!container) return;
 
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
+            const onlinePeers = getActiveOnlinePeersList();
             container.innerHTML = `
                 <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
                     <div>
@@ -785,15 +846,9 @@
                 </div>
             `;
 
-            let onlineCount = 1;
-            const now = Date.now();
+            let onlineCount = 1 + onlinePeers.length;
 
-            Object.values(activePeers).forEach(p => {
-                if (p.peerId === myPeerId) return;
-                // Prune inactive peers older than 30 seconds
-                if (now - p.timestamp > 30000) return;
-
-                onlineCount++;
+            onlinePeers.forEach(p => {
                 const isAccepted = acceptedConnections.has(p.peerId);
 
                 const div = document.createElement('div');
@@ -816,7 +871,6 @@
             document.getElementById('online-counter').innerText = `${onlineCount} Online`;
         }
 
-        // Keep peer heartbeat alive every 10 seconds
         setInterval(registerPeerInLocalStorage, 10000);
         setInterval(refreshLocalMembersDirectory, 5000);
 
@@ -825,19 +879,16 @@
             document.getElementById('target-peer-id').value = targetPeerId;
 
             if (acceptedConnections.has(targetPeerId)) {
-                unlockCallControls();
                 alert(`Already connected with ${targetUsername}. Calls unlocked!`);
                 return;
             }
 
-            // Broadcast connection request via localStorage event bus
             const reqData = { fromPeerId: myPeerId, fromUsername: currentUser ? currentUser.username : 'Guest', toPeerId: targetPeerId, timestamp: Date.now() };
             localStorage.setItem('pending_conn_request', JSON.stringify(reqData));
 
             showNotification("REQUEST SENT", targetUsername, "Waiting for acceptance to unlock voice/video calls...");
         }
 
-        // Listen to cross-tab connection requests
         window.addEventListener('storage', (e) => {
             if (e.key === 'pending_conn_request' && e.newValue) {
                 try {
@@ -854,23 +905,11 @@
                     const res = JSON.parse(e.newValue);
                     if (res.toPeerId === myPeerId) {
                         acceptedConnections.add(res.fromPeerId);
-                        unlockCallControls();
                         showNotification("CONNECTED", res.fromPeerId, "Connection accepted! Voice and video calling unlocked.");
                     }
                 } catch (err) {}
             }
         });
-
-        function unlockCallControls() {
-            const vBtn = document.getElementById('btn-start-video');
-            const aBtn = document.getElementById('btn-start-voice');
-            vBtn.removeAttribute('disabled');
-            aBtn.removeAttribute('disabled');
-            vBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            aBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            vBtn.removeAttribute('title');
-            aBtn.removeAttribute('title');
-        }
 
         function setupDataConnectionListeners(conn) {
             conn.on('data', (data) => {
@@ -901,6 +940,11 @@
         }
 
         function updateVideoElements() {
+            if (isGroupCallActive) {
+                renderGroupVideoGrid();
+                return;
+            }
+
             const mainVideo = document.getElementById('main-video');
             const pipVideo = document.getElementById('pip-video');
             const pipOffPlaceholder = document.getElementById('pip-off-placeholder');
@@ -932,9 +976,172 @@
             }
         }
 
+        /* GROUP MESH CALL LOGIC */
+        function openGroupCallModal() {
+            const container = document.getElementById('group-peers-selector');
+            const onlinePeers = getActiveOnlinePeersList();
+
+            container.innerHTML = '';
+            if (onlinePeers.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-center py-4">No online members detected right now. Ask friends to open the app!</p>`;
+            } else {
+                onlinePeers.forEach(p => {
+                    const div = document.createElement('label');
+                    div.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80 cursor-pointer hover:border-purple-500 transition";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" value="${p.peerId}" class="group-peer-checkbox rounded bg-slate-800 border-slate-700 text-purple-600 focus:ring-purple-500">
+                            <span class="font-bold text-slate-200">${p.username}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500">ID: ${p.peerId}</span>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.querySelectorAll('.group-peer-checkbox').forEach(chk => {
+                    chk.addEventListener('change', updateGroupSelectionCount);
+                });
+            }
+
+            updateGroupSelectionCount();
+            document.getElementById('group-call-modal').classList.remove('hidden');
+        }
+
+        function updateGroupSelectionCount() {
+            const selected = document.querySelectorAll('.group-peer-checkbox:checked');
+            const countEl = document.getElementById('group-selection-count');
+            countEl.innerText = `Selected: ${selected.length} / 5`;
+
+            // Enforce limit up to 5 participants
+            if (selected.length >= 5) {
+                document.querySelectorAll('.group-peer-checkbox:not(:checked)').forEach(chk => chk.disabled = true);
+            } else {
+                document.querySelectorAll('.group-peer-checkbox').forEach(chk => chk.disabled = false);
+            }
+        }
+
+        async function launchGroupCall() {
+            const checkboxes = document.querySelectorAll('.group-peer-checkbox:checked');
+            const selectedPeerIds = Array.from(checkboxes).map(c => c.value);
+
+            if (selectedPeerIds.length === 0) {
+                alert("Please select at least 1 online peer for the group call.");
+                return;
+            }
+
+            if (selectedPeerIds.length > 5) {
+                alert("Group call limit is up to 5 participants.");
+                return;
+            }
+
+            document.getElementById('group-call-modal').classList.add('hidden');
+            const stream = await getLocalMediaStream(true);
+            if (!stream) return;
+
+            isGroupCallActive = true;
+            activeGroupCalls.clear();
+            groupRemoteStreams.clear();
+
+            document.getElementById('remote-placeholder').classList.add('hidden');
+            document.getElementById('pip-container').classList.add('hidden');
+            document.getElementById('main-video').classList.add('hidden');
+            document.getElementById('group-video-grid').classList.remove('hidden');
+
+            document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-purple-400 animate-pulse";
+            document.getElementById('peer-info-label').innerText = `Group Call (${selectedPeerIds.length + 1} users)`;
+            setConnectionStatus(`Connecting Mesh Group Call (${selectedPeerIds.length} peers)...`, 'text-purple-400');
+
+            renderGroupVideoGrid();
+
+            // Establish Mesh Calls with selected peers
+            selectedPeerIds.forEach(targetId => {
+                const call = peer.call(targetId, stream, { metadata: { type: 'group-video' } });
+                setupGroupCallPeer(call);
+            });
+        }
+
+        function setupGroupCallPeer(call) {
+            activeGroupCalls.set(call.peer, call);
+
+            call.on('stream', (remoteStream) => {
+                groupRemoteStreams.set(call.peer, remoteStream);
+                renderGroupVideoGrid();
+            });
+
+            call.on('close', () => {
+                activeGroupCalls.delete(call.peer);
+                groupRemoteStreams.delete(call.peer);
+                renderGroupVideoGrid();
+                if (groupRemoteStreams.size === 0 && !isGroupCallActive) {
+                    resetCallUI();
+                }
+            });
+
+            call.on('error', () => {
+                activeGroupCalls.delete(call.peer);
+                groupRemoteStreams.delete(call.peer);
+                renderGroupVideoGrid();
+            });
+        }
+
+        function renderGroupVideoGrid() {
+            const grid = document.getElementById('group-video-grid');
+            grid.innerHTML = '';
+
+            const totalTiles = 1 + groupRemoteStreams.size; // self + remotes
+
+            // Dynamic grid layout adjustments based on total participants (2 to 6)
+            if (totalTiles <= 2) {
+                grid.className = "absolute inset-0 p-3 grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full h-full bg-slate-950 z-10";
+            } else if (totalTiles <= 4) {
+                grid.className = "absolute inset-0 p-3 grid grid-cols-2 gap-2.5 w-full h-full bg-slate-950 z-10";
+            } else {
+                grid.className = "absolute inset-0 p-3 grid grid-cols-2 md:grid-cols-3 gap-2.5 w-full h-full bg-slate-950 z-10";
+            }
+
+            // Tile 1: Self Local Stream
+            const selfTile = document.createElement('div');
+            selfTile.className = "relative rounded-xl overflow-hidden bg-slate-900 border border-indigo-500/40 shadow-lg flex items-center justify-center";
+            selfTile.innerHTML = `
+                <video id="group-self-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                <div class="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-400 border border-slate-700">
+                    You (Host)
+                </div>
+            `;
+            grid.appendChild(selfTile);
+
+            const selfVid = selfTile.querySelector('#group-self-video');
+            if (localStream) selfVid.srcObject = localStream;
+
+            // Tiles 2-N: Remote Participants
+            groupRemoteStreams.forEach((stream, peerId) => {
+                const tile = document.createElement('div');
+                tile.className = "relative rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shadow-lg flex items-center justify-center";
+                tile.innerHTML = `
+                    <video id="vid-${peerId}" autoplay playsinline class="w-full h-full object-cover no-mirror"></video>
+                    <div class="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 border border-slate-700">
+                        Peer: ${peerId}
+                    </div>
+                `;
+                grid.appendChild(tile);
+                const vidEl = tile.querySelector(`#vid-${peerId}`);
+                vidEl.srcObject = stream;
+            });
+        }
+
         function resetCallUI() {
             stopRingtoneSound();
             window.remoteStreamObj = null;
+
+            // Reset Group Call Mesh state
+            isGroupCallActive = false;
+            activeGroupCalls.forEach(call => call.close());
+            activeGroupCalls.clear();
+            groupRemoteStreams.clear();
+
+            document.getElementById('group-video-grid').classList.add('hidden');
+            document.getElementById('group-video-grid').innerHTML = '';
+            document.getElementById('pip-container').classList.remove('hidden');
 
             const mainVideo = document.getElementById('main-video');
             const pipVideo = document.getElementById('pip-video');
@@ -954,8 +1161,6 @@
             }
             document.getElementById('pip-off-placeholder').classList.remove('hidden');
             if (activeCall) { activeCall.close(); activeCall = null; }
-            // Do not reset or close the chat channel when a call ends.
-            // This lets users keep messaging before, during, and after calls.
         }
 
         function enableChat() {
@@ -1034,6 +1239,13 @@
         }
 
         function setupUIEventListeners() {
+            // Group Call Setup
+            document.getElementById('btn-open-group-modal').addEventListener('click', openGroupCallModal);
+            document.getElementById('close-group-modal-btn').addEventListener('click', () => {
+                document.getElementById('group-call-modal').classList.add('hidden');
+            });
+            document.getElementById('btn-start-group-call').addEventListener('click', launchGroupCall);
+
             // Auth Modals
             document.getElementById('btn-show-auth').addEventListener('click', () => {
                 if (currentUser) {
@@ -1095,7 +1307,6 @@
                 document.getElementById('conn-req-modal').classList.add('hidden');
                 if (pendingIncomingRequestId) {
                     acceptedConnections.add(pendingIncomingRequestId);
-                    unlockCallControls();
                     localStorage.setItem('accepted_conn_response', JSON.stringify({ fromPeerId: myPeerId, toPeerId: pendingIncomingRequestId, timestamp: Date.now() }));
                     alert("Connection accepted! Calling controls unlocked.");
                 }
@@ -1169,11 +1380,22 @@
                 stopRingtoneSound();
                 document.getElementById('incoming-call-modal').classList.add('hidden');
                 if (incomingCallObj) {
-                    const isVideo = incomingCallObj.metadata && incomingCallObj.metadata.type === 'video';
+                    const isGroup = incomingCallObj.metadata && incomingCallObj.metadata.type === 'group-video';
+                    const isVideo = isGroup || (incomingCallObj.metadata && incomingCallObj.metadata.type === 'video');
+                    
                     const stream = await getLocalMediaStream(isVideo);
                     if (stream) {
                         incomingCallObj.answer(stream);
-                        handleCallStream(incomingCallObj);
+                        if (isGroup) {
+                            isGroupCallActive = true;
+                            document.getElementById('remote-placeholder').classList.add('hidden');
+                            document.getElementById('pip-container').classList.add('hidden');
+                            document.getElementById('main-video').classList.add('hidden');
+                            document.getElementById('group-video-grid').classList.remove('hidden');
+                            setupGroupCallPeer(incomingCallObj);
+                        } else {
+                            handleCallStream(incomingCallObj);
+                        }
                     }
                     incomingCallObj = null;
                 }
