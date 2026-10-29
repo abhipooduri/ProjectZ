@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONNECT</title>
+    <title>CONNECT - Unified Call & Chat Suite</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,15 +36,10 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- PeerJS CDN for WebRTC -->
+    <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <!-- Custom Styles & Privacy Protection CSS -->
+    <!-- Custom Styles & Privacy Protection -->
     <style>
         :root {
             --color-primary: #6366f1;
@@ -53,7 +48,6 @@
             --color-text: #818cf8;
         }
 
-        /* Prevent Text Selection and Copying */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #09090e;
@@ -61,10 +55,7 @@
             overflow-x: hidden;
             transition: background-color 0.3s, color 0.3s;
             -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
             user-select: none;
-            -webkit-touch-callout: none;
         }
 
         html.light body {
@@ -72,7 +63,6 @@
             color: #0f172a;
         }
 
-        /* Blur/obfuscate application when window loses focus (Screenshot & Screen Recording Protection) */
         body.screen-protected {
             filter: blur(25px) grayscale(100%);
             pointer-events: none;
@@ -140,7 +130,7 @@
                 <span id="window-status-text" class="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
             </div>
 
-            <!-- AUTH & SETTINGS ICON BUTTONS -->
+            <!-- ACCOUNT & SETTINGS BUTTONS -->
             <div class="flex items-center gap-2">
                 <button id="btn-show-auth" title="Login / Register" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-user"></i> <span id="auth-btn-text">Account</span>
@@ -186,21 +176,21 @@
                 </button>
             </div>
 
-            <!-- CONNECT CONTROLS -->
+            <!-- CONNECT CONTROLS & CALL LOCKING -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID or Username" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
-                <!-- ACTION BUTTONS -->
+                <!-- ACTION BUTTONS (Voice & Video locked until connection request accepted) -->
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled>
+                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled title="Accept connection in Members tab first">
                         <i class="fa-solid fa-video"></i> Video Call
                     </button>
-                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled>
+                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled title="Accept connection in Members tab first">
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
                 <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-comments"></i> Chat
+                    <i class="fa-solid fa-comments"></i> Chat Session
                 </button>
 
                 <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS...</p>
@@ -221,7 +211,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Accept or send a connection request in Members tab to unlock video & voice calling.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Send a connection request in the <strong>Members</strong> tab and wait for acceptance to unlock voice & video calling.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
@@ -270,7 +260,7 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL & MEMBERS DIRECTORY WITH TABS -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL & MEMBERS DIRECTORY -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
             
             <!-- TAB BAR -->
@@ -292,7 +282,7 @@
 
                 <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                        -- NEW P2P CHAT SESSION STARTED --
+                        -- P2P SECURE CHAT READY --
                     </div>
                 </div>
 
@@ -312,15 +302,21 @@
                 </form>
             </div>
 
-            <!-- TAB CONTENT: DIRECTORY / MEMBERS VIEW -->
+            <!-- TAB CONTENT: MEMBERS DIRECTORY -->
             <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
                 <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
-                    <span>Registered Members Directory:</span>
-                    <span id="online-counter" class="text-emerald-400 font-bold">0 Online</span>
+                    <span>Available Online Members:</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
                 </div>
                 
                 <div id="members-list-container" class="flex flex-col gap-2">
-                    <p class="text-slate-500 text-[11px] italic">Loading registered users...</p>
+                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-200 block">You (Active)</span>
+                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ---</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+                    </div>
                 </div>
             </div>
 
@@ -383,6 +379,23 @@
         </div>
     </div>
 
+    <!-- INCOMING CALL MODAL -->
+    <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
+                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
+            </div>
+            <div>
+                <h3 id="incoming-call-title" class="font-display font-bold text-base text-cyan-300">INCOMING CALL</h3>
+                <p id="incoming-peer-id" class="text-xs text-slate-300 font-mono mt-1 font-bold">From ID: ...</p>
+            </div>
+            <div class="flex gap-3 w-full mt-2">
+                <button id="btn-decline-call" class="flex-1 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 font-bold text-white text-xs transition">DECLINE</button>
+                <button id="btn-accept-call" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition">ACCEPT</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SETTINGS & PROFILE MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
@@ -429,7 +442,6 @@
             <div class="space-y-4">
                 <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">PROFILE DETAILS</label>
                 
-                <!-- Profile Image Upload -->
                 <div class="flex items-center gap-4">
                     <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border overflow-hidden shrink-0 flex items-center justify-center">
                         <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full object-cover hidden">
@@ -443,13 +455,11 @@
                     </div>
                 </div>
 
-                <!-- Email ID -->
                 <div>
                     <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Email ID</label>
                     <input id="user-email-input" type="email" placeholder="Enter your email" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 </div>
 
-                <!-- Phone Number -->
                 <div>
                     <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Phone Number</label>
                     <input id="user-phone-input" type="tel" placeholder="Enter your phone number" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
@@ -460,27 +470,9 @@
                 SAVE CHANGES
             </button>
 
-            <!-- REMOVE PROFILE BUTTON -->
             <button id="btn-remove-profile" class="w-full py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 font-bold text-rose-400 text-xs transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-trash-can"></i> REMOVE PROFILE
             </button>
-        </div>
-    </div>
-
-    <!-- INCOMING CALL MODAL -->
-    <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
-            <div class="w-16 h-16 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
-                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
-            </div>
-            <div>
-                <h3 id="incoming-call-title" class="font-display font-bold text-base text-cyan-300">INCOMING VIDEO CALL</h3>
-                <p id="incoming-peer-id" class="text-xs text-slate-300 font-mono mt-1 font-bold">From ID: ...</p>
-            </div>
-            <div class="flex gap-3 w-full mt-2">
-                <button id="btn-decline-call" class="flex-1 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 font-bold text-white text-xs transition">DECLINE</button>
-                <button id="btn-accept-call" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition">ACCEPT</button>
-            </div>
         </div>
     </div>
 
@@ -488,20 +480,8 @@
     <footer class="w-full border-t border-indigo-900/30 dark:bg-slate-950/80 bg-white/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
     </footer>
 
-    <!-- INLINE SCRIPT LOGIC -->
+    <!-- INLINE APPLICATION LOGIC -->
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDemoConfigKeyForConnectingApp123",
-            authDomain: "connect-app-p2p.firebaseapp.com",
-            projectId: "connect-app-p2p",
-            storageBucket: "connect-app-p2p.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef123456"
-        };
-
-        let db = null;
-        let auth = null;
         let currentUser = null;
         let isAuthModeLogin = false;
 
@@ -514,9 +494,9 @@
         let incomingCallObj = null;
         let micMuted = false;
         let camOff = false;
-        
+
         let acceptedConnections = new Set();
-        let pendingIncomingRequestDoc = null;
+        let pendingIncomingRequestId = null;
 
         let isMainRemote = true; 
         let isPipLarge = false;
@@ -537,27 +517,9 @@
             teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
         };
 
-        // Privacy & Screenshot Obfuscation Listeners
+        // Screen protection listeners
         window.addEventListener('blur', () => document.body.classList.add('screen-protected'));
         window.addEventListener('focus', () => document.body.classList.remove('screen-protected'));
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'PrintScreen') {
-                navigator.clipboard.writeText('');
-                alert('Screenshots are disabled for privacy & security.');
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (
-                e.key === 'PrintScreen' ||
-                (e.ctrlKey && e.key === 'p') ||
-                (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'))
-            ) {
-                e.preventDefault();
-                alert('Screen capture keyboard shortcuts are disabled.');
-            }
-        });
 
         function applyThemeAndAccent(themeMode, colorKey) {
             document.documentElement.className = themeMode;
@@ -679,157 +641,34 @@
             const box = document.getElementById('chat-messages');
             box.innerHTML = `
                 <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                    -- NEW P2P CHAT SESSION STARTED --
+                    -- P2P SECURE CHAT SESSION STARTED --
                 </div>
             `;
             disableChat();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
             initPeerJS();
             setupUIEventListeners();
             loadSavedProfile();
+            checkUserSession();
+            refreshLocalMembersDirectory();
         });
 
-        function initFirebase() {
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                auth = firebase.auth();
-                db = firebase.firestore();
+        function checkUserSession() {
+            const savedUser = JSON.parse(localStorage.getItem('connect_app_user') || 'null');
+            const authBtnText = document.getElementById('auth-btn-text');
+            const handleDisplay = document.getElementById('display-user-handle');
 
-                auth.onAuthStateChanged((user) => {
-                    currentUser = user;
-                    const authBtnText = document.getElementById('auth-btn-text');
-                    const handleDisplay = document.getElementById('display-user-handle');
-
-                    if (user) {
-                        authBtnText.innerText = "Logout";
-                        db.collection("users").doc(user.uid).get().then((doc) => {
-                            if (doc.exists) {
-                                const data = doc.data();
-                                handleDisplay.innerText = data.username || user.email.split('@')[0];
-                                syncPeerToFirestore();
-                            }
-                        });
-                    } else {
-                        authBtnText.innerText = "Account";
-                        handleDisplay.innerText = "Guest";
-                    }
-                });
-
-                listenToMembersDirectory();
-                listenToConnectionRequests();
-            } catch (err) {
-                console.warn("Firebase Init fallback/offline mode:", err);
-            }
-        }
-
-        function syncPeerToFirestore() {
-            if (currentUser && db && myPeerId) {
-                const handle = document.getElementById('display-user-handle').innerText;
-                db.collection("users").doc(currentUser.uid).set({
-                    email: currentUser.email,
-                    username: handle,
-                    peerId: myPeerId,
-                    isOnline: true,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            }
-        }
-
-        function listenToMembersDirectory() {
-            if (!db) return;
-            db.collection("users").onSnapshot((snapshot) => {
-                const container = document.getElementById('members-list-container');
-                container.innerHTML = '';
-                let count = 0;
-
-                snapshot.forEach((doc) => {
-                    const u = doc.data();
-                    if (currentUser && doc.id === currentUser.uid) return;
-                    if (u.isOnline) count++;
-
-                    const div = document.createElement('div');
-                    div.className = "p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-between gap-2";
-                    
-                    const isAccepted = acceptedConnections.has(u.peerId);
-
-                    div.innerHTML = `
-                        <div class="truncate flex flex-col">
-                            <span class="font-bold text-slate-200 text-xs">${u.username || 'User'}</span>
-                            <span class="text-[10px] text-slate-400 font-mono">ID: ${u.peerId || 'Offline'}</span>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <div class="w-2 h-2 rounded-full ${u.isOnline ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}"></div>
-                            <button onclick="requestConnection('${u.peerId}', '${u.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold">
-                                ${isAccepted ? 'Connected' : 'Connect'}
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                });
-
-                document.getElementById('online-counter').innerText = `${count} Online`;
-            });
-        }
-
-        function requestConnection(targetPeerId, targetUsername) {
-            if (!targetPeerId) return;
-            document.getElementById('target-peer-id').value = targetPeerId;
-            
-            if (acceptedConnections.has(targetPeerId)) {
-                unlockCallControls(targetPeerId);
-                alert(`You are already connected with ${targetUsername || targetPeerId}. Calls unlocked!`);
-                return;
-            }
-
-            if (db && currentUser) {
-                db.collection("requests").add({
-                    fromUid: currentUser.uid,
-                    fromPeerId: myPeerId,
-                    fromUsername: document.getElementById('display-user-handle').innerText,
-                    toPeerId: targetPeerId,
-                    status: 'pending',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    showNotification("REQUEST SENT", targetPeerId, "Awaiting friend's acceptance...");
-                });
+            if (savedUser) {
+                currentUser = savedUser;
+                authBtnText.innerText = "Logout";
+                handleDisplay.innerText = savedUser.username;
             } else {
-                acceptedConnections.add(targetPeerId);
-                unlockCallControls(targetPeerId);
-                alert("P2P Local Connection Granted.");
+                currentUser = null;
+                authBtnText.innerText = "Account";
+                handleDisplay.innerText = "Guest";
             }
-        }
-
-        function listenToConnectionRequests() {
-            if (!db) return;
-            db.collection("requests").onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    const req = change.doc.data();
-                    if (req.toPeerId === myPeerId && req.status === 'pending') {
-                        pendingIncomingRequestDoc = change.doc.ref;
-                        document.getElementById('conn-req-text').innerText = `${req.fromUsername || req.fromPeerId} wants to connect with you.`;
-                        document.getElementById('conn-req-modal').classList.remove('hidden');
-                        startRingtoneSound();
-                    } else if (req.fromPeerId === myPeerId && req.status === 'accepted') {
-                        acceptedConnections.add(req.toPeerId);
-                        unlockCallControls(req.toPeerId);
-                        showNotification("REQUEST ACCEPTED", req.toPeerId, "Calling features unlocked!");
-                    }
-                });
-            });
-        }
-
-        function unlockCallControls(targetPeerId) {
-            const vBtn = document.getElementById('btn-start-video');
-            const aBtn = document.getElementById('btn-start-voice');
-            vBtn.removeAttribute('disabled');
-            aBtn.removeAttribute('disabled');
-            vBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            aBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
         function loadSavedProfile() {
@@ -888,9 +727,10 @@
                 peer.on('open', (id) => {
                     myPeerId = id;
                     document.getElementById('my-peer-id').innerText = id;
+                    document.getElementById('member-self-id').innerText = `ID: ${id}`;
                     document.getElementById('chat-header-id').innerText = `ID: ${id}`;
                     setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
-                    syncPeerToFirestore();
+                    registerPeerInLocalStorage();
                 });
 
                 peer.on('call', (call) => {
@@ -900,7 +740,7 @@
                     
                     document.getElementById('incoming-call-title').innerText = isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL';
                     document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
-                    document.getElementById('incoming-peer-id').innerText = `From Friend ID: ${call.peer}`;
+                    document.getElementById('incoming-peer-id').innerText = `From Peer ID: ${call.peer}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
                     startRingtoneSound();
                 });
@@ -919,6 +759,117 @@
             } catch (err) {
                 setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
             }
+        }
+
+        function registerPeerInLocalStorage() {
+            if (!myPeerId) return;
+            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
+            const username = currentUser ? currentUser.username : ('Guest_' + myPeerId.slice(-3));
+            activePeers[myPeerId] = { peerId: myPeerId, username: username, timestamp: Date.now() };
+            localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
+            refreshLocalMembersDirectory();
+        }
+
+        function refreshLocalMembersDirectory() {
+            const container = document.getElementById('members-list-container');
+            if (!container) return;
+
+            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
+            container.innerHTML = `
+                <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Guest)'}</span>
+                        <span id="member-self-id" class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+                </div>
+            `;
+
+            let onlineCount = 1;
+            const now = Date.now();
+
+            Object.values(activePeers).forEach(p => {
+                if (p.peerId === myPeerId) return;
+                // Prune inactive peers older than 30 seconds
+                if (now - p.timestamp > 30000) return;
+
+                onlineCount++;
+                const isAccepted = acceptedConnections.has(p.peerId);
+
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-2";
+                div.innerHTML = `
+                    <div class="truncate flex flex-col">
+                        <span class="font-bold text-slate-200 text-xs">${p.username}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">ID: ${p.peerId}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <button onclick="requestConnection('${p.peerId}', '${p.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold">
+                            ${isAccepted ? 'Connected' : 'Connect'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('online-counter').innerText = `${onlineCount} Online`;
+        }
+
+        // Keep peer heartbeat alive every 10 seconds
+        setInterval(registerPeerInLocalStorage, 10000);
+        setInterval(refreshLocalMembersDirectory, 5000);
+
+        function requestConnection(targetPeerId, targetUsername) {
+            if (!targetPeerId) return;
+            document.getElementById('target-peer-id').value = targetPeerId;
+
+            if (acceptedConnections.has(targetPeerId)) {
+                unlockCallControls();
+                alert(`Already connected with ${targetUsername}. Calls unlocked!`);
+                return;
+            }
+
+            // Broadcast connection request via localStorage event bus
+            const reqData = { fromPeerId: myPeerId, fromUsername: currentUser ? currentUser.username : 'Guest', toPeerId: targetPeerId, timestamp: Date.now() };
+            localStorage.setItem('pending_conn_request', JSON.stringify(reqData));
+
+            showNotification("REQUEST SENT", targetUsername, "Waiting for acceptance to unlock voice/video calls...");
+        }
+
+        // Listen to cross-tab connection requests
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'pending_conn_request' && e.newValue) {
+                try {
+                    const req = JSON.parse(e.newValue);
+                    if (req.toPeerId === myPeerId) {
+                        pendingIncomingRequestId = req.fromPeerId;
+                        document.getElementById('conn-req-text').innerText = `${req.fromUsername} (${req.fromPeerId}) wants to connect with you.`;
+                        document.getElementById('conn-req-modal').classList.remove('hidden');
+                        startRingtoneSound();
+                    }
+                } catch (err) {}
+            } else if (e.key === 'accepted_conn_response' && e.newValue) {
+                try {
+                    const res = JSON.parse(e.newValue);
+                    if (res.toPeerId === myPeerId) {
+                        acceptedConnections.add(res.fromPeerId);
+                        unlockCallControls();
+                        showNotification("CONNECTED", res.fromPeerId, "Connection accepted! Voice and video calling unlocked.");
+                    }
+                } catch (err) {}
+            }
+        });
+
+        function unlockCallControls() {
+            const vBtn = document.getElementById('btn-start-video');
+            const aBtn = document.getElementById('btn-start-voice');
+            vBtn.removeAttribute('disabled');
+            aBtn.removeAttribute('disabled');
+            vBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            aBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            vBtn.removeAttribute('title');
+            aBtn.removeAttribute('title');
         }
 
         function setupDataConnectionListeners(conn) {
@@ -1065,7 +1016,7 @@
             }
 
             if (!acceptedConnections.has(targetId)) {
-                alert("You must first send and have your connection request accepted in the Members tab before placing voice or video calls!");
+                alert("Call blocked! You must connect and have your request accepted in the Members tab first.");
                 return;
             }
 
@@ -1090,7 +1041,9 @@
             // Auth Modals
             document.getElementById('btn-show-auth').addEventListener('click', () => {
                 if (currentUser) {
-                    auth.signOut().then(() => alert("Logged out successfully!"));
+                    localStorage.removeItem('connect_app_user');
+                    checkUserSession();
+                    alert("Logged out successfully!");
                 } else {
                     document.getElementById('auth-modal').classList.remove('hidden');
                 }
@@ -1113,40 +1066,48 @@
                 const pass = document.getElementById('auth-password').value.trim();
                 const uname = document.getElementById('auth-username').value.trim();
 
+                const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '{}');
+
                 if (isAuthModeLogin) {
-                    auth.signInWithEmailAndPassword(email, pass).then(() => {
+                    if (registeredUsers[email] && registeredUsers[email].password === pass) {
+                        const userData = registeredUsers[email];
+                        localStorage.setItem('connect_app_user', JSON.stringify(userData));
+                        checkUserSession();
                         document.getElementById('auth-modal').classList.add('hidden');
-                    }).catch(err => alert(err.message));
+                        alert(`Welcome back, ${userData.username}!`);
+                        registerPeerInLocalStorage();
+                    } else {
+                        alert("Invalid Email or Password!");
+                    }
                 } else {
                     if (!uname) { alert("Please set your custom username."); return; }
-                    auth.createUserWithEmailAndPassword(email, pass).then((cred) => {
-                        db.collection("users").doc(cred.user.uid).set({
-                            email: email,
-                            username: uname,
-                            peerId: myPeerId || '',
-                            isOnline: true,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }).then(() => {
-                            document.getElementById('auth-modal').classList.add('hidden');
-                        });
-                    }).catch(err => alert(err.message));
+                    const userData = { email, password: pass, username: uname };
+                    registeredUsers[email] = userData;
+                    localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
+                    localStorage.setItem('connect_app_user', JSON.stringify(userData));
+
+                    checkUserSession();
+                    document.getElementById('auth-modal').classList.add('hidden');
+                    alert(`Account created successfully! Logged in as ${uname}`);
+                    registerPeerInLocalStorage();
                 }
             });
 
-            // Connection Request Responses
+            // Connection Request Handling
             document.getElementById('btn-accept-req').addEventListener('click', () => {
                 stopRingtoneSound();
                 document.getElementById('conn-req-modal').classList.add('hidden');
-                if (pendingIncomingRequestDoc) {
-                    pendingIncomingRequestDoc.update({ status: 'accepted' });
+                if (pendingIncomingRequestId) {
+                    acceptedConnections.add(pendingIncomingRequestId);
+                    unlockCallControls();
+                    localStorage.setItem('accepted_conn_response', JSON.stringify({ fromPeerId: myPeerId, toPeerId: pendingIncomingRequestId, timestamp: Date.now() }));
+                    alert("Connection accepted! Calling controls unlocked.");
                 }
             });
             document.getElementById('btn-decline-req').addEventListener('click', () => {
                 stopRingtoneSound();
                 document.getElementById('conn-req-modal').classList.add('hidden');
-                if (pendingIncomingRequestDoc) {
-                    pendingIncomingRequestDoc.update({ status: 'declined' });
-                }
+                pendingIncomingRequestId = null;
             });
 
             // Calling Actions
@@ -1300,7 +1261,6 @@
                 alert("Settings & profile saved successfully!");
             });
 
-            // Remove Profile Implementation
             document.getElementById('btn-remove-profile').addEventListener('click', () => {
                 if (confirm("Are you sure you want to remove your stored profile details?")) {
                     localStorage.removeItem('user_email');
