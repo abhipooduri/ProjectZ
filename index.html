@@ -31,41 +31,35 @@
     </script>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Orbitron:wght@600;800;900&family=Outfit:wght@400;600;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
+    <!-- PeerJS CDN for WebRTC Video, Voice & Data Channels -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Custom Styles & Privacy Protection -->
+    <!-- Custom Glassmorphism Styles & Dynamic Theming -->
     <style>
         :root {
             --color-primary: #6366f1;
             --color-hover: #4f46e5;
             --color-border: rgba(99, 102, 241, 0.3);
             --color-text: #818cf8;
+            --app-font: 'Inter', sans-serif;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--app-font);
             background-color: #09090e;
             color: #f1f5f9;
             overflow-x: hidden;
             transition: background-color 0.3s, color 0.3s;
-            -webkit-user-select: none;
-            user-select: none;
         }
 
         html.light body {
             background-color: #e2e8f0;
             color: #0f172a;
-        }
-
-        body.screen-protected {
-            filter: blur(25px) grayscale(100%);
-            pointer-events: none;
         }
 
         .font-display { font-family: 'Orbitron', sans-serif; }
@@ -90,12 +84,6 @@
         .dynamic-border { border-color: var(--color-border); }
         .dynamic-text { color: var(--color-text); }
 
-        .scanlines {
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 3px, 6px 100%;
-            pointer-events: none;
-        }
-
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #09090e; }
         ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
@@ -111,7 +99,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- TOP HEADER -->
+    <!-- TOP NAVIGATION HEADER -->
     <header class="w-full border-b dynamic-border dark:bg-slate-950/80 bg-white/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 transition-colors">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -130,7 +118,7 @@
                 <span id="window-status-text" class="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
             </div>
 
-            <!-- ACCOUNT & SETTINGS BUTTONS -->
+            <!-- ACCOUNT & SETTINGS ACTION BUTTONS -->
             <div class="flex items-center gap-2">
                 <button id="btn-show-auth" title="Login / Register" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-user"></i> <span id="auth-btn-text">Account</span>
@@ -142,43 +130,43 @@
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN DASHBOARD CONTENT -->
     <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT COLUMN: CONTROLS & USER ID -->
+        <!-- LEFT PANEL: USER ID & CONNECTION CONTROLS -->
         <section class="lg:col-span-3 flex flex-col gap-4">
             
             <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
                 <div class="flex items-center gap-2 dynamic-text font-display text-sm font-bold border-b border-indigo-900/40 pb-2">
                     <i class="fa-solid fa-location-crosshairs"></i>
-                    <span>SELECT YOUR NEXUS ZONE</span>
+                    <span id="i18n-nexus-zone">SELECT YOUR NEXUS ZONE</span>
                 </div>
                 <div>
-                    <label class="text-[11px] font-mono text-slate-600 dark:text-slate-400 mb-1 block">Campus / Region Hub</label>
+                    <label id="i18n-hub-label" class="text-[11px] font-mono text-slate-600 dark:text-slate-400 mb-1 block">Campus / Region Hub</label>
                     <select id="select-campus" class="w-full bg-slate-200 dark:bg-slate-900 border dynamic-border rounded-xl p-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-semibold transition-colors">
-                        <option value="" disabled selected>Select your college</option>
+                        <option value="" disabled selected>Select your region hub</option>
                         <option value="cmr_ec">CMR Engineering College</option>
                         <option value="vnr_vjiet">VNR VJIET</option>
                         <option value="iit_hyd">IIT Hyderabad</option>
-                        <option value="other">Other</option>
+                        <option value="other">Other Region</option>
                     </select>
                 </div>
             </div>
 
-            <!-- YOUR ID & USERNAME -->
+            <!-- YOUR ID & MOBILE NUMBER REGISTRATION -->
             <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
                 <div class="truncate mr-2">
                     <div class="text-slate-400">User: <span id="display-user-handle" class="font-bold text-cyan-400">Guest</span></div>
-                    <div class="text-slate-500">Your ID: <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
+                    <div class="text-slate-500">Your Peer ID (Mobile): <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
                 </div>
                 <button id="copy-id-btn" class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition text-xs px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded">
                     <i class="fa-regular fa-copy"></i>
                 </button>
             </div>
 
-            <!-- CONNECT CONTROLS & CALL LOCKING -->
+            <!-- MANUAL DIAL CONTROLS -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="Enter Mobile Number / Peer ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
                 <div class="grid grid-cols-2 gap-2">
                     <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
@@ -188,8 +176,7 @@
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
-                
-                <!-- GROUP CALL BUTTON -->
+
                 <button id="btn-open-group-modal" class="w-full rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-users-viewfinder"></i> Group Call (Max 5)
                 </button>
@@ -198,35 +185,35 @@
                     <i class="fa-solid fa-comments"></i> Chat Session
                 </button>
 
-                <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS...</p>
+                <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS Network...</p>
             </div>
 
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL / GROUP GRID SCREEN -->
+        <!-- CENTER PANEL: CALL CANVAS & MESH GRID DISPLAY -->
         <section class="lg:col-span-6 flex flex-col gap-4">
             <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-900 dark:bg-slate-950">
                 
-                <!-- SINGLE 1-ON-1 CALL DISPLAY VIDEO -->
+                <!-- SINGLE 1-ON-1 REMOTE VIDEO DISPLAY -->
                 <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror absolute inset-0"></video>
                 
-                <!-- GROUP MESH GRID CONTAINER -->
+                <!-- GROUP MESH DYNAMIC GRID DISPLAY -->
                 <div id="group-video-grid" class="hidden absolute inset-0 p-3 grid gap-2.5 w-full h-full overflow-y-auto bg-slate-950 z-10"></div>
 
-                <!-- PLACEHOLDER WHEN NO CALL ACTIVE -->
-                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 scanlines z-10">
+                <!-- CALL PLACEHOLDER OVERLAY -->
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 z-10">
                     <div class="w-20 h-20 rounded-full bg-slate-800/80 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
-                    <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter a friend’s Peer ID or start a Group Call with up to 5 online participants.</p>
+                    <h3 id="i18n-ready-call" class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
+                    <p id="i18n-ready-desc" class="text-xs text-slate-400 max-w-xs mt-1">Select an active member or enter a peer mobile number to start standard 1-on-1 or group call.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
                 <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
                     <div class="bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border dynamic-border flex items-center gap-2">
                         <i id="peer-status-dot" class="fa-solid fa-circle text-[10px] text-slate-500"></i>
-                        <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200">Awaiting to connect</span>
+                        <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200">Awaiting connection</span>
                     </div>
                     
                     <button id="btn-swap-feeds" title="Swap Main & PIP Screen" class="pointer-events-auto bg-slate-900/80 dark:bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white p-2 rounded-full border border-slate-700/80 text-xs transition">
@@ -234,7 +221,7 @@
                     </button>
                 </div>
 
-                <!-- PIP SECONDARY SCREEN (FOR 1-ON-1 CALLS) -->
+                <!-- PIP SECONDARY LOCAL PREVIEW -->
                 <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     
@@ -260,7 +247,6 @@
                     <button id="btn-toggle-cam" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 flex items-center justify-center text-sm transition" title="Toggle Video">
                         <i class="fa-solid fa-video"></i>
                     </button>
-                    <!-- DYNAMIC MID-CALL ADD MEMBER BUTTON -->
                     <button id="btn-add-midcall" class="h-10 px-3 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-purple-600/30" title="Add Participant to Call">
                         <i class="fa-solid fa-user-plus"></i> <span class="hidden sm:inline">Add</span>
                     </button>
@@ -272,33 +258,51 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL & MEMBERS DIRECTORY -->
+        <!-- RIGHT PANEL: REAL-TIME ONLINE MEMBERS & CHAT TERMINAL -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
             
-            <!-- TAB BAR -->
+            <!-- TAB SELECTION HEADER -->
             <div class="grid grid-cols-2 bg-slate-200 dark:bg-slate-950/90 border-b dynamic-border text-xs font-display font-bold">
-                <button id="tab-chat-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-comments"></i> Chat
+                <button id="tab-peers-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-users"></i> Active Members
                 </button>
-                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-users"></i> Members
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-comments"></i> Chat Session
                 </button>
             </div>
 
-            <!-- TAB CONTENT: CHAT VIEW -->
-            <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
+            <!-- TAB 1: MEMBERS DIRECTORY -->
+            <div id="view-peers" class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
+                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
+                    <span>Active Network Members:</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
+                </div>
+                
+                <div id="members-list-container" class="flex flex-col gap-2">
+                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-200 block">You (Active)</span>
+                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ---</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: LIVE DATA CHAT TERMINAL -->
+            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
                 <div class="p-2 bg-slate-100 dark:bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
-                    <span id="chat-header-id" class="text-slate-500 font-bold">ID: ---</span>
+                    <span id="chat-header-id" class="text-slate-500 font-bold">Connected ID: ---</span>
                     <span id="chat-status" class="text-slate-500 font-bold">OFFLINE</span>
                 </div>
 
                 <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                        -- CHAT READY: CONNECT TO A FRIEND ID --
+                        -- CONNECT TO AN ACTIVE MEMBER TO START CHAT --
                     </div>
                 </div>
 
-                <!-- CHAT FORM -->
+                <!-- FILE & TEXT SEND FORM -->
                 <form id="chat-form" class="p-2 bg-slate-200 dark:bg-slate-950 border-t dynamic-border flex items-center gap-2 transition-colors">
                     <input id="file-input" type="file" class="hidden">
                     
@@ -314,94 +318,11 @@
                 </form>
             </div>
 
-            <!-- TAB CONTENT: MEMBERS DIRECTORY -->
-            <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
-                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
-                    <span>Available Online Members:</span>
-                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
-                </div>
-                
-                <div id="members-list-container" class="flex flex-col gap-2">
-                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-slate-200 block">You (Active)</span>
-                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ---</span>
-                        </div>
-                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
-                    </div>
-                </div>
-            </div>
-
         </section>
 
     </main>
 
-    <!-- MID-CALL ADD MEMBER MODAL -->
-    <div id="midcall-add-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-purple-500/50 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> ADD TO ACTIVE CALL
-                </h3>
-                <button id="close-midcall-modal-btn" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <p class="text-xs text-slate-300">Select an online peer to invite into the active call session (Max 5 participants total).</p>
-
-            <div id="midcall-peers-selector" class="max-h-60 overflow-y-auto space-y-2 font-mono text-xs my-1">
-                <!-- Dynamic peer checkboxes -->
-            </div>
-
-            <div class="flex items-center justify-between border-t border-slate-800 pt-3">
-                <span id="midcall-selection-count" class="text-xs font-mono dynamic-text font-bold">In Call: 0 / 5</span>
-                <button id="btn-confirm-add-midcall" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-white text-xs transition shadow-lg flex items-center gap-1.5">
-                    <i class="fa-solid fa-plus"></i> Add Selected
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTHENTICATION MODAL (REGISTER / LOGIN) -->
-    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 id="auth-modal-title" class="font-display font-bold text-base dynamic-text flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> Register Account
-                </h3>
-                <button id="close-auth-modal-btn" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <form id="auth-form" class="space-y-3">
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Email Address</label>
-                    <input id="auth-email" type="email" required placeholder="user@domain.com" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Password</label>
-                    <input id="auth-password" type="password" required placeholder="••••••••" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-                <div id="username-field-wrapper">
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Custom Username</label>
-                    <input id="auth-username" type="text" placeholder="e.g. cyber_hero" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-
-                <button id="auth-submit-btn" type="submit" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition shadow-lg mt-2">
-                    REGISTER
-                </button>
-            </form>
-
-            <div class="text-center text-[11px] text-slate-400 font-mono pt-2 border-t border-slate-800">
-                <span id="auth-toggle-prompt">Already registered?</span>
-                <button id="auth-toggle-btn" class="dynamic-text font-bold ml-1 hover:underline">Login here</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CONNECTION REQUEST PROMPT MODAL -->
+    <!-- INTERACTIVE CONNECTION REQUEST MODAL -->
     <div id="conn-req-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
             <div class="w-16 h-16 rounded-full bg-indigo-950 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
@@ -409,7 +330,7 @@
             </div>
             <div>
                 <h3 class="font-display font-bold text-base text-cyan-300">CONNECTION REQUEST</h3>
-                <p id="conn-req-text" class="text-xs text-slate-300 font-mono mt-1 font-bold">User wants to connect with you...</p>
+                <p id="conn-req-text" class="text-xs text-slate-300 font-mono mt-1 font-bold">Member wants to connect with you...</p>
             </div>
             <div class="flex gap-3 w-full mt-2">
                 <button id="btn-decline-req" class="flex-1 py-2.5 rounded-xl bg-rose-900 hover:bg-rose-800 font-bold text-white text-xs transition">DECLINE</button>
@@ -418,7 +339,7 @@
         </div>
     </div>
 
-    <!-- INCOMING CALL MODAL -->
+    <!-- INCOMING CALL ALERT MODAL -->
     <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
             <div class="w-16 h-16 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
@@ -435,7 +356,85 @@
         </div>
     </div>
 
-    <!-- SETTINGS & PROFILE MODAL -->
+    <!-- GROUP CALL MODAL -->
+    <div id="group-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-purple-500/50 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i> LAUNCH MESH GROUP CALL
+                </h3>
+                <button id="close-group-modal-btn" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300">Select online peers to start a multi-party group call (Max 5 participants total).</p>
+            <div id="group-peers-selector" class="max-h-60 overflow-y-auto space-y-2 font-mono text-xs my-1"></div>
+            <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+                <span id="group-selection-count" class="text-xs font-mono dynamic-text font-bold">Selected: 0 / 5</span>
+                <button id="btn-start-group-call" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-white text-xs transition shadow-lg">START GROUP CALL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MID-CALL ADD PARTICIPANT MODAL -->
+    <div id="midcall-add-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-purple-500/50 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> ADD TO ACTIVE CALL
+                </h3>
+                <button id="close-midcall-modal-btn" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300">Select online peers to invite into active call session.</p>
+            <div id="midcall-peers-selector" class="max-h-60 overflow-y-auto space-y-2 font-mono text-xs my-1"></div>
+            <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+                <span id="midcall-selection-count" class="text-xs font-mono dynamic-text font-bold">In Call: 0 / 5</span>
+                <button id="btn-confirm-add-midcall" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-white text-xs transition shadow-lg">Add Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION / REGISTRATION MODAL -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 id="auth-modal-title" class="font-display font-bold text-base dynamic-text flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Register Account
+                </h3>
+                <button id="close-auth-modal-btn" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="auth-form" class="space-y-3">
+                <div>
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Mobile Number (Required for Peer ID)</label>
+                    <input id="auth-phone" type="tel" required placeholder="e.g. 9876543210" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+                <div>
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Password</label>
+                    <input id="auth-password" type="password" required placeholder="••••••••" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+                <div id="username-field-wrapper">
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Custom Display Name</label>
+                    <input id="auth-username" type="text" placeholder="e.g. cyber_hero" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+
+                <button id="auth-submit-btn" type="submit" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition shadow-lg mt-2">
+                    REGISTER & RE-INITIALIZE
+                </button>
+            </form>
+
+            <div class="text-center text-[11px] text-slate-400 font-mono pt-2 border-t border-slate-800">
+                <span id="auth-toggle-prompt">Already registered?</span>
+                <button id="auth-toggle-btn" class="dynamic-text font-bold ml-1 hover:underline">Login here</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS & STAGED PROFILE MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -447,9 +446,29 @@
                 </button>
             </div>
 
-            <!-- THEME SELECTION -->
+            <!-- LANGUAGE & FONT SETTINGS -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[11px] font-mono font-bold text-slate-400 block mb-1">APP LANGUAGE</label>
+                    <select id="staged-language" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-slate-200">
+                        <option value="en">English</option>
+                        <option value="te">Telugu (తెలుగు)</option>
+                        <option value="hi">Hindi (हिंदी)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-mono font-bold text-slate-400 block mb-1">FONT STYLE</label>
+                    <select id="staged-font" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-slate-200">
+                        <option value="Inter">Inter (Standard)</option>
+                        <option value="Outfit">Outfit (Modern)</option>
+                        <option value="Roboto Mono">Roboto Mono</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- THEME MODE -->
             <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">THEME</label>
+                <label class="text-xs font-mono font-bold text-slate-400 block">THEME MODE</label>
                 <div class="grid grid-cols-2 gap-3">
                     <button data-theme="dark" class="theme-picker-btn py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition">
                         <i class="fa-solid fa-moon"></i> Dark
@@ -460,9 +479,9 @@
                 </div>
             </div>
 
-            <!-- COLOR ACCENT CUSTOMIZATION -->
+            <!-- COLOR ACCENT PICKER -->
             <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">ACCENT COLOR CUSTOMIZATION</label>
+                <label class="text-xs font-mono font-bold text-slate-400 block">ACCENT COLOR</label>
                 <div class="flex flex-wrap items-center gap-3">
                     <button data-color="default" class="color-picker-btn w-8 h-8 rounded-full bg-indigo-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
                     <button data-color="cyan" class="color-picker-btn w-8 h-8 rounded-full bg-cyan-400 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
@@ -470,57 +489,62 @@
                     <button data-color="pink" class="color-picker-btn w-8 h-8 rounded-full bg-pink-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
                     <button data-color="amber" class="color-picker-btn w-8 h-8 rounded-full bg-amber-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
                     <button data-color="purple" class="color-picker-btn w-8 h-8 rounded-full bg-purple-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="crimson" class="color-picker-btn w-8 h-8 rounded-full bg-rose-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="teal" class="color-picker-btn w-8 h-8 rounded-full bg-teal-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
                 </div>
             </div>
 
-            <hr class="border-slate-300 dark:border-slate-800">
+            <hr class="border-slate-800">
 
-            <!-- PROFILE DETAILS -->
+            <!-- PROFILE & AVATAR EDIT WITH OVERLAY DELETE -->
             <div class="space-y-4">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">PROFILE DETAILS</label>
+                <label class="text-xs font-mono font-bold text-slate-400 block">PROFILE DETAILS</label>
                 
                 <div class="flex items-center gap-4">
-                    <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border overflow-hidden shrink-0 flex items-center justify-center">
-                        <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full object-cover hidden">
-                        <i id="profile-img-placeholder" class="fa-solid fa-user text-2xl dynamic-text"></i>
-                    </div>
-                    <div>
-                        <input id="profile-img-input" type="file" accept="image/*" class="hidden">
-                        <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition">
-                            <i class="fa-solid fa-camera mr-1"></i> Upload Image
+                    <!-- AVATAR CONTAINER WITH OVERLAY DELETE BUTTON -->
+                    <div class="relative group w-20 h-20 rounded-full bg-slate-900 border-2 dynamic-border overflow-hidden shrink-0 flex items-center justify-center shadow-lg">
+                        <img id="profile-img-preview" src="" alt="Profile Avatar" class="w-full h-full object-cover hidden">
+                        <i id="profile-img-placeholder" class="fa-solid fa-user text-3xl dynamic-text"></i>
+                        
+                        <!-- WHATSAPP-STYLE DELETE OVERLAY BUTTON -->
+                        <button id="btn-delete-avatar-overlay" title="Delete Avatar Photo" type="button" class="hidden group-hover:flex absolute inset-0 bg-black/60 items-center justify-center text-rose-400 hover:text-rose-300 text-lg transition">
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
+
+                    <div class="space-y-2">
+                        <input id="profile-img-input" type="file" accept="image/*" class="hidden">
+                        <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                            <i class="fa-solid fa-camera mr-1"></i> Upload Photo
+                        </button>
+                        <p class="text-[10px] text-slate-500">Hover photo preview to delete avatar.</p>
+                    </div>
                 </div>
 
                 <div>
-                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Email ID</label>
-                    <input id="user-email-input" type="email" placeholder="Enter your email" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Email ID</label>
+                    <input id="user-email-input" type="email" placeholder="Enter email address" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
                 </div>
 
                 <div>
-                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Phone Number</label>
-                    <input id="user-phone-input" type="tel" placeholder="Enter your phone number" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Mobile Phone Number</label>
+                    <input id="user-phone-input" type="tel" placeholder="Enter mobile number" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
                 </div>
             </div>
 
+            <!-- SAVE CHANGES BUTTON -->
             <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
                 SAVE CHANGES
-            </button>
-
-            <button id="btn-remove-profile" class="w-full py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 font-bold text-rose-400 text-xs transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-trash-can"></i> REMOVE PROFILE
             </button>
         </div>
     </div>
 
     <!-- FOOTER -->
     <footer class="w-full border-t border-indigo-900/30 dark:bg-slate-950/80 bg-white/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
+        CONNECT WebRTC Platform &copy; 2026. All rights reserved.
     </footer>
 
-    <!-- INLINE APPLICATION LOGIC -->
+    <!-- LOGIC APPLICATION SCRIPT -->
     <script>
+        // Core State Variables
         let currentUser = null;
         let isAuthModeLogin = false;
 
@@ -534,10 +558,10 @@
         let micMuted = false;
         let camOff = false;
 
-        // Group Mesh Call Structures (Max 5 targets + self)
+        // Group Mesh Call Structures
         let isGroupCallActive = false;
-        let activeGroupCalls = new Map(); // peerId -> callObj
-        let groupRemoteStreams = new Map(); // peerId -> streamObj
+        let activeGroupCalls = new Map();
+        let groupRemoteStreams = new Map();
 
         let acceptedConnections = new Set();
         let pendingIncomingRequestId = null;
@@ -546,9 +570,35 @@
         let isPipLarge = false;
         let ringtoneInterval = null;
 
+        // Staged Settings State (Not applied until Save Changes clicked)
         let stagedAccentColorKey = 'default';
         let stagedThemeMode = 'dark';
+        let stagedLanguage = 'en';
+        let stagedFont = 'Inter';
+        let stagedAvatarData = null;
+
         let audioCtx = null;
+
+        const i18nDict = {
+            en: {
+                nexusZone: "SELECT YOUR NEXUS ZONE",
+                hubLabel: "Campus / Region Hub",
+                readyCall: "READY TO CALL",
+                readyDesc: "Select an active member or enter a peer mobile number to start standard 1-on-1 or group call."
+            },
+            te: {
+                nexusZone: "మీ నెక్సస్ జోన్‌ను ఎంచుకోండి",
+                hubLabel: "క్యాంపస్ / ప్రాంతీయ హబ్",
+                readyCall: "కాల్ చేయడానికి సిద్ధంగా ఉంది",
+                readyDesc: "కాల్‌ను ప్రారంభించడానికి సభ్యుడిని ఎంచుకోండి లేదా మొబైల్ నంబర్‌ను ఎంటర్ చేయండి."
+            },
+            hi: {
+                nexusZone: "अपना नेक्सस ज़ोन चुनें",
+                hubLabel: "कैंपस / क्षेत्रीय हब",
+                readyCall: "कॉल के लिए तैयार",
+                readyDesc: "कॉल शुरू करने के लिए किसी सदस्य को चुनें या मोबाइल नंबर दर्ज करें।"
+            }
+        };
 
         const themeColors = {
             default: { primary: '#6366f1', hover: '#4f46e5', border: 'rgba(99, 102, 241, 0.3)', text: '#818cf8' },
@@ -556,22 +606,32 @@
             emerald: { primary: '#10b981', hover: '#059669', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
             pink:    { primary: '#ec4899', hover: '#db2777', border: 'rgba(236, 72, 153, 0.3)', text: '#f472b6' },
             amber:   { primary: '#f59e0b', hover: '#d97706', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
-            purple:  { primary: '#9333ea', hover: '#7e22ce', border: 'rgba(147, 51, 234, 0.3)', text: '#c084fc' },
-            crimson: { primary: '#e11d48', hover: '#be123c', border: 'rgba(225, 29, 72, 0.3)', text: '#fb7185' },
-            teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
+            purple:  { primary: '#9333ea', hover: '#7e22ce', border: 'rgba(147, 51, 234, 0.3)', text: '#c084fc' }
         };
 
-        // Screen protection listeners
-        window.addEventListener('blur', () => document.body.classList.add('screen-protected'));
-        window.addEventListener('focus', () => document.body.classList.remove('screen-protected'));
+        function generateMobileId() {
+            return '9' + Math.floor(100000009 + Math.random() * 899999990).toString();
+        }
 
-        function applyThemeAndAccent(themeMode, colorKey) {
+        function applyThemeAndAccent(themeMode, colorKey, lang, font) {
             document.documentElement.className = themeMode;
             const config = themeColors[colorKey] || themeColors.default;
             document.documentElement.style.setProperty('--color-primary', config.primary);
             document.documentElement.style.setProperty('--color-hover', config.hover);
             document.documentElement.style.setProperty('--color-border', config.border);
             document.documentElement.style.setProperty('--color-text', config.text);
+
+            if (font) {
+                document.documentElement.style.setProperty('--app-font', `'${font}', sans-serif`);
+            }
+
+            if (lang && i18nDict[lang]) {
+                const dict = i18nDict[lang];
+                document.getElementById('i18n-nexus-zone').innerText = dict.nexusZone;
+                document.getElementById('i18n-hub-label').innerText = dict.hubLabel;
+                document.getElementById('i18n-ready-call').innerText = dict.readyCall;
+                document.getElementById('i18n-ready-desc').innerText = dict.readyDesc;
+            }
         }
 
         function highlightStagedUI(themeMode, colorKey) {
@@ -587,17 +647,12 @@
             });
         }
 
-        function generate7DigitId() {
-            return Math.floor(1000000 + Math.random() * 9000000).toString();
-        }
-
         function initAudioContext() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
         window.addEventListener('click', initAudioContext, { once: true });
-        window.addEventListener('keydown', initAudioContext, { once: true });
 
         function playMessageSound() {
             try {
@@ -692,10 +747,10 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            initPeerJS();
-            setupUIEventListeners();
             loadSavedProfile();
             checkUserSession();
+            initPeerJS();
+            setupUIEventListeners();
             refreshLocalMembersDirectory();
         });
 
@@ -721,14 +776,21 @@
             const avatar = localStorage.getItem('user_avatar') || '';
             const savedColorKey = localStorage.getItem('user_accent_color') || 'default';
             const savedThemeMode = localStorage.getItem('user_theme_mode') || 'dark';
+            const savedLang = localStorage.getItem('user_language') || 'en';
+            const savedFont = localStorage.getItem('user_font') || 'Inter';
 
             stagedThemeMode = savedThemeMode;
             stagedAccentColorKey = savedColorKey;
+            stagedLanguage = savedLang;
+            stagedFont = savedFont;
+            stagedAvatarData = avatar;
 
             document.getElementById('user-email-input').value = email;
             document.getElementById('user-phone-input').value = phone;
+            document.getElementById('staged-language').value = savedLang;
+            document.getElementById('staged-font').value = savedFont;
 
-            applyThemeAndAccent(savedThemeMode, savedColorKey);
+            applyThemeAndAccent(savedThemeMode, savedColorKey, savedLang, savedFont);
             highlightStagedUI(savedThemeMode, savedColorKey);
 
             if (avatar) {
@@ -736,6 +798,7 @@
                 imgPreview.src = avatar;
                 imgPreview.classList.remove('hidden');
                 document.getElementById('profile-img-placeholder').classList.add('hidden');
+                document.getElementById('btn-delete-avatar-overlay').classList.remove('hidden');
             }
         }
 
@@ -751,6 +814,38 @@
             }
         }
 
+        function updateVideoElements() {
+            const mainVideo = document.getElementById('main-video');
+            const pipVideo = document.getElementById('pip-video');
+
+            if (isMainRemote) {
+                if (window.remoteStreamObj) {
+                    mainVideo.srcObject = window.remoteStreamObj;
+                    mainVideo.classList.remove('hidden');
+                } else {
+                    mainVideo.classList.add('hidden');
+                }
+                if (localStream) {
+                    pipVideo.srcObject = localStream;
+                    pipVideo.classList.remove('hidden');
+                    document.getElementById('pip-off-placeholder').classList.add('hidden');
+                } else {
+                    pipVideo.classList.add('hidden');
+                    document.getElementById('pip-off-placeholder').classList.remove('hidden');
+                }
+            } else {
+                if (localStream) {
+                    mainVideo.srcObject = localStream;
+                    mainVideo.classList.remove('hidden');
+                }
+                if (window.remoteStreamObj) {
+                    pipVideo.srcObject = window.remoteStreamObj;
+                    pipVideo.classList.remove('hidden');
+                    document.getElementById('pip-off-placeholder').classList.add('hidden');
+                }
+            }
+        }
+
         function setConnectionStatus(message, color = "text-amber-500 dark:text-amber-300") {
             const el = document.getElementById('connection-status');
             if (el) { el.textContent = message; el.className = `text-[11px] ${color} font-mono`; }
@@ -758,13 +853,18 @@
 
         function initPeerJS() {
             setConnectionStatus('Connecting to signaling server...', 'text-amber-500 dark:text-amber-300');
-            const custom7DigitId = generate7DigitId();
+            
+            // Priority Peer ID: Local User Phone Mobile Number -> Saved Phone -> Generated Mobile Number
+            const assignedMobileId = (currentUser && currentUser.phone) ? currentUser.phone : (localStorage.getItem('user_phone') || generateMobileId());
+
             try {
-                peer = new Peer(custom7DigitId, {
+                if (peer) peer.destroy();
+
+                peer = new Peer(assignedMobileId, {
                     host: '0.peerjs.com',
                     secure: true,
                     port: 443,
-                    debug: 3,
+                    debug: 1,
                     config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
                 });
 
@@ -772,8 +872,7 @@
                     myPeerId = id;
                     document.getElementById('my-peer-id').innerText = id;
                     document.getElementById('member-self-id').innerText = `ID: ${id}`;
-                    document.getElementById('chat-header-id').innerText = `ID: ${id}`;
-                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
+                    setConnectionStatus('Online. Mobile Peer ID initialized.', 'text-emerald-500 dark:text-emerald-300');
                     registerPeerInLocalStorage();
                 });
 
@@ -781,7 +880,6 @@
                     const isGroupCall = call.metadata && call.metadata.type === 'group-video';
                     
                     if (isGroupCall && isGroupCallActive) {
-                        // Dynamically accept incoming mesh call during group call
                         if (localStream) {
                             call.answer(localStream);
                             setupGroupCallPeer(call);
@@ -817,7 +915,7 @@
         function registerPeerInLocalStorage() {
             if (!myPeerId) return;
             const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-            const username = currentUser ? currentUser.username : ('Guest_' + myPeerId.slice(-3));
+            const username = currentUser ? currentUser.username : ('User_' + myPeerId.slice(-4));
             activePeers[myPeerId] = { peerId: myPeerId, username: username, timestamp: Date.now() };
             localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
             refreshLocalMembersDirectory();
@@ -843,8 +941,8 @@
             container.innerHTML = `
                 <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
                     <div>
-                        <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Guest)'}</span>
-                        <span id="member-self-id" class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
+                        <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Active User)'}</span>
+                        <span id="member-self-id" class="text-[10px] text-slate-400">Mobile ID: ${myPeerId || '---'}</span>
                     </div>
                     <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
                 </div>
@@ -860,11 +958,11 @@
                 div.innerHTML = `
                     <div class="truncate flex flex-col">
                         <span class="font-bold text-slate-200 text-xs">${p.username}</span>
-                        <span class="text-[10px] text-slate-400 font-mono">ID: ${p.peerId}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">Mobile: ${p.peerId}</span>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                        <button onclick="requestConnection('${p.peerId}', '${p.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold">
+                        <button onclick="requestConnection('${p.peerId}', '${p.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold transition shadow">
                             ${isAccepted ? 'Connected' : 'Connect'}
                         </button>
                     </div>
@@ -876,27 +974,26 @@
         }
 
         setInterval(registerPeerInLocalStorage, 10000);
-        setInterval(refreshLocalMembersDirectory, 5000);
+        setInterval(refreshLocalMembersDirectory, 4000);
 
         function requestConnection(targetPeerId, targetUsername) {
             if (!targetPeerId) return;
             document.getElementById('target-peer-id').value = targetPeerId;
 
             if (acceptedConnections.has(targetPeerId)) {
-                // If already connected, auto-switch to chat session
                 initiateCall('chat');
                 return;
             }
 
             const reqData = { 
                 fromPeerId: myPeerId, 
-                fromUsername: currentUser ? currentUser.username : 'Guest', 
+                fromUsername: currentUser ? currentUser.username : 'User_' + myPeerId.slice(-4), 
                 toPeerId: targetPeerId, 
                 timestamp: Date.now() 
             };
             localStorage.setItem('pending_conn_request', JSON.stringify(reqData));
 
-            showNotification("REQUEST SENT", targetUsername, "Waiting for acceptance to start session...");
+            showNotification("REQUEST SENT", targetUsername, "Waiting for acceptance to unlock chat and call...");
         }
 
         window.addEventListener('storage', (e) => {
@@ -905,7 +1002,7 @@
                     const req = JSON.parse(e.newValue);
                     if (req.toPeerId === myPeerId) {
                         pendingIncomingRequestId = req.fromPeerId;
-                        document.getElementById('conn-req-text').innerText = `${req.fromUsername} (${req.fromPeerId}) wants to chat and connect with you.`;
+                        document.getElementById('conn-req-text').innerText = `${req.fromUsername} (${req.fromPeerId}) wants to connect with you.`;
                         document.getElementById('conn-req-modal').classList.remove('hidden');
                         startRingtoneSound();
                     }
@@ -917,8 +1014,6 @@
                         acceptedConnections.add(res.fromPeerId);
                         document.getElementById('target-peer-id').value = res.fromPeerId;
                         showNotification("CONNECTED", res.fromPeerId, "Request accepted! Bridging chat session...");
-                        
-                        // Automatically open P2P Chat Data Connection upon acceptance
                         initiateCall('chat');
                     }
                 } catch (err) {}
@@ -945,12 +1040,10 @@
             call.on('stream', (remoteStream) => {
                 window.remoteStreamObj = remoteStream;
 
-                // If escalated mid-call or starting a 2-person call, track remote peer in group structures
                 groupRemoteStreams.set(call.peer, remoteStream);
                 activeGroupCalls.set(call.peer, call);
 
                 if (groupRemoteStreams.size > 1 || isGroupCallActive) {
-                    // Transition smoothly to group mesh grid view
                     isGroupCallActive = true;
                     document.getElementById('remote-placeholder').classList.add('hidden');
                     document.getElementById('pip-container').classList.add('hidden');
@@ -978,105 +1071,14 @@
             });
         }
 
-        /* MID-CALL DYNAMIC PARTICIPANT ESCALATION */
-        function openMidCallAddModal() {
-            if (!localStream) {
-                alert("You must be in an active video or voice call to add members.");
-                return;
-            }
-
-            const activePeerCount = 1 + groupRemoteStreams.size;
-            if (activePeerCount >= 5) {
-                alert("Maximum limit of 5 participants reached for this group call.");
-                return;
-            }
-
-            const container = document.getElementById('midcall-peers-selector');
-            const onlinePeers = getActiveOnlinePeersList();
-
-            // Filter out peers already in the active call
-            const availablePeers = onlinePeers.filter(p => !groupRemoteStreams.has(p.peerId));
-
-            container.innerHTML = '';
-            if (availablePeers.length === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-center py-4">No available online members to add.</p>`;
-            } else {
-                availablePeers.forEach(p => {
-                    const div = document.createElement('label');
-                    div.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80 cursor-pointer hover:border-purple-500 transition";
-                    div.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" value="${p.peerId}" class="midcall-peer-checkbox rounded bg-slate-800 border-slate-700 text-purple-600 focus:ring-purple-500">
-                            <span class="font-bold text-slate-200">${p.username}</span>
-                        </div>
-                        <span class="text-[10px] text-slate-500">ID: ${p.peerId}</span>
-                    `;
-                    container.appendChild(div);
-                });
-
-                document.querySelectorAll('.midcall-peer-checkbox').forEach(chk => {
-                    chk.addEventListener('change', updateMidCallSelectionCount);
-                });
-            }
-
-            updateMidCallSelectionCount();
-            document.getElementById('midcall-add-modal').classList.remove('hidden');
-        }
-
-        function updateMidCallSelectionCount() {
-            const currentCallCount = 1 + groupRemoteStreams.size;
-            const selected = document.querySelectorAll('.midcall-peer-checkbox:checked');
-            const allowedMaxNew = 5 - currentCallCount;
-
-            const countEl = document.getElementById('midcall-selection-count');
-            countEl.innerText = `In Call: ${currentCallCount + selected.length} / 5`;
-
-            if (selected.length >= allowedMaxNew) {
-                document.querySelectorAll('.midcall-peer-checkbox:not(:checked)').forEach(chk => chk.disabled = true);
-            } else {
-                document.querySelectorAll('.midcall-peer-checkbox').forEach(chk => chk.disabled = false);
-            }
-        }
-
-        async function confirmAddMidCallPeers() {
-            const checkboxes = document.querySelectorAll('.midcall-peer-checkbox:checked');
-            const selectedPeerIds = Array.from(checkboxes).map(c => c.value);
-
-            if (selectedPeerIds.length === 0) {
-                document.getElementById('midcall-add-modal').classList.add('hidden');
-                return;
-            }
-
-            document.getElementById('midcall-add-modal').classList.add('hidden');
-
-            // Switch to grid view seamlessly if upgrading from 1-on-1 to multi-party
-            isGroupCallActive = true;
-            document.getElementById('remote-placeholder').classList.add('hidden');
-            document.getElementById('pip-container').classList.add('hidden');
-            document.getElementById('main-video').classList.add('hidden');
-            document.getElementById('group-video-grid').classList.remove('hidden');
-
-            renderGroupVideoGrid();
-
-            // Connect & dial new peers into existing session
-            selectedPeerIds.forEach(targetId => {
-                const call = peer.call(targetId, localStream, { metadata: { type: 'group-video' } });
-                setupGroupCallPeer(call);
-            });
-
-            document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-purple-400 animate-pulse";
-            document.getElementById('peer-info-label').innerText = `Group Call (${1 + groupRemoteStreams.size + selectedPeerIds.length} users)`;
-            showNotification("ADDING MEMBERS", "System", `Dialing ${selectedPeerIds.length} new participant(s)...`);
-        }
-
-        /* GROUP MESH CALL LOGIC */
+        /* MESH GROUP CALLS LOGIC */
         function openGroupCallModal() {
             const container = document.getElementById('group-peers-selector');
             const onlinePeers = getActiveOnlinePeersList();
 
             container.innerHTML = '';
             if (onlinePeers.length === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-center py-4">No online members detected right now. Ask friends to open the app!</p>`;
+                container.innerHTML = `<p class="text-slate-400 text-center py-4">No online members detected right now.</p>`;
             } else {
                 onlinePeers.forEach(p => {
                     const div = document.createElement('label');
@@ -1086,7 +1088,7 @@
                             <input type="checkbox" value="${p.peerId}" class="group-peer-checkbox rounded bg-slate-800 border-slate-700 text-purple-600 focus:ring-purple-500">
                             <span class="font-bold text-slate-200">${p.username}</span>
                         </div>
-                        <span class="text-[10px] text-slate-500">ID: ${p.peerId}</span>
+                        <span class="text-[10px] text-slate-500">Mobile: ${p.peerId}</span>
                     `;
                     container.appendChild(div);
                 });
@@ -1105,7 +1107,6 @@
             const countEl = document.getElementById('group-selection-count');
             countEl.innerText = `Selected: ${selected.length} / 5`;
 
-            // Enforce limit up to 5 participants
             if (selected.length >= 5) {
                 document.querySelectorAll('.group-peer-checkbox:not(:checked)').forEach(chk => chk.disabled = true);
             } else {
@@ -1119,11 +1120,6 @@
 
             if (selectedPeerIds.length === 0) {
                 alert("Please select at least 1 online peer for the group call.");
-                return;
-            }
-
-            if (selectedPeerIds.length > 5) {
-                alert("Group call limit is up to 5 participants.");
                 return;
             }
 
@@ -1146,9 +1142,63 @@
 
             renderGroupVideoGrid();
 
-            // Establish Mesh Calls with selected peers
             selectedPeerIds.forEach(targetId => {
                 const call = peer.call(targetId, stream, { metadata: { type: 'group-video' } });
+                setupGroupCallPeer(call);
+            });
+        }
+
+        function openMidCallAddModal() {
+            if (!localStream) { alert("You must be in an active video or voice call to add members."); return; }
+            const activePeerCount = 1 + groupRemoteStreams.size;
+            if (activePeerCount >= 5) { alert("Maximum limit of 5 participants reached for this group call."); return; }
+
+            const container = document.getElementById('midcall-peers-selector');
+            const onlinePeers = getActiveOnlinePeersList();
+            const availablePeers = onlinePeers.filter(p => !groupRemoteStreams.has(p.peerId));
+
+            container.innerHTML = '';
+            if (availablePeers.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-center py-4">No available online members to add.</p>`;
+            } else {
+                availablePeers.forEach(p => {
+                    const div = document.createElement('label');
+                    div.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80 cursor-pointer hover:border-purple-500 transition";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" value="${p.peerId}" class="midcall-peer-checkbox rounded bg-slate-800 border-slate-700 text-purple-600 focus:ring-purple-500">
+                            <span class="font-bold text-slate-200">${p.username}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500">Mobile: ${p.peerId}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            document.getElementById('midcall-add-modal').classList.remove('hidden');
+        }
+
+        async function confirmAddMidCallPeers() {
+            const checkboxes = document.querySelectorAll('.midcall-peer-checkbox:checked');
+            const selectedPeerIds = Array.from(checkboxes).map(c => c.value);
+
+            if (selectedPeerIds.length === 0) {
+                document.getElementById('midcall-add-modal').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('midcall-add-modal').classList.add('hidden');
+
+            isGroupCallActive = true;
+            document.getElementById('remote-placeholder').classList.add('hidden');
+            document.getElementById('pip-container').classList.add('hidden');
+            document.getElementById('main-video').classList.add('hidden');
+            document.getElementById('group-video-grid').classList.remove('hidden');
+
+            renderGroupVideoGrid();
+
+            selectedPeerIds.forEach(targetId => {
+                const call = peer.call(targetId, localStream, { metadata: { type: 'group-video' } });
                 setupGroupCallPeer(call);
             });
         }
@@ -1165,15 +1215,7 @@
                 activeGroupCalls.delete(call.peer);
                 groupRemoteStreams.delete(call.peer);
                 renderGroupVideoGrid();
-                if (groupRemoteStreams.size === 0 && !isGroupCallActive) {
-                    resetCallUI();
-                }
-            });
-
-            call.on('error', () => {
-                activeGroupCalls.delete(call.peer);
-                groupRemoteStreams.delete(call.peer);
-                renderGroupVideoGrid();
+                if (groupRemoteStreams.size === 0 && !isGroupCallActive) resetCallUI();
             });
         }
 
@@ -1181,9 +1223,8 @@
             const grid = document.getElementById('group-video-grid');
             grid.innerHTML = '';
 
-            const totalTiles = 1 + groupRemoteStreams.size; // self + remotes
+            const totalTiles = 1 + groupRemoteStreams.size;
 
-            // Dynamic grid layout adjustments based on total participants (2 to 6)
             if (totalTiles <= 2) {
                 grid.className = "absolute inset-0 p-3 grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full h-full bg-slate-950 z-10";
             } else if (totalTiles <= 4) {
@@ -1192,7 +1233,6 @@
                 grid.className = "absolute inset-0 p-3 grid grid-cols-2 md:grid-cols-3 gap-2.5 w-full h-full bg-slate-950 z-10";
             }
 
-            // Tile 1: Self Local Stream
             const selfTile = document.createElement('div');
             selfTile.className = "relative rounded-xl overflow-hidden bg-slate-900 border border-indigo-500/40 shadow-lg flex items-center justify-center";
             selfTile.innerHTML = `
@@ -1206,7 +1246,6 @@
             const selfVid = selfTile.querySelector('#group-self-video');
             if (localStream) selfVid.srcObject = localStream;
 
-            // Tiles 2-N: Remote Participants
             groupRemoteStreams.forEach((stream, peerId) => {
                 const tile = document.createElement('div');
                 tile.className = "relative rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shadow-lg flex items-center justify-center";
@@ -1226,7 +1265,6 @@
             stopRingtoneSound();
             window.remoteStreamObj = null;
 
-            // Reset Group Call Mesh state
             isGroupCallActive = false;
             activeGroupCalls.forEach(call => call.close());
             activeGroupCalls.clear();
@@ -1245,7 +1283,7 @@
 
             document.getElementById('remote-placeholder').classList.remove('hidden');
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-            document.getElementById('peer-info-label').innerText = "Awaiting to connect";
+            document.getElementById('peer-info-label').innerText = "Awaiting connection";
             setConnectionStatus('Call ended.', 'text-amber-500 dark:text-amber-300');
             
             if (localStream) {
@@ -1295,15 +1333,21 @@
         }
 
         async function initiateCall(connectionType = 'video') {
-            const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Please enter your friend Peer ID."); return; }
+            // Auto-Target Switch: If no target is typed in input, fallback automatically to current friend ID
+            let targetId = document.getElementById('target-peer-id').value.trim();
+            if (!targetId && currentFriendId) {
+                targetId = currentFriendId;
+                document.getElementById('target-peer-id').value = currentFriendId;
+            }
+
+            if (!targetId) { alert("Please enter or select a mobile Peer ID."); return; }
 
             currentFriendId = targetId;
 
             if (connectionType === 'chat') {
                 resetChatSession();
                 document.getElementById('tab-chat-btn').click();
-                setConnectionStatus(`Connecting chat to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
+                setConnectionStatus(`Connecting chat to Mobile ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
                 const conn = peer.connect(targetId);
                 activeDataConn = conn;
                 conn.on('open', () => {
@@ -1332,25 +1376,26 @@
         }
 
         function setupUIEventListeners() {
-            // Mid-Call Member Escalation Listeners
-            document.getElementById('btn-add-midcall').addEventListener('click', openMidCallAddModal);
-            document.getElementById('close-midcall-modal-btn').addEventListener('click', () => {
-                document.getElementById('midcall-add-modal').classList.add('hidden');
-            });
-            document.getElementById('btn-confirm-add-midcall').addEventListener('click', confirmAddMidCallPeers);
-
-            // Group Call Setup
+            // Group Call Buttons
             document.getElementById('btn-open-group-modal').addEventListener('click', openGroupCallModal);
             document.getElementById('close-group-modal-btn').addEventListener('click', () => {
                 document.getElementById('group-call-modal').classList.add('hidden');
             });
             document.getElementById('btn-start-group-call').addEventListener('click', launchGroupCall);
 
-            // Auth Modals
+            // Mid-Call Participant Escalation
+            document.getElementById('btn-add-midcall').addEventListener('click', openMidCallAddModal);
+            document.getElementById('close-midcall-modal-btn').addEventListener('click', () => {
+                document.getElementById('midcall-add-modal').classList.add('hidden');
+            });
+            document.getElementById('btn-confirm-add-midcall').addEventListener('click', confirmAddMidCallPeers);
+
+            // Authentication Modal Actions
             document.getElementById('btn-show-auth').addEventListener('click', () => {
                 if (currentUser) {
                     localStorage.removeItem('connect_app_user');
                     checkUserSession();
+                    initPeerJS();
                     alert("Logged out successfully!");
                 } else {
                     document.getElementById('auth-modal').classList.remove('hidden');
@@ -1363,45 +1408,47 @@
                 isAuthModeLogin = !isAuthModeLogin;
                 document.getElementById('auth-modal-title').innerHTML = isAuthModeLogin ? '<i class="fa-solid fa-right-to-bracket"></i> Login' : '<i class="fa-solid fa-user-plus"></i> Register Account';
                 document.getElementById('username-field-wrapper').style.display = isAuthModeLogin ? 'none' : 'block';
-                document.getElementById('auth-submit-btn').innerText = isAuthModeLogin ? 'LOGIN' : 'REGISTER';
+                document.getElementById('auth-submit-btn').innerText = isAuthModeLogin ? 'LOGIN & RE-INITIALIZE' : 'REGISTER & RE-INITIALIZE';
                 document.getElementById('auth-toggle-prompt').innerText = isAuthModeLogin ? "Need an account?" : "Already registered?";
                 document.getElementById('auth-toggle-btn').innerText = isAuthModeLogin ? 'Register here' : 'Login here';
             });
 
             document.getElementById('auth-form').addEventListener('submit', (e) => {
                 e.preventDefault();
-                const email = document.getElementById('auth-email').value.trim();
+                const phone = document.getElementById('auth-phone').value.trim();
                 const pass = document.getElementById('auth-password').value.trim();
                 const uname = document.getElementById('auth-username').value.trim();
 
                 const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '{}');
 
                 if (isAuthModeLogin) {
-                    if (registeredUsers[email] && registeredUsers[email].password === pass) {
-                        const userData = registeredUsers[email];
+                    if (registeredUsers[phone] && registeredUsers[phone].password === pass) {
+                        const userData = registeredUsers[phone];
                         localStorage.setItem('connect_app_user', JSON.stringify(userData));
+                        localStorage.setItem('user_phone', phone);
                         checkUserSession();
+                        initPeerJS();
                         document.getElementById('auth-modal').classList.add('hidden');
-                        alert(`Welcome back, ${userData.username}!`);
-                        registerPeerInLocalStorage();
+                        alert(`Welcome back, ${userData.username}! Registered with Peer ID: ${phone}`);
                     } else {
-                        alert("Invalid Email or Password!");
+                        alert("Invalid Mobile Number or Password!");
                     }
                 } else {
-                    if (!uname) { alert("Please set your custom username."); return; }
-                    const userData = { email, password: pass, username: uname };
-                    registeredUsers[email] = userData;
+                    if (!uname) { alert("Please set your custom display name."); return; }
+                    const userData = { phone, password: pass, username: uname };
+                    registeredUsers[phone] = userData;
                     localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
                     localStorage.setItem('connect_app_user', JSON.stringify(userData));
+                    localStorage.setItem('user_phone', phone);
 
                     checkUserSession();
+                    initPeerJS();
                     document.getElementById('auth-modal').classList.add('hidden');
-                    alert(`Account created successfully! Logged in as ${uname}`);
-                    registerPeerInLocalStorage();
+                    alert(`Account created successfully! Peer ID initialized as ${phone}`);
                 }
             });
 
-            // Connection Request Handling
+            // Connection Request Modal Listeners
             document.getElementById('btn-accept-req').addEventListener('click', () => {
                 stopRingtoneSound();
                 document.getElementById('conn-req-modal').classList.add('hidden');
@@ -1416,7 +1463,6 @@
                         timestamp: Date.now() 
                     }));
 
-                    // Bridge into active chat session on recipient side
                     initiateCall('chat');
                 }
             });
@@ -1426,12 +1472,12 @@
                 pendingIncomingRequestId = null;
             });
 
-            // Calling Actions
+            // Call Initiation Controls
             document.getElementById('btn-start-video').addEventListener('click', () => initiateCall('video'));
             document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall('voice'));
             document.getElementById('btn-start-chat').addEventListener('click', () => initiateCall('chat'));
 
-            // Tab Navigation
+            // Tab Navigation Controls
             const tabChatBtn = document.getElementById('tab-chat-btn');
             const tabPeersBtn = document.getElementById('tab-peers-btn');
             const viewChat = document.getElementById('view-chat');
@@ -1454,7 +1500,7 @@
             document.getElementById('copy-id-btn').addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
-                    alert("Copied your Peer ID!");
+                    alert("Copied your Peer Mobile ID!");
                 }
             });
 
@@ -1531,7 +1577,7 @@
                 input.value = '';
             });
 
-            // Settings Modal & Remove Profile
+            // Settings Modal & Staged Modifications
             document.getElementById('btn-show-settings').addEventListener('click', () => {
                 highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
                 document.getElementById('settings-modal').classList.remove('hidden');
@@ -1564,47 +1610,52 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const avatarData = event.target.result;
+                    stagedAvatarData = event.target.result;
                     const imgPreview = document.getElementById('profile-img-preview');
-                    imgPreview.src = avatarData;
+                    imgPreview.src = stagedAvatarData;
                     imgPreview.classList.remove('hidden');
                     document.getElementById('profile-img-placeholder').classList.add('hidden');
-                    localStorage.setItem('user_avatar', avatarData);
+                    document.getElementById('btn-delete-avatar-overlay').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             });
 
+            // WhatsApp-style Overlay Delete Photo Action
+            document.getElementById('btn-delete-avatar-overlay').addEventListener('click', () => {
+                stagedAvatarData = null;
+                const imgPreview = document.getElementById('profile-img-preview');
+                imgPreview.src = '';
+                imgPreview.classList.add('hidden');
+                document.getElementById('profile-img-placeholder').classList.remove('hidden');
+                document.getElementById('btn-delete-avatar-overlay').classList.add('hidden');
+            });
+
+            // Staged Apply Action Trigger
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 const email = document.getElementById('user-email-input').value.trim();
                 const phone = document.getElementById('user-phone-input').value.trim();
+                const lang = document.getElementById('staged-language').value;
+                const font = document.getElementById('staged-font').value;
 
                 localStorage.setItem('user_email', email);
                 localStorage.setItem('user_phone', phone);
                 localStorage.setItem('user_theme_mode', stagedThemeMode);
                 localStorage.setItem('user_accent_color', stagedAccentColorKey);
+                localStorage.setItem('user_language', lang);
+                localStorage.setItem('user_font', font);
 
-                applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
-                document.getElementById('settings-modal').classList.add('hidden');
-                alert("Settings & profile saved successfully!");
-            });
-
-            document.getElementById('btn-remove-profile').addEventListener('click', () => {
-                if (confirm("Are you sure you want to remove your stored profile details?")) {
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_phone');
+                if (stagedAvatarData) {
+                    localStorage.setItem('user_avatar', stagedAvatarData);
+                } else {
                     localStorage.removeItem('user_avatar');
-
-                    document.getElementById('user-email-input').value = '';
-                    document.getElementById('user-phone-input').value = '';
-
-                    const imgPreview = document.getElementById('profile-img-preview');
-                    imgPreview.src = '';
-                    imgPreview.classList.add('hidden');
-                    document.getElementById('profile-img-placeholder').classList.remove('hidden');
-
-                    showNotification("PROFILE REMOVED", "Local Storage", "Stored profile details were cleared.");
-                    alert("Profile details cleared!");
                 }
+
+                applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey, lang, font);
+                document.getElementById('settings-modal').classList.add('hidden');
+                
+                // Re-initialize PeerJS if phone number changed
+                initPeerJS();
+                alert("Settings and profile applied successfully!");
             });
 
             document.getElementById('btn-toggle-mic').addEventListener('click', () => {
