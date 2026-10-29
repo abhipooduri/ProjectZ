@@ -246,36 +246,59 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL WITH TABS -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
-            <div class="p-3 bg-slate-200 dark:bg-slate-950/90 border-b dynamic-border flex items-center justify-between transition-colors">
-                <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-800 dark:text-slate-200">
-                    <i class="fa-solid fa-comments dynamic-text"></i>
-                    <span>CAMPUS CHAT</span>
-                </div>
-                <span id="chat-status" class="text-[10px] font-mono text-slate-500">OFFLINE</span>
+            
+            <!-- TAB BAR -->
+            <div class="grid grid-cols-2 bg-slate-200 dark:bg-slate-950/90 border-b dynamic-border text-xs font-display font-bold">
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-comments"></i> Chat
+                </button>
+                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-users"></i> Members
+                </button>
             </div>
 
-            <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                    -- P2P ENCRYPTED CHAT & FILE STREAM --
+            <!-- TAB CONTENT: CHAT VIEW -->
+            <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
+                <div class="p-2 bg-slate-100 dark:bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
+                    <span class="text-slate-500">Secure P2P Stream</span>
+                    <span id="chat-status" class="text-slate-500 font-bold">OFFLINE</span>
+                </div>
+
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
+                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
+                        -- P2P ENCRYPTED CHAT & FILE STREAM --
+                    </div>
+                </div>
+
+                <!-- CHAT FORM -->
+                <form id="chat-form" class="p-2 bg-slate-200 dark:bg-slate-950 border-t dynamic-border flex items-center gap-2 transition-colors">
+                    <input id="file-input" type="file" class="hidden">
+                    
+                    <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-300 dark:bg-slate-900 hover:bg-slate-400 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-500 border border-slate-300 dark:border-slate-700 text-xs transition flex items-center justify-center">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </button>
+
+                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-mono transition-colors">
+                    
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB CONTENT: MEMBERS / PEERS VIEW -->
+            <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
+                <div class="text-[11px] text-slate-500 mb-1">Active Connected Peer:</div>
+                <div class="p-3 rounded-xl bg-slate-200 dark:bg-slate-900 border dynamic-border flex items-center justify-between">
+                    <div class="truncate mr-2">
+                        <span id="active-peer-member-label" class="font-bold text-slate-700 dark:text-slate-300">No active connection</span>
+                    </div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-500" id="member-status-dot"></div>
                 </div>
             </div>
 
-            <!-- CHAT FORM -->
-            <form id="chat-form" class="p-2 bg-slate-200 dark:bg-slate-950 border-t dynamic-border flex items-center gap-2 transition-colors">
-                <input id="file-input" type="file" class="hidden">
-                
-                <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-300 dark:bg-slate-900 hover:bg-slate-400 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-500 border border-slate-300 dark:border-slate-700 text-xs transition flex items-center justify-center">
-                    <i class="fa-solid fa-paperclip"></i>
-                </button>
-
-                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-mono transition-colors">
-                
-                <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </form>
         </section>
 
     </main>
@@ -688,11 +711,24 @@
                         setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                         enableChat();
                         setupDataConnectionListeners(conn);
+                        updateMemberTabInfo(conn.peer, true);
                     });
                 });
             } catch (err) {
                 console.error("PeerJS initialization exception:", err);
                 setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
+            }
+        }
+
+        function updateMemberTabInfo(peerId, isConnected) {
+            const label = document.getElementById('active-peer-member-label');
+            const dot = document.getElementById('member-status-dot');
+            if (isConnected) {
+                label.innerText = `ID: ${peerId}`;
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
+            } else {
+                label.innerText = "No active connection";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
             }
         }
 
@@ -710,6 +746,7 @@
             conn.on('close', () => {
                 setConnectionStatus('Chat connection closed.', 'text-amber-500 dark:text-amber-400');
                 disableChat();
+                updateMemberTabInfo(null, false);
             });
         }
 
@@ -723,6 +760,7 @@
                 document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
                 document.getElementById('peer-info-label').innerText = `Connected: ${call.peer}`;
                 setConnectionStatus('Call active!', 'text-emerald-500 dark:text-emerald-300');
+                updateMemberTabInfo(call.peer, true);
             });
             call.on('close', () => {
                 resetCallUI();
@@ -783,6 +821,7 @@
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
             document.getElementById('peer-info-label').innerText = "Awaiting to connect";
             setConnectionStatus('Call ended.', 'text-amber-500 dark:text-amber-300');
+            updateMemberTabInfo(null, false);
             
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -799,7 +838,7 @@
             document.getElementById('chat-send-btn').removeAttribute('disabled');
             document.getElementById('file-attach-btn').removeAttribute('disabled');
             document.getElementById('chat-status').innerText = "ONLINE";
-            document.getElementById('chat-status').className = "text-[10px] font-mono text-emerald-500 dark:text-emerald-400";
+            document.getElementById('chat-status').className = "text-emerald-500 dark:text-emerald-400 font-bold";
         }
 
         function disableChat() {
@@ -807,7 +846,7 @@
             document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
             document.getElementById('file-attach-btn').setAttribute('disabled', 'true');
             document.getElementById('chat-status').innerText = "OFFLINE";
-            document.getElementById('chat-status').className = "text-[10px] font-mono text-slate-500";
+            document.getElementById('chat-status').className = "text-slate-500 font-bold";
         }
 
         function appendChatMessage(sender, text, isSelf) {
@@ -869,6 +908,7 @@
                 setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                 enableChat();
                 setupDataConnectionListeners(conn);
+                updateMemberTabInfo(conn.peer, true);
             });
 
             const call = peer.call(targetId, stream, { metadata: { type: isVideo ? 'video' : 'voice' } });
@@ -876,6 +916,26 @@
         }
 
         function setupUIEventListeners() {
+            // Chat vs Members Tab Switcher
+            const tabChatBtn = document.getElementById('tab-chat-btn');
+            const tabPeersBtn = document.getElementById('tab-peers-btn');
+            const viewChat = document.getElementById('view-chat');
+            const viewPeers = document.getElementById('view-peers');
+
+            tabChatBtn.addEventListener('click', () => {
+                viewChat.classList.remove('hidden');
+                viewPeers.classList.add('hidden');
+                tabChatBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
+                tabPeersBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
+            });
+
+            tabPeersBtn.addEventListener('click', () => {
+                viewPeers.classList.remove('hidden');
+                viewChat.classList.add('hidden');
+                tabPeersBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
+                tabChatBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
+            });
+
             document.getElementById('copy-id-btn').addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
@@ -964,7 +1024,6 @@
             });
 
             document.getElementById('btn-show-settings').addEventListener('click', () => {
-                // Sync settings modal options to current active values before showing
                 highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
                 document.getElementById('settings-modal').classList.remove('hidden');
             });
@@ -1020,7 +1079,6 @@
                 localStorage.setItem('user_theme_mode', stagedThemeMode);
                 localStorage.setItem('user_accent_color', stagedAccentColorKey);
 
-                // Commit and apply theme and accent choices
                 applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
 
                 document.getElementById('settings-modal').classList.add('hidden');
