@@ -344,7 +344,7 @@
 
     </main>
 
-    <!-- SETTINGS & PROFILE MODAL (WITH LANGUAGE & FONT SELECTION) -->
+    <!-- SETTINGS & PROFILE MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -414,15 +414,22 @@
 
             <hr class="border-slate-300 dark:border-slate-800">
 
-            <!-- PROFILE DETAILS -->
+            <!-- PROFILE DETAILS WITH INTEGRATED WHATSAPP-STYLE REMOVE BUTTON OVERLAY -->
             <div class="space-y-4">
                 <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="profileDetails">PROFILE DETAILS</label>
                 
                 <div class="flex items-center gap-4">
-                    <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border overflow-hidden shrink-0 flex items-center justify-center">
-                        <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                    <!-- PROFILE AVATAR CONTAINER WITH IN-CORNER WHATSAPP STYLE REMOVE BUTTON -->
+                    <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border flex items-center justify-center shrink-0">
+                        <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full rounded-full object-cover hidden">
                         <i id="profile-img-placeholder" class="fa-solid fa-user text-2xl dynamic-text"></i>
+                        
+                        <!-- WHATSAPP STYLE DELETE BUTTON ATTACHED DIRECTLY ON PROFILE IMAGE (Takes effect after Save Changes) -->
+                        <button id="btn-remove-avatar" title="Remove Profile Picture" type="button" class="hidden absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[10px] items-center justify-center border-2 border-slate-900 shadow-md transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </div>
+
                     <div>
                         <input id="profile-img-input" type="file" accept="image/*" class="hidden">
                         <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition">
@@ -442,12 +449,9 @@
                 </div>
             </div>
 
+            <!-- EVERYTHING SAVES ON THIS BUTTON ONLY -->
             <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg" data-i18n="saveChanges">
                 SAVE CHANGES
-            </button>
-
-            <button id="btn-remove-profile" class="w-full py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 font-bold text-rose-400 text-xs transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-trash-can"></i> <span data-i18n="removeProfile">REMOVE PROFILE</span>
             </button>
         </div>
     </div>
@@ -569,7 +573,6 @@
 
     <!-- INLINE APPLICATION LOGIC -->
     <script>
-        // Internationalization Dictionaries
         const translations = {
             en: {
                 account: "Account",
@@ -606,7 +609,6 @@
                 emailId: "Email ID",
                 phoneNumber: "Phone Number",
                 saveChanges: "SAVE CHANGES",
-                removeProfile: "REMOVE PROFILE",
                 selectGroupMembers: "Select Online Group Members",
                 groupCallDesc: "Select online participants to start a mesh call (Maximum limit: 5 members).",
                 startGroupCall: "Start Group Call",
@@ -658,7 +660,6 @@
                 emailId: "ఇమెయిల్ ID",
                 phoneNumber: "ఫోన్ నంబర్",
                 saveChanges: "మార్పులను సేవ్ చేయండి",
-                removeProfile: "ప్రొఫైల్‌ను తొలగించండి",
                 selectGroupMembers: "ఆన్‌లైన్ గ్రూప్ సభ్యులను ఎంచుకోండి",
                 groupCallDesc: "కాల్ ప్రారంభించడానికి ఆన్‌లైన్ పాల్గొనేవారిని ఎంచుకోండి (గరిష్ట పరిమితి: 5 మంది).",
                 startGroupCall: "గ్రూప్ కాల్ ప్రారంభించండి",
@@ -710,7 +711,6 @@
                 emailId: "ईमेल ID",
                 phoneNumber: "फ़ोन नंबर",
                 saveChanges: "बदलाव सहेजें",
-                removeProfile: "प्रोफ़ाइल हटाएं",
                 selectGroupMembers: "ऑनलाइन ग्रुप सदस्य चुनें",
                 groupCallDesc: "ग्रुप कॉल शुरू करने के लिए सदस्यों को चुनें (अधिकतम सीमा: 5 सदस्य)।",
                 startGroupCall: "ग्रुप कॉल शुरू करें",
@@ -736,9 +736,8 @@
         let myPeerId = null;
         let currentFriendId = null;
         
-        // Multi-Party WebRTC Group Calls structure
-        let activeCalls = new Map(); // Map<peerId, callObj>
-        let remoteStreamsMap = new Map(); // Map<peerId, MediaStream>
+        let activeCalls = new Map();
+        let remoteStreamsMap = new Map();
 
         let activeDataConn = null;
         let localStream = null;
@@ -753,10 +752,19 @@
         let isPipLarge = false;
         let ringtoneInterval = null;
 
+        // Current Active Applied Settings
+        let appliedAccentColorKey = 'default';
+        let appliedThemeMode = 'dark';
+        let appliedLanguage = 'en';
+        let appliedFont = "'Inter', sans-serif";
+
+        // Staged Settings (Temp holding area before user clicks Save Changes)
         let stagedAccentColorKey = 'default';
         let stagedThemeMode = 'dark';
         let stagedLanguage = 'en';
         let stagedFont = "'Inter', sans-serif";
+        let stagedAvatarData = null; // null = untouched, '' = deleted, 'data:image...' = uploaded
+        
         let audioCtx = null;
 
         const themeColors = {
@@ -770,13 +778,13 @@
             teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
         };
 
-        // Privacy Protection
+        // Screen protection listeners
         window.addEventListener('blur', () => document.body.classList.add('screen-protected'));
         window.addEventListener('focus', () => document.body.classList.remove('screen-protected'));
 
         function updateLanguageUI(langKey) {
             const lang = translations[langKey] ? langKey : 'en';
-            stagedLanguage = lang;
+            appliedLanguage = lang;
             const dict = translations[lang];
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -788,9 +796,11 @@
                 const key = el.getAttribute('data-i18n-ph');
                 if (dict[key]) el.placeholder = dict[key];
             });
+        }
 
+        function highlightStagedLanguageButtons(langKey) {
             document.querySelectorAll('.lang-picker-btn').forEach(btn => {
-                const isSelected = btn.dataset.lang === lang;
+                const isSelected = btn.dataset.lang === langKey;
                 btn.classList.toggle('ring-2', isSelected);
                 btn.classList.toggle('ring-indigo-400', isSelected);
                 btn.classList.toggle('bg-indigo-600', isSelected);
@@ -798,12 +808,14 @@
         }
 
         function updateFontUI(fontFamily) {
-            stagedFont = fontFamily;
+            appliedFont = fontFamily;
             document.documentElement.style.setProperty('--app-font', fontFamily);
-            document.getElementById('select-app-font').value = fontFamily;
         }
 
         function applyThemeAndAccent(themeMode, colorKey) {
+            appliedThemeMode = themeMode;
+            appliedAccentColorKey = colorKey;
+
             document.documentElement.className = themeMode;
             const config = themeColors[colorKey] || themeColors.default;
             document.documentElement.style.setProperty('--color-primary', config.primary);
@@ -948,7 +960,7 @@
                 handleDisplay.innerText = savedUser.username;
             } else {
                 currentUser = null;
-                authBtnText.innerText = translations[stagedLanguage]?.account || "Account";
+                authBtnText.innerText = translations[appliedLanguage]?.account || "Account";
                 handleDisplay.innerText = "Guest";
             }
         }
@@ -962,22 +974,40 @@
             const savedLanguage = localStorage.getItem('user_language') || 'en';
             const savedFont = localStorage.getItem('user_font') || "'Inter', sans-serif";
 
+            appliedThemeMode = savedThemeMode;
+            appliedAccentColorKey = savedColorKey;
+            appliedLanguage = savedLanguage;
+            appliedFont = savedFont;
+
             stagedThemeMode = savedThemeMode;
             stagedAccentColorKey = savedColorKey;
+            stagedLanguage = savedLanguage;
+            stagedFont = savedFont;
+            stagedAvatarData = null;
 
             document.getElementById('user-email-input').value = email;
             document.getElementById('user-phone-input').value = phone;
 
             applyThemeAndAccent(savedThemeMode, savedColorKey);
-            highlightStagedUI(savedThemeMode, savedColorKey);
             updateLanguageUI(savedLanguage);
             updateFontUI(savedFont);
 
+            const imgPreview = document.getElementById('profile-img-preview');
+            const placeholder = document.getElementById('profile-img-placeholder');
+            const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+
             if (avatar) {
-                const imgPreview = document.getElementById('profile-img-preview');
                 imgPreview.src = avatar;
                 imgPreview.classList.remove('hidden');
-                document.getElementById('profile-img-placeholder').classList.add('hidden');
+                placeholder.classList.add('hidden');
+                removeAvatarBtn.classList.remove('hidden');
+                removeAvatarBtn.classList.add('flex');
+            } else {
+                imgPreview.src = '';
+                imgPreview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                removeAvatarBtn.classList.add('hidden');
+                removeAvatarBtn.classList.remove('flex');
             }
         }
 
@@ -1153,7 +1183,6 @@
             });
         }
 
-        // Add call stream into active multi-party calls
         function handleCallStream(call) {
             const peerId = call.peer;
             activeCalls.set(peerId, call);
@@ -1173,7 +1202,6 @@
             });
         }
 
-        // Render video layouts: single PIP or grid depending on call state
         function renderVideoGrid() {
             const groupGrid = document.getElementById('group-video-grid');
             const mainVideo = document.getElementById('main-video');
@@ -1182,9 +1210,8 @@
             const midCallAddBtn = document.getElementById('btn-midcall-add');
 
             const activePeerIds = Array.from(remoteStreamsMap.keys());
-            const totalPeopleInCall = activePeerIds.length + 1; // Remote peers + Self
+            const totalPeopleInCall = activePeerIds.length + 1; 
 
-            // "+ Add" button is ONLY visible when at least 2 people are in the call
             if (totalPeopleInCall >= 2 && localStream) {
                 midCallAddBtn.classList.remove('hidden');
             } else {
@@ -1197,7 +1224,7 @@
                 pipContainer.classList.remove('hidden');
                 remotePlaceholder.classList.remove('hidden');
                 document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-                document.getElementById('peer-info-label').innerText = translations[stagedLanguage]?.awaitingToConnect || "Awaiting to connect";
+                document.getElementById('peer-info-label').innerText = translations[appliedLanguage]?.awaitingToConnect || "Awaiting to connect";
                 return;
             }
 
@@ -1205,7 +1232,6 @@
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
 
             if (activePeerIds.length === 1) {
-                // Standard 1-on-1 Call View
                 groupGrid.classList.add('hidden');
                 pipContainer.classList.remove('hidden');
                 
@@ -1214,7 +1240,6 @@
 
                 updateSingleCallVideoElements(singlePeerId);
             } else {
-                // Multi-party Mesh Grid Call View (3 to 6 total people)
                 mainVideo.classList.add('hidden');
                 pipContainer.classList.add('hidden');
                 groupGrid.classList.remove('hidden');
@@ -1227,19 +1252,17 @@
 
                 groupGrid.innerHTML = '';
 
-                // Add Self Tile
                 const selfTile = document.createElement('div');
                 selfTile.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900 flex items-center justify-center";
                 selfTile.innerHTML = `
                     <video id="grid-video-self" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                    <div class="absolute top-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono dynamic-text border border-slate-700">${translations[stagedLanguage]?.you || "You"}</div>
+                    <div class="absolute top-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono dynamic-text border border-slate-700">${translations[appliedLanguage]?.you || "You"}</div>
                 `;
                 groupGrid.appendChild(selfTile);
                 
                 const selfVideoEl = selfTile.querySelector('#grid-video-self');
                 if (localStream) selfVideoEl.srcObject = localStream;
 
-                // Add Remote Participant Tiles
                 activePeerIds.forEach(pId => {
                     const tile = document.createElement('div');
                     tile.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900 flex items-center justify-center";
@@ -1272,7 +1295,7 @@
                     pipVideo.classList.add('hidden');
                     pipOffPlaceholder.classList.remove('hidden');
                 }
-                pipTagName.innerText = translations[stagedLanguage]?.you || "You";
+                pipTagName.innerText = translations[appliedLanguage]?.you || "You";
             } else {
                 if (localStream) { mainVideo.srcObject = localStream; mainVideo.classList.remove('hidden'); }
                 if (remoteStream) {
@@ -1290,7 +1313,6 @@
         function resetCallUI() {
             stopRingtoneSound();
             
-            // Hang up all active calls
             activeCalls.forEach(call => call.close());
             activeCalls.clear();
             remoteStreamsMap.clear();
@@ -1306,7 +1328,7 @@
             document.getElementById('remote-placeholder').classList.remove('hidden');
             document.getElementById('pip-container').classList.remove('hidden');
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-            document.getElementById('peer-info-label').innerText = translations[stagedLanguage]?.awaitingToConnect || "Awaiting to connect";
+            document.getElementById('peer-info-label').innerText = translations[appliedLanguage]?.awaitingToConnect || "Awaiting to connect";
             
             document.getElementById('btn-midcall-add').classList.add('hidden');
 
@@ -1331,7 +1353,7 @@
             document.getElementById('chat-input').setAttribute('disabled', 'true');
             document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
             document.getElementById('file-attach-btn').setAttribute('disabled', 'true');
-            document.getElementById('chat-status').innerText = translations[stagedLanguage]?.offline || "OFFLINE";
+            document.getElementById('chat-status').innerText = translations[appliedLanguage]?.offline || "OFFLINE";
             document.getElementById('chat-status').className = "text-slate-500 font-bold";
         }
 
@@ -1406,17 +1428,17 @@
         }
 
         function setupUIEventListeners() {
-            // Language Picker Buttons
+            // Staged Language Selector
             document.querySelectorAll('.lang-picker-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const lang = e.currentTarget.dataset.lang;
-                    updateLanguageUI(lang);
+                    stagedLanguage = e.currentTarget.dataset.lang;
+                    highlightStagedLanguageButtons(stagedLanguage);
                 });
             });
 
-            // Font Selector
+            // Staged Font Selector
             document.getElementById('select-app-font').addEventListener('change', (e) => {
-                updateFontUI(e.target.value);
+                stagedFont = e.target.value;
             });
 
             // Auth Modals
@@ -1699,13 +1721,42 @@
                 input.value = '';
             });
 
-            // Settings Modal & Remove Profile
+            // OPEN SETTINGS MODAL & INITIALIZE STAGED VALUES
             document.getElementById('btn-show-settings').addEventListener('click', () => {
+                stagedThemeMode = appliedThemeMode;
+                stagedAccentColorKey = appliedAccentColorKey;
+                stagedLanguage = appliedLanguage;
+                stagedFont = appliedFont;
+                stagedAvatarData = null; // reset uncommitted avatar state
+
                 highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
+                highlightStagedLanguageButtons(stagedLanguage);
+                document.getElementById('select-app-font').value = stagedFont;
+
                 document.getElementById('settings-modal').classList.remove('hidden');
             });
 
             document.getElementById('close-settings-btn').addEventListener('click', () => {
+                // Revert any staged modal preview back to actual saved profile avatar
+                const savedAvatar = localStorage.getItem('user_avatar') || '';
+                const imgPreview = document.getElementById('profile-img-preview');
+                const placeholder = document.getElementById('profile-img-placeholder');
+                const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+
+                if (savedAvatar) {
+                    imgPreview.src = savedAvatar;
+                    imgPreview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    removeAvatarBtn.classList.remove('hidden');
+                    removeAvatarBtn.classList.add('flex');
+                } else {
+                    imgPreview.src = '';
+                    imgPreview.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    removeAvatarBtn.classList.add('hidden');
+                    removeAvatarBtn.classList.remove('flex');
+                }
+
                 document.getElementById('settings-modal').classList.add('hidden');
             });
 
@@ -1732,16 +1783,35 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const avatarData = event.target.result;
+                    stagedAvatarData = event.target.result;
                     const imgPreview = document.getElementById('profile-img-preview');
-                    imgPreview.src = avatarData;
+                    const placeholder = document.getElementById('profile-img-placeholder');
+                    const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+
+                    imgPreview.src = stagedAvatarData;
                     imgPreview.classList.remove('hidden');
-                    document.getElementById('profile-img-placeholder').classList.add('hidden');
-                    localStorage.setItem('user_avatar', avatarData);
+                    placeholder.classList.add('hidden');
+                    removeAvatarBtn.classList.remove('hidden');
+                    removeAvatarBtn.classList.add('flex');
                 };
                 reader.readAsDataURL(file);
             });
 
+            // WHATSAPP-STYLE IN-AVATAR DELETE BUTTON EVENT (STAGED)
+            document.getElementById('btn-remove-avatar').addEventListener('click', () => {
+                stagedAvatarData = ''; // Stage deletion
+                const imgPreview = document.getElementById('profile-img-preview');
+                const placeholder = document.getElementById('profile-img-placeholder');
+                const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+
+                imgPreview.src = '';
+                imgPreview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                removeAvatarBtn.classList.add('hidden');
+                removeAvatarBtn.classList.remove('flex');
+            });
+
+            // SAVE CHANGES BUTTON: APPLIES & PERSISTS ALL STAGED SETTINGS AT ONCE
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 const email = document.getElementById('user-email-input').value.trim();
                 const phone = document.getElementById('user-phone-input').value.trim();
@@ -1753,31 +1823,20 @@
                 localStorage.setItem('user_language', stagedLanguage);
                 localStorage.setItem('user_font', stagedFont);
 
+                // Handle Staged Avatar Image Deletion/Update
+                if (stagedAvatarData === '') {
+                    localStorage.removeItem('user_avatar');
+                } else if (stagedAvatarData !== null) {
+                    localStorage.setItem('user_avatar', stagedAvatarData);
+                }
+
+                // Apply choices to actual app
                 applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
                 updateLanguageUI(stagedLanguage);
                 updateFontUI(stagedFont);
 
                 document.getElementById('settings-modal').classList.add('hidden');
-                alert("Settings saved successfully!");
-            });
-
-            document.getElementById('btn-remove-profile').addEventListener('click', () => {
-                if (confirm("Are you sure you want to remove your stored profile details?")) {
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_phone');
-                    localStorage.removeItem('user_avatar');
-
-                    document.getElementById('user-email-input').value = '';
-                    document.getElementById('user-phone-input').value = '';
-
-                    const imgPreview = document.getElementById('profile-img-preview');
-                    imgPreview.src = '';
-                    imgPreview.classList.add('hidden');
-                    document.getElementById('profile-img-placeholder').classList.remove('hidden');
-
-                    showNotification("PROFILE REMOVED", "Local Storage", "Stored profile details were cleared.");
-                    alert("Profile details cleared!");
-                }
+                alert("All settings and profile updates saved successfully!");
             });
 
             document.getElementById('btn-toggle-mic').addEventListener('click', () => {
