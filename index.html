@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CONNECT - Unified Call & Chat Suite</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -13,369 +12,153 @@
             theme: {
                 extend: {
                     colors: {
-                        theme: {
-                            primary: 'var(--color-primary)',
-                            hover: 'var(--color-hover)',
-                            border: 'var(--color-border)',
-                            text: 'var(--color-text)'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Orbitron', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace'],
-                        telugu: ['Noto Sans Telugu', 'sans-serif'],
-                        hindi: ['Noto Sans Devanagari', 'sans-serif']
+                        theme: { primary: 'var(--color-primary)', hover: 'var(--color-hover)', border: 'var(--color-border)', text: 'var(--color-text)' }
                     }
                 }
             }
         }
     </script>
 
-    <!-- Google Fonts (Including Telugu & Hindi) -->
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Custom Styles & Privacy Protection -->
     <style>
         :root {
-            --color-primary: #6366f1;
-            --color-hover: #4f46e5;
-            --color-border: rgba(99, 102, 241, 0.3);
-            --color-text: #818cf8;
+            --color-primary: #6366f1; --color-hover: #4f46e5;
+            --color-border: rgba(99, 102, 241, 0.3); --color-text: #818cf8;
             --app-font: 'Inter', sans-serif;
         }
-
-        body {
-            font-family: var(--app-font);
-            background-color: #09090e;
-            color: #f1f5f9;
-            overflow-x: hidden;
-            transition: background-color 0.3s, color 0.3s;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        html.light body {
-            background-color: #e2e8f0;
-            color: #0f172a;
-        }
-
-        body.screen-protected {
-            filter: blur(25px) grayscale(100%);
-            pointer-events: none;
-        }
-
-        .font-display { font-family: 'Orbitron', sans-serif; }
-        .font-code { font-family: 'Fira Code', monospace; }
-
-        .glass-panel {
-            background: rgba(15, 14, 38, 0.75);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--color-border);
-            transition: background 0.3s, border-color 0.3s;
-        }
-
-        html.light .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--color-border);
-            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-        }
-
+        body { font-family: var(--app-font); background: #09090e; color: #f1f5f9; user-select: none; transition: 0.3s; }
+        html.light body { background: #e2e8f0; color: #0f172a; }
+        body.screen-protected { filter: blur(25px) grayscale(100%); pointer-events: none; }
+        .glass-panel { background: rgba(15, 14, 38, 0.75); backdrop-filter: blur(16px); border: 1px solid var(--color-border); }
+        html.light .glass-panel { background: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); }
         .dynamic-bg-primary { background-color: var(--color-primary); }
         .dynamic-bg-hover:hover { background-color: var(--color-hover); }
         .dynamic-border { border-color: var(--color-border); }
         .dynamic-text { color: var(--color-text); }
-
-        .scanlines {
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 3px, 6px 100%;
-            pointer-events: none;
-        }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090e; }
-        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
-
-        video {
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-        .no-mirror {
-            transform: scaleX(1) !important;
-        }
+        video { object-fit: cover; transform: scaleX(-1); }
+        .no-mirror { transform: scaleX(1) !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between">
 
-    <!-- TOP HEADER -->
-    <header class="w-full border-b dynamic-border dark:bg-slate-950/80 bg-white/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 transition-colors">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <!-- HEADER -->
+    <header class="w-full border-b dynamic-border dark:bg-slate-950/80 bg-white/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center shadow-lg text-white">
-                    <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
+                    <i class="fa-solid fa-satellite-dish animate-pulse"></i>
                 </div>
-                <div>
-                    <h1 class="font-display font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
-                        CONNECT
-                    </h1>
-                </div>
+                <h1 class="font-bold text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">CONNECT</h1>
             </div>
-
-            <div id="window-status-banner" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-500 dark:text-emerald-300 text-xs font-mono">
-                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
-                <span id="window-status-text" class="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
-            </div>
-
-            <!-- ACCOUNT & SETTINGS BUTTONS -->
             <div class="flex items-center gap-2">
-                <button id="btn-show-auth" title="Login / Register" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                <button id="btn-show-auth" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-user"></i> <span id="auth-btn-text" data-i18n="account">Account</span>
                 </button>
-                <button id="btn-show-settings" title="Settings" class="w-9 h-9 rounded-lg dynamic-bg-primary dynamic-bg-hover text-white text-sm font-semibold transition flex items-center justify-center shadow-md">
+                <button id="btn-show-settings" class="w-9 h-9 rounded-lg dynamic-bg-primary dynamic-bg-hover text-white text-sm transition flex items-center justify-center shadow-md">
                     <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <!-- MAIN -->
+    <main class="max-w-7xl w-full mx-auto p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT COLUMN: CONTROLS & USER ID -->
+        <!-- LEFT CONTROLS -->
         <section class="lg:col-span-3 flex flex-col gap-4">
-            
-            <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
-                <div class="flex items-center gap-2 dynamic-text font-display text-sm font-bold border-b border-indigo-900/40 pb-2">
-                    <i class="fa-solid fa-location-crosshairs"></i>
-                    <span data-i18n="selectNexusZone">SELECT YOUR NEXUS ZONE</span>
-                </div>
-                <div>
-                    <label class="text-[11px] font-mono text-slate-600 dark:text-slate-400 mb-1 block" data-i18n="campusRegionHub">Campus / Region Hub</label>
-                    <select id="select-campus" class="w-full bg-slate-200 dark:bg-slate-900 border dynamic-border rounded-xl p-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-semibold transition-colors">
-                        <option value="" disabled selected data-i18n="selectCollege">Select your college</option>
-                        <option value="cmr_ec">CMR Engineering College</option>
-                        <option value="vnr_vjiet">VNR VJIET</option>
-                        <option value="iit_hyd">IIT Hyderabad</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- YOUR ID & USERNAME -->
-            <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
-                <div class="truncate mr-2">
+            <div class="glass-panel rounded-2xl p-3 font-mono text-xs flex justify-between items-center">
+                <div class="truncate">
                     <div class="text-slate-400"><span data-i18n="user">User</span>: <span id="display-user-handle" class="font-bold text-cyan-400">Guest</span></div>
-                    <div class="text-slate-500"><span data-i18n="yourId">Your ID</span>: <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
+                    <div class="text-slate-500"><span data-i18n="yourId">Your ID</span>: <span id="my-peer-id" class="dynamic-text font-bold">...</span></div>
                 </div>
-                <button id="copy-id-btn" class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition text-xs px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded">
-                    <i class="fa-regular fa-copy"></i>
-                </button>
+                <button id="copy-id-btn" class="p-2 bg-slate-800 hover:text-indigo-400 rounded transition"><i class="fa-regular fa-copy"></i></button>
             </div>
 
-            <!-- CONNECT CONTROLS & CALL LOCKING -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID" data-i18n-ph="enterFriendId" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID" data-i18n-ph="enterFriendId" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs outline-none focus:border-indigo-400 font-mono">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-video" class="rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-video"></i> <span data-i18n="videoCall">Video Call</span>
                     </button>
-                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-voice" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-phone"></i> <span data-i18n="voiceCall">Voice Call</span>
                     </button>
                 </div>
                 
-                <!-- GROUP CALL BUTTON (Up to 5 online peers) -->
-                <button id="btn-open-group-modal" class="w-full rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                <button id="btn-open-group-modal" class="w-full rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-users-viewfinder"></i> <span data-i18n="groupCall">Group Call (Max 5)</span>
                 </button>
 
-                <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-comments"></i> <span data-i18n="chatSession">Chat Session</span>
-                </button>
-
-                <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS...</p>
+                <p id="connection-status" class="text-[11px] text-amber-500 font-mono">Initializing PeerJS...</p>
             </div>
-
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL SCREEN -->
-        <section class="lg:col-span-6 flex flex-col gap-4">
-            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-900 dark:bg-slate-950">
-                
-                <!-- MAIN DISPLAY VIDEO (Used during 1-on-1 Call) -->
+        <!-- CENTER DISPLAY -->
+        <section class="lg:col-span-6 flex flex-col">
+            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950">
                 <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror absolute inset-0"></video>
-                
-                <!-- MULTI-PARTY MESH GROUP CALL GRID -->
-                <div id="group-video-grid" class="hidden absolute inset-0 w-full h-full p-2 grid gap-2 z-10 bg-slate-950">
-                    <!-- Dynamic video tiles render here -->
-                </div>
+                <div id="group-video-grid" class="hidden absolute inset-0 w-full h-full p-2 grid gap-2 z-10 bg-slate-950"></div>
 
-                <!-- PLACEHOLDER WHEN NO CALL ACTIVE -->
-                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 scanlines z-0">
-                    <div class="w-20 h-20 rounded-full bg-slate-800/80 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-20 h-20 rounded-full bg-slate-800 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse">
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
-                    <h3 class="font-display font-bold text-base text-slate-200" data-i18n="readyToCall">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1" data-i18n="callInstructions">Enter a friend's Peer ID or start a Group Call with up to 5 online participants.</p>
+                    <h3 class="font-bold text-slate-200" data-i18n="readyToCall">READY TO CALL</h3>
+                    <p class="text-xs text-slate-400 mt-1" data-i18n="callInstructions">Enter a Peer ID or start a Group Call with up to 5 members.</p>
                 </div>
 
-                <!-- TOP BAR OVERLAY -->
-                <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
-                    <div class="bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border dynamic-border flex items-center gap-2">
-                        <i id="peer-status-dot" class="fa-solid fa-circle text-[10px] text-slate-500"></i>
-                        <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200" data-i18n="awaitingToConnect">Awaiting to connect</span>
-                    </div>
-                    
-                    <button id="btn-swap-feeds" title="Swap Main & PIP Screen" class="pointer-events-auto bg-slate-900/80 dark:bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white p-2 rounded-full border border-slate-700/80 text-xs transition">
-                        <i class="fa-solid fa-right-left"></i>
-                    </button>
-                </div>
-
-                <!-- PIP SECONDARY SCREEN (1-on-1 mode) -->
-                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all">
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
-                    
-                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-2">
-                        <i class="fa-solid fa-user-slash text-xl mb-1 text-slate-500"></i>
-                        <span id="pip-label-text" class="text-[9px] font-mono leading-tight" data-i18n="cameraOff">Camera Off</span>
-                    </div>
-
-                    <div class="absolute top-1.5 left-1.5 pointer-events-none">
-                        <span id="pip-tag-name" class="bg-slate-950/80 px-1.5 py-0.5 rounded text-[9px] font-mono dynamic-text border border-slate-700" data-i18n="you">You</span>
-                    </div>
-
-                    <button id="btn-resize-pip" title="Resize PIP Screen" class="absolute bottom-1.5 right-1.5 bg-slate-950/90 text-slate-300 hover:text-white p-1 rounded text-[10px]">
-                        <i class="fa-solid fa-expand"></i>
-                    </button>
+                    <div id="pip-off-placeholder" class="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 text-xs font-mono" data-i18n="cameraOff">Camera Off</div>
                 </div>
 
-                <!-- FLOATING CALL CONTROLS -->
-                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-900/85 dark:bg-slate-950/85 backdrop-blur-md border border-slate-800/80 px-4 py-2 rounded-2xl z-30 shadow-2xl">
-                    <button id="btn-toggle-mic" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 flex items-center justify-center text-sm transition">
-                        <i class="fa-solid fa-microphone"></i>
+                <!-- CONTROLS BAR -->
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
+                    <button id="btn-toggle-mic" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition"><i class="fa-solid fa-microphone"></i></button>
+                    <button id="btn-toggle-cam" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition"><i class="fa-solid fa-video"></i></button>
+                    <button id="btn-midcall-add" class="hidden px-3.5 h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-user-plus"></i> <span data-i18n="add">Add</span>
                     </button>
-                    <button id="btn-toggle-cam" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 flex items-center justify-center text-sm transition">
-                        <i class="fa-solid fa-video"></i>
-                    </button>
-                    
-                    <!-- MID-CALL ADD MEMBER BUTTON (Hidden by default, ONLY shows when at least 2 people are in call) -->
-                    <button id="btn-midcall-add" class="hidden px-3.5 h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span data-i18n="add">Add</span>
-                    </button>
-
-                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg shadow-red-600/30">
-                        <i class="fa-solid fa-phone-slash"></i>
-                    </button>
+                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition"><i class="fa-solid fa-phone-slash"></i></button>
                 </div>
-
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL & MEMBERS DIRECTORY -->
-        <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
-            
-            <!-- TAB BAR -->
-            <div class="grid grid-cols-2 bg-slate-200 dark:bg-slate-950/90 border-b dynamic-border text-xs font-display font-bold">
-                <button id="tab-chat-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-comments"></i> <span data-i18n="chat">Chat</span>
-                </button>
-                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-users"></i> <span data-i18n="members">Members</span>
-                </button>
+        <!-- RIGHT MEMBERS DIRECTORY -->
+        <section class="lg:col-span-3 glass-panel rounded-2xl p-3 flex flex-col gap-3 font-mono text-xs">
+            <div class="flex justify-between items-center text-slate-400">
+                <span data-i18n="availableOnlineMembers">Online Members:</span>
+                <span id="online-counter" class="text-emerald-400 font-bold">1</span>
             </div>
-
-            <!-- TAB CONTENT: CHAT VIEW -->
-            <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
-                <div class="p-2 bg-slate-100 dark:bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
-                    <span id="chat-header-id" class="text-slate-500 font-bold">ID: ---</span>
-                    <span id="chat-status" class="text-slate-500 font-bold" data-i18n="offline">OFFLINE</span>
-                </div>
-
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                        -- CHAT READY: CONNECT TO A FRIEND ID --
-                    </div>
-                </div>
-
-                <!-- CHAT FORM -->
-                <form id="chat-form" class="p-2 bg-slate-200 dark:bg-slate-950 border-t dynamic-border flex items-center gap-2 transition-colors">
-                    <input id="file-input" type="file" class="hidden">
-                    
-                    <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-300 dark:bg-slate-900 hover:bg-slate-400 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-500 border border-slate-300 dark:border-slate-700 text-xs transition flex items-center justify-center">
-                        <i class="fa-solid fa-paperclip"></i>
-                    </button>
-
-                    <input id="chat-input" type="text" placeholder="Type message..." data-i18n-ph="typeMessage" disabled class="flex-1 bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-mono transition-colors">
-                    
-                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
-
-            <!-- TAB CONTENT: MEMBERS DIRECTORY -->
-            <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
-                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
-                    <span data-i18n="availableOnlineMembers">Available Online Members:</span>
-                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
-                </div>
-                
-                <div id="members-list-container" class="flex flex-col gap-2">
-                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-slate-200 block">You (Active)</span>
-                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ---</span>
-                        </div>
-                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
-                    </div>
-                </div>
-            </div>
-
+            <div id="members-list-container" class="flex flex-col gap-2 overflow-y-auto max-h-[400px]"></div>
         </section>
 
     </main>
 
-    <!-- SETTINGS & PROFILE MODAL -->
+    <!-- SETTINGS MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 class="font-display font-bold text-lg dynamic-text flex items-center gap-2">
-                    <i class="fa-solid fa-gear"></i> <span data-i18n="settings">SETTINGS</span>
-                </h3>
-                <button id="close-settings-btn" class="text-slate-400 hover:text-slate-200 text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="font-bold text-lg dynamic-text"><i class="fa-solid fa-gear"></i> <span data-i18n="settings">SETTINGS</span></h3>
+                <button id="close-settings-btn" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- LANGUAGE SELECTION -->
-            <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="language">LANGUAGE</label>
+            <div>
+                <label class="text-xs font-bold text-slate-400 block mb-1" data-i18n="language">LANGUAGE</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <button data-lang="en" class="lang-picker-btn py-2 px-2 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center">
-                        English
-                    </button>
-                    <button data-lang="te" class="lang-picker-btn py-2 px-2 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center">
-                        తెలుగు (Telugu)
-                    </button>
-                    <button data-lang="hi" class="lang-picker-btn py-2 px-2 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center">
-                        हिंदी (Hindi)
-                    </button>
+                    <button data-lang="en" class="lang-btn p-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-bold">English</button>
+                    <button data-lang="te" class="lang-btn p-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-bold">తెలుగు</button>
+                    <button data-lang="hi" class="lang-btn p-2 rounded-xl border border-slate-700 bg-slate-800 text-xs font-bold">हिंदी</button>
                 </div>
             </div>
 
-            <!-- FONT SELECTION -->
-            <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="fontStyle">FONT STYLE</label>
-                <select id="select-app-font" class="w-full bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-slate-100 outline-none font-semibold transition-colors">
+            <div>
+                <label class="text-xs font-bold text-slate-400 block mb-1" data-i18n="fontStyle">FONT STYLE</label>
+                <select id="select-app-font" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs">
                     <option value="'Inter', sans-serif">Inter (Default)</option>
                     <option value="'Orbitron', sans-serif">Orbitron (Cyber)</option>
                     <option value="'Fira Code', monospace">Fira Code (Mono)</option>
@@ -384,1477 +167,225 @@
                 </select>
             </div>
 
-            <!-- THEME SELECTION -->
-            <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="theme">THEME</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <button data-theme="dark" class="theme-picker-btn py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition">
-                        <i class="fa-solid fa-moon"></i> <span data-i18n="dark">Dark</span>
-                    </button>
-                    <button data-theme="light" class="theme-picker-btn py-2 px-3 rounded-xl border border-slate-300 bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-2 transition">
-                        <i class="fa-solid fa-sun"></i> <span data-i18n="light">Light</span>
+            <div class="flex items-center gap-4">
+                <div class="relative w-16 h-16 rounded-full bg-slate-900 border-2 dynamic-border flex items-center justify-center shrink-0">
+                    <img id="profile-img-preview" src="" class="w-full h-full rounded-full object-cover hidden">
+                    <i id="profile-img-placeholder" class="fa-solid fa-user text-2xl dynamic-text"></i>
+                    <button id="btn-remove-avatar" type="button" class="hidden absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[10px] items-center justify-center border-2 border-slate-900 shadow">
+                        <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
+                <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs border border-slate-700">
+                    <i class="fa-solid fa-camera mr-1"></i> <span data-i18n="uploadImage">Upload Image</span>
+                </button>
+                <input id="profile-img-input" type="file" accept="image/*" class="hidden">
             </div>
 
-            <!-- COLOR ACCENT CUSTOMIZATION -->
-            <div class="space-y-2">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="accentColor">ACCENT COLOR CUSTOMIZATION</label>
-                <div class="flex flex-wrap items-center gap-3">
-                    <button data-color="default" class="color-picker-btn w-8 h-8 rounded-full bg-indigo-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="cyan" class="color-picker-btn w-8 h-8 rounded-full bg-cyan-400 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="emerald" class="color-picker-btn w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="pink" class="color-picker-btn w-8 h-8 rounded-full bg-pink-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="amber" class="color-picker-btn w-8 h-8 rounded-full bg-amber-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="purple" class="color-picker-btn w-8 h-8 rounded-full bg-purple-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="crimson" class="color-picker-btn w-8 h-8 rounded-full bg-rose-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                    <button data-color="teal" class="color-picker-btn w-8 h-8 rounded-full bg-teal-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
-                </div>
-            </div>
-
-            <hr class="border-slate-300 dark:border-slate-800">
-
-            <!-- PROFILE DETAILS WITH INTEGRATED WHATSAPP-STYLE REMOVE BUTTON OVERLAY -->
-            <div class="space-y-4">
-                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block" data-i18n="profileDetails">PROFILE DETAILS</label>
-                
-                <div class="flex items-center gap-4">
-                    <!-- PROFILE AVATAR CONTAINER WITH IN-CORNER WHATSAPP STYLE REMOVE BUTTON -->
-                    <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border flex items-center justify-center shrink-0">
-                        <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full rounded-full object-cover hidden">
-                        <i id="profile-img-placeholder" class="fa-solid fa-user text-2xl dynamic-text"></i>
-                        
-                        <!-- WHATSAPP STYLE DELETE BUTTON ATTACHED DIRECTLY ON PROFILE IMAGE (Takes effect after Save Changes) -->
-                        <button id="btn-remove-avatar" title="Remove Profile Picture" type="button" class="hidden absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[10px] items-center justify-center border-2 border-slate-900 shadow-md transition">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-
-                    <div>
-                        <input id="profile-img-input" type="file" accept="image/*" class="hidden">
-                        <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition">
-                            <i class="fa-solid fa-camera mr-1"></i> <span data-i18n="uploadImage">Upload Image</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block" data-i18n="emailId">Email ID</label>
-                    <input id="user-email-input" type="email" placeholder="Enter your email" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
-                </div>
-
-                <div>
-                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block" data-i18n="phoneNumber">Phone Number</label>
-                    <input id="user-phone-input" type="tel" placeholder="Enter your phone number" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
-                </div>
-            </div>
-
-            <!-- EVERYTHING SAVES ON THIS BUTTON ONLY -->
-            <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg" data-i18n="saveChanges">
+            <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs shadow-lg mt-2" data-i18n="saveChanges">
                 SAVE CHANGES
             </button>
         </div>
     </div>
 
-    <!-- GROUP CALL SELECTION MODAL -->
+    <!-- GROUP CALL MODAL -->
     <div id="group-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-purple-500/50 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
-                    <i class="fa-solid fa-users-viewfinder"></i> <span data-i18n="selectGroupMembers">Select Online Group Members</span>
-                </h3>
-                <button id="close-group-modal-btn" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <p class="text-xs text-slate-400 font-mono" data-i18n="groupCallDesc">Select online participants to start a mesh call (Maximum limit: 5 members).</p>
-
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 flex flex-col gap-4">
+            <h3 class="font-bold text-purple-400" data-i18n="selectGroupMembers">Select Online Group Members</h3>
             <div id="group-selection-list" class="max-h-60 overflow-y-auto flex flex-col gap-2 font-mono text-xs"></div>
-
-            <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+            <div class="flex justify-between items-center border-t border-slate-800 pt-3">
                 <span id="group-selected-count" class="text-xs font-mono text-slate-400">Selected: 0/5</span>
-                <button id="btn-start-group-call" disabled class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs transition shadow-lg" data-i18n="startGroupCall">
+                <button id="btn-start-group-call" disabled class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs" data-i18n="startGroupCall">
                     Start Group Call
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- MID-CALL ADD PARTICIPANT MODAL -->
+    <!-- MID-CALL ADD MODAL -->
     <div id="midcall-add-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 class="font-display font-bold text-base text-indigo-400 flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> <span data-i18n="addPerson">Add Person to Call</span>
-                </h3>
-                <button id="close-midcall-modal-btn" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <p class="text-xs text-slate-400 font-mono" data-i18n="addPersonDesc">Select an available online peer to join your active call:</p>
-
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 flex flex-col gap-4">
+            <h3 class="font-bold text-indigo-400" data-i18n="addPerson">Add Person to Call</h3>
             <div id="midcall-selection-list" class="max-h-52 overflow-y-auto flex flex-col gap-2 font-mono text-xs"></div>
+            <button onclick="document.getElementById('midcall-add-modal').classList.add('hidden')" class="w-full py-2 rounded-xl bg-slate-800 text-xs">Close</button>
         </div>
     </div>
 
-    <!-- AUTHENTICATION MODAL -->
-    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <h3 id="auth-modal-title" class="font-display font-bold text-base dynamic-text flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> <span data-i18n="registerAccount">Register Account</span>
-                </h3>
-                <button id="close-auth-modal-btn" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <form id="auth-form" class="space-y-3">
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block" data-i18n="emailId">Email Address</label>
-                    <input id="auth-email" type="email" required placeholder="user@domain.com" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-                <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block" data-i18n="password">Password</label>
-                    <input id="auth-password" type="password" required placeholder="••••••••" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-                <div id="username-field-wrapper">
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block" data-i18n="customUsername">Custom Username</label>
-                    <input id="auth-username" type="text" placeholder="e.g. cyber_hero" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
-                </div>
-
-                <button id="auth-submit-btn" type="submit" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition shadow-lg mt-2" data-i18n="register">
-                    REGISTER
-                </button>
-            </form>
-
-            <div class="text-center text-[11px] text-slate-400 font-mono pt-2 border-t border-slate-800">
-                <span id="auth-toggle-prompt" data-i18n="alreadyRegistered">Already registered?</span>
-                <button id="auth-toggle-btn" class="dynamic-text font-bold ml-1 hover:underline" data-i18n="loginHere">Login here</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CONNECTION REQUEST MODAL -->
-    <div id="conn-req-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
-            <div class="w-16 h-16 rounded-full bg-indigo-950 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
-                <i class="fa-solid fa-user-check"></i>
-            </div>
-            <div>
-                <h3 class="font-display font-bold text-base text-cyan-300" data-i18n="connectionRequest">CONNECTION REQUEST</h3>
-                <p id="conn-req-text" class="text-xs text-slate-300 font-mono mt-1 font-bold">User wants to connect with you...</p>
-            </div>
-            <div class="flex gap-3 w-full mt-2">
-                <button id="btn-decline-req" class="flex-1 py-2.5 rounded-xl bg-rose-900 hover:bg-rose-800 font-bold text-white text-xs transition" data-i18n="decline">DECLINE</button>
-                <button id="btn-accept-req" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition" data-i18n="accept">ACCEPT</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- INCOMING CALL MODAL -->
-    <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
-            <div class="w-16 h-16 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
-                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
-            </div>
-            <div>
-                <h3 id="incoming-call-title" class="font-display font-bold text-base text-cyan-300" data-i18n="incomingCall">INCOMING CALL</h3>
-                <p id="incoming-peer-id" class="text-xs text-slate-300 font-mono mt-1 font-bold">From ID: ...</p>
-            </div>
-            <div class="flex gap-3 w-full mt-2">
-                <button id="btn-decline-call" class="flex-1 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 font-bold text-white text-xs transition" data-i18n="decline">DECLINE</button>
-                <button id="btn-accept-call" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition" data-i18n="accept">ACCEPT</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- INLINE APPLICATION LOGIC -->
+    <!-- SCRIPT LOGIC -->
     <script>
-        const translations = {
-            en: {
-                account: "Account",
-                selectNexusZone: "SELECT YOUR NEXUS ZONE",
-                campusRegionHub: "Campus / Region Hub",
-                selectCollege: "Select your college",
-                user: "User",
-                yourId: "Your ID",
-                enterFriendId: "enter friend Peer ID",
-                videoCall: "Video Call",
-                voiceCall: "Voice Call",
-                groupCall: "Group Call (Max 5)",
-                chatSession: "Chat Session",
-                readyToCall: "READY TO CALL",
-                callInstructions: "Enter a friend's Peer ID or start a Group Call with up to 5 online participants.",
-                awaitingToConnect: "Awaiting to connect",
-                cameraOff: "Camera Off",
-                you: "You",
-                add: "Add",
-                chat: "Chat",
-                members: "Members",
-                offline: "OFFLINE",
-                typeMessage: "Type message...",
-                availableOnlineMembers: "Available Online Members:",
-                settings: "SETTINGS",
-                language: "LANGUAGE",
-                fontStyle: "FONT STYLE",
-                theme: "THEME",
-                dark: "Dark",
-                light: "Light",
-                accentColor: "ACCENT COLOR CUSTOMIZATION",
-                profileDetails: "PROFILE DETAILS",
-                uploadImage: "Upload Image",
-                emailId: "Email ID",
-                phoneNumber: "Phone Number",
-                saveChanges: "SAVE CHANGES",
-                selectGroupMembers: "Select Online Group Members",
-                groupCallDesc: "Select online participants to start a mesh call (Maximum limit: 5 members).",
-                startGroupCall: "Start Group Call",
-                addPerson: "Add Person to Call",
-                addPersonDesc: "Select an available online peer to join your active call:",
-                registerAccount: "Register Account",
-                password: "Password",
-                customUsername: "Custom Username",
-                register: "REGISTER",
-                alreadyRegistered: "Already registered?",
-                loginHere: "Login here",
-                connectionRequest: "CONNECTION REQUEST",
-                decline: "DECLINE",
-                accept: "ACCEPT",
-                incomingCall: "INCOMING CALL"
-            },
-            te: {
-                account: "ఖాతా",
-                selectNexusZone: "మీ నెక్సస్ జోన్ ఎంచుకోండి",
-                campusRegionHub: "క్యాంపస్ / ప్రాంతీయ హబ్",
-                selectCollege: "మీ కళాశాలను ఎంచుకోండి",
-                user: "వాడుకరి",
-                yourId: "మీ ID",
-                enterFriendId: "స్నేహితుడి Peer ID నమోదు చేయండి",
-                videoCall: "వీడియో కాల్",
-                voiceCall: "వాయిస్ కాల్",
-                groupCall: "గ్రూప్ కాల్ (గరిష్టం 5)",
-                chatSession: "చాట్ సెషన్",
-                readyToCall: "కాల్ చేయడానికి సిద్ధంగా ఉంది",
-                callInstructions: "స్నేహితుడి IDని నమోదు చేయండి లేదా 5 మంది ఆన్‌లైన్ సభ్యులతో గ్రూప్ కాల్ ప్రారంభించండి.",
-                awaitingToConnect: "కనెక్ట్ కావడానికి వేచి ఉంది",
-                cameraOff: "కెమెరా ఆఫ్",
-                you: "మీరు",
-                add: "జోడించు",
-                chat: "చాట్",
-                members: "సభ్యులు",
-                offline: "ఆఫ్‌లైన్",
-                typeMessage: "సందేశాన్ని టైప్ చేయండి...",
-                availableOnlineMembers: "అందుబాటులో ఉన్న ఆన్‌లైన్ సభ్యులు:",
-                settings: "సెట్టింగ్‌లు",
-                language: "భాష",
-                fontStyle: "ఫాంట్ శైలి",
-                theme: "థీమ్",
-                dark: "డార్క్",
-                light: "లైట్",
-                accentColor: "యాక్సెంట్ కలర్ ఎంపిక",
-                profileDetails: "ప్రొఫైల్ వివరాలు",
-                uploadImage: "చిత్రాన్ని అప్‌లోడ్ చేయండి",
-                emailId: "ఇమెయిల్ ID",
-                phoneNumber: "ఫోన్ నంబర్",
-                saveChanges: "మార్పులను సేవ్ చేయండి",
-                selectGroupMembers: "ఆన్‌లైన్ గ్రూప్ సభ్యులను ఎంచుకోండి",
-                groupCallDesc: "కాల్ ప్రారంభించడానికి ఆన్‌లైన్ పాల్గొనేవారిని ఎంచుకోండి (గరిష్ట పరిమితి: 5 మంది).",
-                startGroupCall: "గ్రూప్ కాల్ ప్రారంభించండి",
-                addPerson: "వ్యక్తిని జోడించండి",
-                addPersonDesc: "కాల్‌లోకి చేరడానికి అందుబాటులో ఉన్న సభ్యుడిని ఎంచుకోండి:",
-                registerAccount: "ఖాతా నమోదు చేయండి",
-                password: "పాస్‌వర్డ్",
-                customUsername: "యూజర్ నేమ్",
-                register: "రిజిస్టర్",
-                alreadyRegistered: "ఇప్పటికే ఖాతా ఉందా?",
-                loginHere: "లాగిన్ అవ్వండి",
-                connectionRequest: "కనెక్షన్ అభ్యర్థన",
-                decline: "తిరస్కరించు",
-                accept: "అంగీకరించు",
-                incomingCall: "ఇన్‌కమింగ్ కాల్"
-            },
-            hi: {
-                account: "खाता",
-                selectNexusZone: "अपना नेक्सस ज़ोन चुनें",
-                campusRegionHub: "कैम्पस / क्षेत्रीय हब",
-                selectCollege: "अपना कॉलेज चुनें",
-                user: "उपयोगकर्ता",
-                yourId: "आपकी ID",
-                enterFriendId: "मित्र की Peer ID दर्ज करें",
-                videoCall: "वीडियो कॉल",
-                voiceCall: "वॉयस कॉल",
-                groupCall: "ग्रुप कॉल (अधिकतम 5)",
-                chatSession: "चैट सत्र",
-                readyToCall: "कॉल के लिए तैयार",
-                callInstructions: "मित्र की Peer ID दर्ज करें या 5 सदस्यों के साथ ग्रुप कॉल शुरू करें।",
-                awaitingToConnect: "कनेक्ट होने की प्रतीक्षा में",
-                cameraOff: "कैमरा बंद",
-                you: "आप",
-                add: "जोड़ें",
-                chat: "चैट",
-                members: "सदस्य",
-                offline: "ऑफ़लाइन",
-                typeMessage: "संदेश टाइप करें...",
-                availableOnlineMembers: "उपलब्ध ऑनलाइन सदस्य:",
-                settings: "सेटिंग्स",
-                language: "भाषा",
-                fontStyle: "फ़ॉन्ट स्टाइल",
-                theme: "थीम",
-                dark: "डार्क",
-                light: "लाइट",
-                accentColor: "रंग कस्टमाइज़ेशन",
-                profileDetails: "प्रोफ़ाइल विवरण",
-                uploadImage: "छवि अपलोड करें",
-                emailId: "ईमेल ID",
-                phoneNumber: "फ़ोन नंबर",
-                saveChanges: "बदलाव सहेजें",
-                selectGroupMembers: "ऑनलाइन ग्रुप सदस्य चुनें",
-                groupCallDesc: "ग्रुप कॉल शुरू करने के लिए सदस्यों को चुनें (अधिकतम सीमा: 5 सदस्य)।",
-                startGroupCall: "ग्रुप कॉल शुरू करें",
-                addPerson: "व्यक्ति जोड़ें",
-                addPersonDesc: "सक्रिय कॉल में शामिल होने के लिए सदस्य चुनें:",
-                registerAccount: "खाता पंजीकृत करें",
-                password: "पासवर्ड",
-                customUsername: "यूज़रनेम",
-                register: "रजिस्टर करें",
-                alreadyRegistered: "पहले से पंजीकृत हैं?",
-                loginHere: "लॉगिन करें",
-                connectionRequest: "कनेक्शन अनुरोध",
-                decline: "अस्वीकार करें",
-                accept: "स्वीकार करें",
-                incomingCall: "इनकमिंग कॉल"
-            }
+        const i18n = {
+            en: { account: "Account", user: "User", yourId: "Your ID", enterFriendId: "enter friend Peer ID", videoCall: "Video Call", voiceCall: "Voice Call", groupCall: "Group Call (Max 5)", readyToCall: "READY TO CALL", callInstructions: "Enter a Peer ID or start a Group Call with up to 5 members.", cameraOff: "Camera Off", you: "You", add: "Add", availableOnlineMembers: "Online Members:", settings: "SETTINGS", language: "LANGUAGE", fontStyle: "FONT STYLE", uploadImage: "Upload Image", saveChanges: "SAVE CHANGES", selectGroupMembers: "Select Group Members", startGroupCall: "Start Group Call", addPerson: "Add Person to Call" },
+            te: { account: "ఖాతా", user: "వాడుకరి", yourId: "మీ ID", enterFriendId: "స్నేహితుడి Peer ID ని ఎంటర్ చేయండి", videoCall: "వీడియో కాల్", voiceCall: "వాయిస్ కాల్", groupCall: "గ్రూప్ కాల్ (గరిష్టం 5)", readyToCall: "కాల్ చేయడానికి సిద్ధంగా ఉంది", callInstructions: "Peer IDని నమోదు చేయండి లేదా 5 మంది సభ్యులతో గ్రూప్ కాల్ ప్రారంభించండి.", cameraOff: "కెమెరా ఆఫ్", you: "మీరు", add: "జోడించు", availableOnlineMembers: "ఆన్‌లైన్ సభ్యులు:", settings: "సెట్టింగ్‌లు", language: "భాష", fontStyle: "ఫాంట్ శైలి", uploadImage: "చిత్రాన్ని అప్‌లోడ్ చేయండి", saveChanges: "సేవ్ చేయండి", selectGroupMembers: "సభ్యులను ఎంచుకోండి", startGroupCall: "గ్రూప్ కాల్ ప్రారంభించండి", addPerson: "వ్యక్తిని జోడించండి" },
+            hi: { account: "खाता", user: "उपयोगकर्ता", yourId: "आपकी ID", enterFriendId: "मित्र की Peer ID दर्ज करें", videoCall: "वीडियो कॉल", voiceCall: "वॉयस कॉल", groupCall: "ग्रुप कॉल (अधिकतम 5)", readyToCall: "कॉल के लिए तैयार", callInstructions: "Peer ID दर्ज करें या 5 सदस्यों के साथ ग्रुप कॉल शुरू करें।", cameraOff: "कैमरा बंद", you: "आप", add: "जोड़ें", availableOnlineMembers: "ऑनलाइन सदस्य:", settings: "सेटिंग्स", language: "भाषा", fontStyle: "फ़ॉन्ट स्टाइल", uploadImage: "छवि अपलोड करें", saveChanges: "सहेजें", selectGroupMembers: "सदस्य चुनें", startGroupCall: "ग्रुप कॉल शुरू करें", addPerson: "व्यक्ति जोड़ें" }
         };
 
-        let currentUser = null;
-        let isAuthModeLogin = false;
+        let peer = null, myPeerId = null, localStream = null;
+        let activeCalls = new Map(), remoteStreamsMap = new Map();
+        let micMuted = false, camOff = false;
 
-        let peer = null;
-        let myPeerId = null;
-        let currentFriendId = null;
-        
-        let activeCalls = new Map();
-        let remoteStreamsMap = new Map();
-
-        let activeDataConn = null;
-        let localStream = null;
-        let incomingCallObj = null;
-        let micMuted = false;
-        let camOff = false;
-
-        let acceptedConnections = new Set();
-        let pendingIncomingRequestId = null;
-
-        let isMainRemote = true; 
-        let isPipLarge = false;
-        let ringtoneInterval = null;
-
-        // Current Active Applied Settings
-        let appliedAccentColorKey = 'default';
-        let appliedThemeMode = 'dark';
-        let appliedLanguage = 'en';
-        let appliedFont = "'Inter', sans-serif";
-
-        // Staged Settings (Temp holding area before user clicks Save Changes)
-        let stagedAccentColorKey = 'default';
-        let stagedThemeMode = 'dark';
-        let stagedLanguage = 'en';
-        let stagedFont = "'Inter', sans-serif";
-        let stagedAvatarData = null; // null = untouched, '' = deleted, 'data:image...' = uploaded
-        
-        let audioCtx = null;
-
-        const themeColors = {
-            default: { primary: '#6366f1', hover: '#4f46e5', border: 'rgba(99, 102, 241, 0.3)', text: '#818cf8' },
-            cyan:    { primary: '#06b6d4', hover: '#0891b2', border: 'rgba(6, 182, 212, 0.3)', text: '#22d3ee' },
-            emerald: { primary: '#10b981', hover: '#059669', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
-            pink:    { primary: '#ec4899', hover: '#db2777', border: 'rgba(236, 72, 153, 0.3)', text: '#f472b6' },
-            amber:   { primary: '#f59e0b', hover: '#d97706', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
-            purple:  { primary: '#9333ea', hover: '#7e22ce', border: 'rgba(147, 51, 234, 0.3)', text: '#c084fc' },
-            crimson: { primary: '#e11d48', hover: '#be123c', border: 'rgba(225, 29, 72, 0.3)', text: '#fb7185' },
-            teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
-        };
-
-        // Screen protection listeners
-        window.addEventListener('blur', () => document.body.classList.add('screen-protected'));
-        window.addEventListener('focus', () => document.body.classList.remove('screen-protected'));
-
-        function updateLanguageUI(langKey) {
-            const lang = translations[langKey] ? langKey : 'en';
-            appliedLanguage = lang;
-            const dict = translations[lang];
-
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (dict[key]) el.innerText = dict[key];
-            });
-
-            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-                const key = el.getAttribute('data-i18n-ph');
-                if (dict[key]) el.placeholder = dict[key];
-            });
-        }
-
-        function highlightStagedLanguageButtons(langKey) {
-            document.querySelectorAll('.lang-picker-btn').forEach(btn => {
-                const isSelected = btn.dataset.lang === langKey;
-                btn.classList.toggle('ring-2', isSelected);
-                btn.classList.toggle('ring-indigo-400', isSelected);
-                btn.classList.toggle('bg-indigo-600', isSelected);
-            });
-        }
-
-        function updateFontUI(fontFamily) {
-            appliedFont = fontFamily;
-            document.documentElement.style.setProperty('--app-font', fontFamily);
-        }
-
-        function applyThemeAndAccent(themeMode, colorKey) {
-            appliedThemeMode = themeMode;
-            appliedAccentColorKey = colorKey;
-
-            document.documentElement.className = themeMode;
-            const config = themeColors[colorKey] || themeColors.default;
-            document.documentElement.style.setProperty('--color-primary', config.primary);
-            document.documentElement.style.setProperty('--color-hover', config.hover);
-            document.documentElement.style.setProperty('--color-border', config.border);
-            document.documentElement.style.setProperty('--color-text', config.text);
-        }
-
-        function highlightStagedUI(themeMode, colorKey) {
-            document.querySelectorAll('.theme-picker-btn').forEach(btn => {
-                btn.classList.toggle('ring-2', btn.dataset.theme === themeMode);
-                btn.classList.toggle('ring-white', btn.dataset.theme === themeMode);
-            });
-
-            document.querySelectorAll('.color-picker-btn').forEach(btn => {
-                btn.classList.toggle('border-white', btn.dataset.color === colorKey);
-                btn.classList.toggle('ring-2', btn.dataset.color === colorKey);
-                btn.classList.toggle('ring-white', btn.dataset.color === colorKey);
-            });
-        }
-
-        function generate7DigitId() {
-            return Math.floor(1000000 + Math.random() * 9000000).toString();
-        }
-
-        function initAudioContext() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        window.addEventListener('click', initAudioContext, { once: true });
-        window.addEventListener('keydown', initAudioContext, { once: true });
-
-        function playMessageSound() {
-            try {
-                initAudioContext();
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.25);
-            } catch (e) {}
-        }
-
-        function startRingtoneSound() {
-            stopRingtoneSound();
-            try {
-                initAudioContext();
-                if (!audioCtx) return;
-                const playChime = () => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.6);
-                };
-                playChime();
-                ringtoneInterval = setInterval(playChime, 1500);
-            } catch (e) {}
-        }
-
-        function stopRingtoneSound() {
-            if (ringtoneInterval) {
-                clearInterval(ringtoneInterval);
-                ringtoneInterval = null;
-            }
-        }
-
-        function showNotification(title, senderId, messageText) {
-            const existingToast = document.getElementById('nexus-toast');
-            if (existingToast) existingToast.remove();
-
-            const toast = document.createElement('div');
-            toast.id = 'nexus-toast';
-            toast.className = 'fixed top-4 right-4 z-50 max-w-xs w-full glass-panel rounded-2xl p-3 border dynamic-border shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100';
-
-            toast.innerHTML = `
-                <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center text-white shrink-0 shadow-md">
-                    <i class="fa-solid fa-bell text-sm animate-pulse"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-mono dynamic-text font-bold uppercase tracking-wider">${title}</span>
-                        <span class="text-[9px] font-mono text-slate-500">just now</span>
-                    </div>
-                    <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">${senderId}</p>
-                    <p class="text-[11px] text-slate-400 truncate">${messageText}</p>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-slate-300 text-xs px-1">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            `;
-
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                if (toast && toast.parentElement) {
-                    toast.classList.add('opacity-0', '-translate-y-2');
-                    setTimeout(() => toast.remove(), 300);
-                }
-            }, 4000);
-        }
-
-        function resetChatSession() {
-            const box = document.getElementById('chat-messages');
-            box.innerHTML = `
-                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                    -- P2P SECURE CHAT SESSION STARTED --
-                </div>
-            `;
-            disableChat();
-        }
+        let appLanguage = localStorage.getItem('user_language') || 'en';
+        let appFont = localStorage.getItem('user_font') || "'Inter', sans-serif";
+        let stagedLang = appLanguage, stagedFont = appFont, stagedAvatar = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            initPeerJS();
-            setupUIEventListeners();
-            loadSavedProfile();
-            checkUserSession();
-            refreshLocalMembersDirectory();
+            initPeer();
+            setupEvents();
+            applySettings(appLanguage, appFont);
         });
 
-        function checkUserSession() {
-            const savedUser = JSON.parse(localStorage.getItem('connect_app_user') || 'null');
-            const authBtnText = document.getElementById('auth-btn-text');
-            const handleDisplay = document.getElementById('display-user-handle');
-
-            if (savedUser) {
-                currentUser = savedUser;
-                authBtnText.innerText = "Logout";
-                handleDisplay.innerText = savedUser.username;
-            } else {
-                currentUser = null;
-                authBtnText.innerText = translations[appliedLanguage]?.account || "Account";
-                handleDisplay.innerText = "Guest";
-            }
+        function applySettings(lang, font) {
+            appLanguage = lang; appFont = font;
+            document.documentElement.style.setProperty('--app-font', font);
+            const dict = i18n[lang] || i18n.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => el.innerText = dict[el.dataset.i18n] || el.innerText);
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = dict[el.dataset.i18nPh] || el.placeholder);
         }
 
-        function loadSavedProfile() {
-            const email = localStorage.getItem('user_email') || '';
-            const phone = localStorage.getItem('user_phone') || '';
-            const avatar = localStorage.getItem('user_avatar') || '';
-            const savedColorKey = localStorage.getItem('user_accent_color') || 'default';
-            const savedThemeMode = localStorage.getItem('user_theme_mode') || 'dark';
-            const savedLanguage = localStorage.getItem('user_language') || 'en';
-            const savedFont = localStorage.getItem('user_font') || "'Inter', sans-serif";
-
-            appliedThemeMode = savedThemeMode;
-            appliedAccentColorKey = savedColorKey;
-            appliedLanguage = savedLanguage;
-            appliedFont = savedFont;
-
-            stagedThemeMode = savedThemeMode;
-            stagedAccentColorKey = savedColorKey;
-            stagedLanguage = savedLanguage;
-            stagedFont = savedFont;
-            stagedAvatarData = null;
-
-            document.getElementById('user-email-input').value = email;
-            document.getElementById('user-phone-input').value = phone;
-
-            applyThemeAndAccent(savedThemeMode, savedColorKey);
-            updateLanguageUI(savedLanguage);
-            updateFontUI(savedFont);
-
-            const imgPreview = document.getElementById('profile-img-preview');
-            const placeholder = document.getElementById('profile-img-placeholder');
-            const removeAvatarBtn = document.getElementById('btn-remove-avatar');
-
-            if (avatar) {
-                imgPreview.src = avatar;
-                imgPreview.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-                removeAvatarBtn.classList.remove('hidden');
-                removeAvatarBtn.classList.add('flex');
-            } else {
-                imgPreview.src = '';
-                imgPreview.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                removeAvatarBtn.classList.add('hidden');
-                removeAvatarBtn.classList.remove('flex');
-            }
-        }
-
-        async function getLocalMediaStream(enableVideo = true) {
-            if (localStream) return localStream;
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: enableVideo, audio: true });
-                return localStream;
-            } catch (err) {
-                alert("Microphone/Camera permission is required to place or answer a call.");
-                return null;
-            }
-        }
-
-        function setConnectionStatus(message, color = "text-amber-500 dark:text-amber-300") {
-            const el = document.getElementById('connection-status');
-            if (el) { el.textContent = message; el.className = `text-[11px] ${color} font-mono`; }
-        }
-
-        function initPeerJS() {
-            setConnectionStatus('Connecting to signaling server...', 'text-amber-500 dark:text-amber-300');
-            const custom7DigitId = generate7DigitId();
-            try {
-                peer = new Peer(custom7DigitId, {
-                    host: '0.peerjs.com',
-                    secure: true,
-                    port: 443,
-                    debug: 3,
-                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-                });
-
-                peer.on('open', (id) => {
-                    myPeerId = id;
-                    document.getElementById('my-peer-id').innerText = id;
-                    document.getElementById('member-self-id').innerText = `ID: ${id}`;
-                    document.getElementById('chat-header-id').innerText = `ID: ${id}`;
-                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
-                    registerPeerInLocalStorage();
-                });
-
-                peer.on('call', (call) => {
-                    incomingCallObj = call;
-                    currentFriendId = call.peer;
-                    const isVideo = call.metadata && call.metadata.type === 'video';
-                    
-                    document.getElementById('incoming-call-title').innerText = call.metadata && call.metadata.isGroup ? 'INCOMING GROUP CALL' : (isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL');
-                    document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
-                    document.getElementById('incoming-peer-id').innerText = `From Peer ID: ${call.peer}`;
-                    document.getElementById('incoming-call-modal').classList.remove('hidden');
-                    startRingtoneSound();
-                });
-
-                peer.on('connection', (conn) => {
-                    activeDataConn = conn;
-                    currentFriendId = conn.peer;
-                    conn.on('open', () => {
-                        setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
-                        enableChat();
-                        setupDataConnectionListeners(conn);
+        function initPeer() {
+            peer = new Peer(Math.floor(1000000 + Math.random() * 9000000).toString(), { host: '0.peerjs.com', port: 443, secure: true });
+            peer.on('open', id => {
+                myPeerId = id;
+                document.getElementById('my-peer-id').innerText = id;
+                document.getElementById('connection-status').innerText = "Online";
+                document.getElementById('connection-status').className = "text-[11px] text-emerald-400 font-mono";
+            });
+            peer.on('call', call => {
+                if (confirm(`Incoming call from ${call.peer}. Answer?`)) {
+                    getLocalStream(true).then(stream => {
+                        call.answer(stream);
+                        handleCallStream(call);
                     });
-                });
-            } catch (err) {
-                setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
-            }
-        }
-
-        function registerPeerInLocalStorage() {
-            if (!myPeerId) return;
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-            const username = currentUser ? currentUser.username : ('Guest_' + myPeerId.slice(-3));
-            activePeers[myPeerId] = { peerId: myPeerId, username: username, timestamp: Date.now() };
-            localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
-            refreshLocalMembersDirectory();
-        }
-
-        function refreshLocalMembersDirectory() {
-            const container = document.getElementById('members-list-container');
-            if (!container) return;
-
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-            container.innerHTML = `
-                <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
-                    <div>
-                        <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Guest)'}</span>
-                        <span id="member-self-id" class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
-                    </div>
-                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
-                </div>
-            `;
-
-            let onlineCount = 1;
-            const now = Date.now();
-
-            Object.values(activePeers).forEach(p => {
-                if (p.peerId === myPeerId) return;
-                if (now - p.timestamp > 30000) return;
-
-                onlineCount++;
-                const isAccepted = acceptedConnections.has(p.peerId);
-
-                const div = document.createElement('div');
-                div.className = "p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-2";
-                div.innerHTML = `
-                    <div class="truncate flex flex-col">
-                        <span class="font-bold text-slate-200 text-xs">${p.username}</span>
-                        <span class="text-[10px] text-slate-400 font-mono">ID: ${p.peerId}</span>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                        <button onclick="requestConnection('${p.peerId}', '${p.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold">
-                            ${isAccepted ? 'Connected' : 'Connect'}
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-
-            document.getElementById('online-counter').innerText = `${onlineCount} Online`;
-        }
-
-        setInterval(registerPeerInLocalStorage, 10000);
-        setInterval(refreshLocalMembersDirectory, 5000);
-
-        function requestConnection(targetPeerId, targetUsername) {
-            if (!targetPeerId) return;
-            document.getElementById('target-peer-id').value = targetPeerId;
-
-            if (acceptedConnections.has(targetPeerId)) {
-                alert(`Already connected with ${targetUsername}. Calls unlocked!`);
-                return;
-            }
-
-            const reqData = { fromPeerId: myPeerId, fromUsername: currentUser ? currentUser.username : 'Guest', toPeerId: targetPeerId, timestamp: Date.now() };
-            localStorage.setItem('pending_conn_request', JSON.stringify(reqData));
-
-            showNotification("REQUEST SENT", targetUsername, "Waiting for acceptance...");
-        }
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'pending_conn_request' && e.newValue) {
-                try {
-                    const req = JSON.parse(e.newValue);
-                    if (req.toPeerId === myPeerId) {
-                        pendingIncomingRequestId = req.fromPeerId;
-                        document.getElementById('conn-req-text').innerText = `${req.fromUsername} (${req.fromPeerId}) wants to connect with you.`;
-                        document.getElementById('conn-req-modal').classList.remove('hidden');
-                        startRingtoneSound();
-                    }
-                } catch (err) {}
-            } else if (e.key === 'accepted_conn_response' && e.newValue) {
-                try {
-                    const res = JSON.parse(e.newValue);
-                    if (res.toPeerId === myPeerId) {
-                        acceptedConnections.add(res.fromPeerId);
-                        showNotification("CONNECTED", res.fromPeerId, "Connection accepted! Calling unlocked.");
-                    }
-                } catch (err) {}
-            }
-        });
-
-        function setupDataConnectionListeners(conn) {
-            conn.on('data', (data) => {
-                if (typeof data === 'object' && data.type === 'file') {
-                    appendFileMessage(`ID: ${conn.peer}`, data, false);
-                } else {
-                    appendChatMessage(`ID: ${conn.peer}`, data, false);
                 }
-                playMessageSound();
             });
-            conn.on('close', () => {
-                setConnectionStatus('Chat connection closed.', 'text-amber-500 dark:text-amber-400');
-                disableChat();
-            });
+        }
+
+        async function getLocalStream(enableVideo = true) {
+            if (!localStream) {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: enableVideo, audio: true });
+            }
+            return localStream;
         }
 
         function handleCallStream(call) {
-            const peerId = call.peer;
-            activeCalls.set(peerId, call);
-
-            call.on('stream', (remoteStream) => {
-                remoteStreamsMap.set(peerId, remoteStream);
-                renderVideoGrid();
+            activeCalls.set(call.peer, call);
+            call.on('stream', stream => {
+                remoteStreamsMap.set(call.peer, stream);
+                renderGrid();
             });
-
             call.on('close', () => {
-                activeCalls.delete(peerId);
-                remoteStreamsMap.delete(peerId);
-                renderVideoGrid();
-                if (activeCalls.size === 0) {
-                    resetCallUI();
-                }
+                activeCalls.delete(call.peer);
+                remoteStreamsMap.delete(call.peer);
+                renderGrid();
             });
         }
 
-        function renderVideoGrid() {
-            const groupGrid = document.getElementById('group-video-grid');
-            const mainVideo = document.getElementById('main-video');
-            const pipContainer = document.getElementById('pip-container');
-            const remotePlaceholder = document.getElementById('remote-placeholder');
-            const midCallAddBtn = document.getElementById('btn-midcall-add');
+        function renderGrid() {
+            const grid = document.getElementById('group-video-grid');
+            const mainVid = document.getElementById('main-video');
+            const placeholder = document.getElementById('remote-placeholder');
+            const midAddBtn = document.getElementById('btn-midcall-add');
+            const activeIds = Array.from(remoteStreamsMap.keys());
+            const total = activeIds.length + 1;
 
-            const activePeerIds = Array.from(remoteStreamsMap.keys());
-            const totalPeopleInCall = activePeerIds.length + 1; 
+            midAddBtn.classList.toggle('hidden', total < 2);
 
-            if (totalPeopleInCall >= 2 && localStream) {
-                midCallAddBtn.classList.remove('hidden');
-            } else {
-                midCallAddBtn.classList.add('hidden');
-            }
-
-            if (activePeerIds.length === 0) {
-                groupGrid.classList.add('hidden');
-                mainVideo.classList.add('hidden');
-                pipContainer.classList.remove('hidden');
-                remotePlaceholder.classList.remove('hidden');
-                document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-                document.getElementById('peer-info-label').innerText = translations[appliedLanguage]?.awaitingToConnect || "Awaiting to connect";
+            if (activeIds.length === 0) {
+                grid.classList.add('hidden');
+                mainVid.classList.add('hidden');
+                placeholder.classList.remove('hidden');
                 return;
             }
 
-            remotePlaceholder.classList.add('hidden');
-            document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
+            placeholder.classList.add('hidden');
 
-            if (activePeerIds.length === 1) {
-                groupGrid.classList.add('hidden');
-                pipContainer.classList.remove('hidden');
-                
-                const singlePeerId = activePeerIds[0];
-                document.getElementById('peer-info-label').innerText = `Connected: ${singlePeerId}`;
-
-                updateSingleCallVideoElements(singlePeerId);
+            if (activeIds.length === 1) {
+                grid.classList.add('hidden');
+                mainVid.classList.remove('hidden');
+                mainVid.srcObject = remoteStreamsMap.get(activeIds[0]);
+                document.getElementById('pip-video').srcObject = localStream;
+                document.getElementById('pip-video').classList.remove('hidden');
             } else {
-                mainVideo.classList.add('hidden');
-                pipContainer.classList.add('hidden');
-                groupGrid.classList.remove('hidden');
-
-                document.getElementById('peer-info-label').innerText = `Group Call (${totalPeopleInCall} Members)`;
-
-                groupGrid.className = "absolute inset-0 w-full h-full p-2 grid gap-2 z-10 bg-slate-950 " + 
-                    (totalPeopleInCall <= 2 ? "grid-cols-1 md:grid-cols-2" : 
-                     totalPeopleInCall <= 4 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3");
-
-                groupGrid.innerHTML = '';
-
-                const selfTile = document.createElement('div');
-                selfTile.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900 flex items-center justify-center";
-                selfTile.innerHTML = `
-                    <video id="grid-video-self" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                    <div class="absolute top-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono dynamic-text border border-slate-700">${translations[appliedLanguage]?.you || "You"}</div>
-                `;
-                groupGrid.appendChild(selfTile);
+                mainVid.classList.add('hidden');
+                grid.classList.remove('hidden');
+                grid.innerHTML = '';
                 
-                const selfVideoEl = selfTile.querySelector('#grid-video-self');
-                if (localStream) selfVideoEl.srcObject = localStream;
+                // Self tile
+                const selfDiv = document.createElement('div');
+                selfDiv.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900";
+                selfDiv.innerHTML = `<video id="self-grid-vid" autoplay playsinline muted class="w-full h-full object-cover"></video>`;
+                grid.appendChild(selfDiv);
+                selfDiv.querySelector('#self-grid-vid').srcObject = localStream;
 
-                activePeerIds.forEach(pId => {
-                    const tile = document.createElement('div');
-                    tile.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900 flex items-center justify-center";
-                    tile.innerHTML = `
-                        <video id="grid-video-${pId}" autoplay playsinline class="w-full h-full object-cover no-mirror"></video>
-                        <div class="absolute top-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-400 border border-slate-700">Peer: ${pId}</div>
-                    `;
-                    groupGrid.appendChild(tile);
-
-                    const remoteVideoEl = tile.querySelector(`#grid-video-${pId}`);
-                    remoteVideoEl.srcObject = remoteStreamsMap.get(pId);
+                // Remote tiles
+                activeIds.forEach(id => {
+                    const div = document.createElement('div');
+                    div.className = "relative rounded-xl overflow-hidden border dynamic-border bg-slate-900";
+                    div.innerHTML = `<video id="grid-vid-${id}" autoplay playsinline class="w-full h-full object-cover no-mirror"></video>`;
+                    grid.appendChild(div);
+                    div.querySelector(`#grid-vid-${id}`).srcObject = remoteStreamsMap.get(id);
                 });
             }
         }
 
-        function updateSingleCallVideoElements(remotePeerId) {
-            const mainVideo = document.getElementById('main-video');
-            const pipVideo = document.getElementById('pip-video');
-            const pipOffPlaceholder = document.getElementById('pip-off-placeholder');
-            const pipTagName = document.getElementById('pip-tag-name');
-            const remoteStream = remoteStreamsMap.get(remotePeerId);
-
-            if (isMainRemote) {
-                if (remoteStream) { mainVideo.srcObject = remoteStream; mainVideo.classList.remove('hidden'); }
-                if (localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled) {
-                    pipVideo.srcObject = localStream;
-                    pipVideo.classList.remove('hidden');
-                    pipOffPlaceholder.classList.add('hidden');
-                } else {
-                    pipVideo.classList.add('hidden');
-                    pipOffPlaceholder.classList.remove('hidden');
-                }
-                pipTagName.innerText = translations[appliedLanguage]?.you || "You";
-            } else {
-                if (localStream) { mainVideo.srcObject = localStream; mainVideo.classList.remove('hidden'); }
-                if (remoteStream) {
-                    pipVideo.srcObject = remoteStream;
-                    pipVideo.classList.remove('hidden');
-                    pipOffPlaceholder.classList.add('hidden');
-                } else {
-                    pipVideo.classList.add('hidden');
-                    pipOffPlaceholder.classList.remove('hidden');
-                }
-                pipTagName.innerText = `Friend (${remotePeerId})`;
-            }
-        }
-
-        function resetCallUI() {
-            stopRingtoneSound();
-            
-            activeCalls.forEach(call => call.close());
-            activeCalls.clear();
-            remoteStreamsMap.clear();
-
-            const mainVideo = document.getElementById('main-video');
-            const pipVideo = document.getElementById('pip-video');
-            mainVideo.srcObject = null;
-            pipVideo.srcObject = null;
-            mainVideo.classList.add('hidden');
-            pipVideo.classList.add('hidden');
-
-            document.getElementById('group-video-grid').classList.add('hidden');
-            document.getElementById('remote-placeholder').classList.remove('hidden');
-            document.getElementById('pip-container').classList.remove('hidden');
-            document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-            document.getElementById('peer-info-label').innerText = translations[appliedLanguage]?.awaitingToConnect || "Awaiting to connect";
-            
-            document.getElementById('btn-midcall-add').classList.add('hidden');
-
-            setConnectionStatus('Call ended.', 'text-amber-500 dark:text-amber-300');
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            document.getElementById('pip-off-placeholder').classList.remove('hidden');
-        }
-
-        function enableChat() {
-            document.getElementById('chat-input').removeAttribute('disabled');
-            document.getElementById('chat-send-btn').removeAttribute('disabled');
-            document.getElementById('file-attach-btn').removeAttribute('disabled');
-            document.getElementById('chat-status').innerText = "ONLINE";
-            document.getElementById('chat-status').className = "text-emerald-500 dark:text-emerald-400 font-bold";
-        }
-
-        function disableChat() {
-            document.getElementById('chat-input').setAttribute('disabled', 'true');
-            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
-            document.getElementById('file-attach-btn').setAttribute('disabled', 'true');
-            document.getElementById('chat-status').innerText = translations[appliedLanguage]?.offline || "OFFLINE";
-            document.getElementById('chat-status').className = "text-slate-500 font-bold";
-        }
-
-        function appendChatMessage(sender, text, isSelf) {
-            const box = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">${text}</div>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function appendFileMessage(sender, fileData, isSelf) {
-            const box = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            const isImage = fileData.fileType.startsWith('image/');
-            let contentHtml = isImage ? `<div class="mb-1 rounded-lg overflow-hidden border border-slate-700 max-w-[200px]"><img src="${fileData.fileContent}" alt="${fileData.fileName}" class="w-full object-cover"></div>` : '';
-            contentHtml += `<a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold dynamic-text hover:opacity-80"><i class="fa-solid fa-file-arrow-down"></i> ${fileData.fileName}</a>`;
-
-            div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender} (File)</span><div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">${contentHtml}</div>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        async function initiateCall(connectionType = 'video') {
-            const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Please enter your friend Peer ID."); return; }
-
-            currentFriendId = targetId;
-
-            if (connectionType === 'chat') {
-                resetChatSession();
-                document.getElementById('tab-chat-btn').click();
-                setConnectionStatus(`Connecting chat to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
-                const conn = peer.connect(targetId);
-                activeDataConn = conn;
-                conn.on('open', () => {
-                    setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
-                    enableChat();
-                    setupDataConnectionListeners(conn);
-                });
-                return;
-            }
-
-            const isVideo = connectionType === 'video';
-            const stream = await getLocalMediaStream(isVideo);
-            if (!stream) return;
-
-            setConnectionStatus(`Calling ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
-            const conn = peer.connect(targetId);
-            activeDataConn = conn;
-            conn.on('open', () => {
-                setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
-                enableChat();
-                setupDataConnectionListeners(conn);
-            });
-
-            const call = peer.call(targetId, stream, { metadata: { type: isVideo ? 'video' : 'voice' } });
-            handleCallStream(call);
-        }
-
-        function addParticipantToCurrentCall(targetPeerId) {
-            if (!localStream) return;
-            if (activeCalls.size >= 5) {
-                alert("Maximum group limit reached (5 participants).");
-                return;
-            }
-            setConnectionStatus(`Adding Peer ${targetPeerId} to group call...`, 'text-purple-400');
-            const call = peer.call(targetPeerId, localStream, { metadata: { type: 'video', isGroup: true } });
-            handleCallStream(call);
-        }
-
-        function setupUIEventListeners() {
-            // Staged Language Selector
-            document.querySelectorAll('.lang-picker-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    stagedLanguage = e.currentTarget.dataset.lang;
-                    highlightStagedLanguageButtons(stagedLanguage);
-                });
-            });
-
-            // Staged Font Selector
-            document.getElementById('select-app-font').addEventListener('change', (e) => {
-                stagedFont = e.target.value;
-            });
-
-            // Auth Modals
-            document.getElementById('btn-show-auth').addEventListener('click', () => {
-                if (currentUser) {
-                    localStorage.removeItem('connect_app_user');
-                    checkUserSession();
-                    alert("Logged out successfully!");
-                } else {
-                    document.getElementById('auth-modal').classList.remove('hidden');
-                }
-            });
-            document.getElementById('close-auth-modal-btn').addEventListener('click', () => {
-                document.getElementById('auth-modal').classList.add('hidden');
-            });
-            document.getElementById('auth-toggle-btn').addEventListener('click', () => {
-                isAuthModeLogin = !isAuthModeLogin;
-                document.getElementById('auth-modal-title').innerHTML = isAuthModeLogin ? '<i class="fa-solid fa-right-to-bracket"></i> Login' : '<i class="fa-solid fa-user-plus"></i> Register Account';
-                document.getElementById('username-field-wrapper').style.display = isAuthModeLogin ? 'none' : 'block';
-                document.getElementById('auth-submit-btn').innerText = isAuthModeLogin ? 'LOGIN' : 'REGISTER';
-                document.getElementById('auth-toggle-prompt').innerText = isAuthModeLogin ? "Need an account?" : "Already registered?";
-                document.getElementById('auth-toggle-btn').innerText = isAuthModeLogin ? 'Register here' : 'Login here';
-            });
-
-            document.getElementById('auth-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = document.getElementById('auth-email').value.trim();
-                const pass = document.getElementById('auth-password').value.trim();
-                const uname = document.getElementById('auth-username').value.trim();
-
-                const registeredUsers = JSON.parse(localStorage.getItem('registered_users') || '{}');
-
-                if (isAuthModeLogin) {
-                    if (registeredUsers[email] && registeredUsers[email].password === pass) {
-                        const userData = registeredUsers[email];
-                        localStorage.setItem('connect_app_user', JSON.stringify(userData));
-                        checkUserSession();
-                        document.getElementById('auth-modal').classList.add('hidden');
-                        alert(`Welcome back, ${userData.username}!`);
-                        registerPeerInLocalStorage();
-                    } else {
-                        alert("Invalid Email or Password!");
-                    }
-                } else {
-                    if (!uname) { alert("Please set your custom username."); return; }
-                    const userData = { email, password: pass, username: uname };
-                    registeredUsers[email] = userData;
-                    localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
-                    localStorage.setItem('connect_app_user', JSON.stringify(userData));
-
-                    checkUserSession();
-                    document.getElementById('auth-modal').classList.add('hidden');
-                    alert(`Account created successfully! Logged in as ${uname}`);
-                    registerPeerInLocalStorage();
-                }
-            });
-
-            // Group Call Modal & Management
-            const groupModal = document.getElementById('group-modal');
-            const groupList = document.getElementById('group-selection-list');
-            const startGroupBtn = document.getElementById('btn-start-group-call');
-            let selectedGroupPeers = new Set();
-
-            document.getElementById('btn-open-group-modal').addEventListener('click', () => {
-                selectedGroupPeers.clear();
-                groupList.innerHTML = '';
-                
-                const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-                const now = Date.now();
-                let availablePeers = Object.values(activePeers).filter(p => p.peerId !== myPeerId && (now - p.timestamp <= 30000));
-
-                if (availablePeers.length === 0) {
-                    groupList.innerHTML = '<div class="text-slate-500 text-center py-4">No online members available for group call.</div>';
-                } else {
-                    availablePeers.forEach(p => {
-                        const item = document.createElement('label');
-                        item.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-purple-500/50 transition";
-                        item.innerHTML = `
-                            <div>
-                                <span class="font-bold text-slate-200">${p.username}</span>
-                                <span class="text-[10px] text-slate-400 block">ID: ${p.peerId}</span>
-                            </div>
-                            <input type="checkbox" value="${p.peerId}" class="group-peer-checkbox rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-0">
-                        `;
-                        groupList.appendChild(item);
-                    });
-                }
-
-                updateGroupSelectionUI();
-                groupModal.classList.remove('hidden');
-            });
-
-            document.getElementById('close-group-modal-btn').addEventListener('click', () => groupModal.classList.add('hidden'));
-
-            groupList.addEventListener('change', (e) => {
-                if (e.target.classList.contains('group-peer-checkbox')) {
-                    const peerId = e.target.value;
-                    if (e.target.checked) {
-                        if (selectedGroupPeers.size >= 5) {
-                            e.target.checked = false;
-                            alert("Maximum limit of 5 participants reached!");
-                            return;
-                        }
-                        selectedGroupPeers.add(peerId);
-                    } else {
-                        selectedGroupPeers.delete(peerId);
-                    }
-                    updateGroupSelectionUI();
-                }
-            });
-
-            function updateGroupSelectionUI() {
-                document.getElementById('group-selected-count').innerText = `Selected: ${selectedGroupPeers.size}/5`;
-                if (selectedGroupPeers.size > 0) {
-                    startGroupBtn.removeAttribute('disabled');
-                } else {
-                    startGroupBtn.setAttribute('disabled', 'true');
-                }
-            }
-
-            startGroupBtn.addEventListener('click', async () => {
-                groupModal.classList.add('hidden');
-                const stream = await getLocalMediaStream(true);
-                if (!stream) return;
-
-                setConnectionStatus(`Initiating Group Call (${selectedGroupPeers.size} members)...`, 'text-purple-400');
-                
-                selectedGroupPeers.forEach(peerId => {
-                    const call = peer.call(peerId, stream, { metadata: { type: 'video', isGroup: true } });
-                    handleCallStream(call);
-                });
-            });
-
-            // Mid-Call Add Member Modal Event Listeners
-            const midCallModal = document.getElementById('midcall-add-modal');
-            const midCallList = document.getElementById('midcall-selection-list');
-
-            document.getElementById('btn-midcall-add').addEventListener('click', () => {
-                midCallList.innerHTML = '';
-                const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-                const now = Date.now();
-                
-                let availablePeers = Object.values(activePeers).filter(p => p.peerId !== myPeerId && !activeCalls.has(p.peerId) && (now - p.timestamp <= 30000));
-
-                if (availablePeers.length === 0) {
-                    midCallList.innerHTML = '<div class="text-slate-500 text-center py-4">No other online members available.</div>';
-                } else {
-                    availablePeers.forEach(p => {
-                        const item = document.createElement('div');
-                        item.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-indigo-500/50 transition";
-                        item.innerHTML = `
-                            <div>
-                                <span class="font-bold text-slate-200">${p.username}</span>
-                                <span class="text-[10px] text-slate-400 block">ID: ${p.peerId}</span>
-                            </div>
-                            <button onclick="midCallAddPeer('${p.peerId}')" class="px-3 py-1 rounded-lg dynamic-bg-primary dynamic-bg-hover text-white text-[10px] font-bold">
-                                + Add
-                            </button>
-                        `;
-                        midCallList.appendChild(item);
-                    });
-                }
-                midCallModal.classList.remove('hidden');
-            });
-
-            window.midCallAddPeer = (peerId) => {
-                midCallModal.classList.add('hidden');
-                addParticipantToCurrentCall(peerId);
+        function setupEvents() {
+            document.getElementById('btn-start-video').onclick = async () => {
+                const target = document.getElementById('target-peer-id').value;
+                if (!target) return alert("Enter Target ID");
+                const stream = await getLocalStream(true);
+                handleCallStream(peer.call(target, stream));
             };
 
-            document.getElementById('close-midcall-modal-btn').addEventListener('click', () => midCallModal.classList.add('hidden'));
+            document.getElementById('btn-end-call').onclick = () => {
+                activeCalls.forEach(c => c.close());
+                activeCalls.clear(); remoteStreamsMap.clear();
+                if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+                renderGrid();
+            };
 
-            // Connection Request Handling
-            document.getElementById('btn-accept-req').addEventListener('click', () => {
-                stopRingtoneSound();
-                document.getElementById('conn-req-modal').classList.add('hidden');
-                if (pendingIncomingRequestId) {
-                    acceptedConnections.add(pendingIncomingRequestId);
-                    localStorage.setItem('accepted_conn_response', JSON.stringify({ fromPeerId: myPeerId, toPeerId: pendingIncomingRequestId, timestamp: Date.now() }));
-                    alert("Connection accepted!");
-                }
-            });
-            document.getElementById('btn-decline-req').addEventListener('click', () => {
-                stopRingtoneSound();
-                document.getElementById('conn-req-modal').classList.add('hidden');
-                pendingIncomingRequestId = null;
-            });
-
-            // Calling Actions
-            document.getElementById('btn-start-video').addEventListener('click', () => initiateCall('video'));
-            document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall('voice'));
-            document.getElementById('btn-start-chat').addEventListener('click', () => initiateCall('chat'));
-
-            // Tab Navigation
-            const tabChatBtn = document.getElementById('tab-chat-btn');
-            const tabPeersBtn = document.getElementById('tab-peers-btn');
-            const viewChat = document.getElementById('view-chat');
-            const viewPeers = document.getElementById('view-peers');
-
-            tabChatBtn.addEventListener('click', () => {
-                viewChat.classList.remove('hidden');
-                viewPeers.classList.add('hidden');
-                tabChatBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
-                tabPeersBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
-            });
-
-            tabPeersBtn.addEventListener('click', () => {
-                viewPeers.classList.remove('hidden');
-                viewChat.classList.add('hidden');
-                tabPeersBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
-                tabChatBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
-            });
-
-            document.getElementById('copy-id-btn').addEventListener('click', () => {
-                if (myPeerId) {
-                    navigator.clipboard.writeText(myPeerId);
-                    alert("Copied your Peer ID!");
-                }
-            });
-
-            document.getElementById('btn-swap-feeds').addEventListener('click', () => {
-                isMainRemote = !isMainRemote;
-                renderVideoGrid();
-            });
-
-            document.getElementById('btn-resize-pip').addEventListener('click', () => {
-                const pipContainer = document.getElementById('pip-container');
-                isPipLarge = !isPipLarge;
-                pipContainer.className = isPipLarge ? 
-                    "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all" : 
-                    "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
-            });
-
-            document.getElementById('file-attach-btn').addEventListener('click', () => document.getElementById('file-input').click());
-            document.getElementById('file-input').addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file || !activeDataConn) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const filePayload = { type: 'file', fileName: file.name, fileType: file.type, fileContent: event.target.result };
-                    activeDataConn.send(filePayload);
-                    appendFileMessage("You", filePayload, true);
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-
-            document.getElementById('btn-accept-call').addEventListener('click', async () => {
-                stopRingtoneSound();
-                document.getElementById('incoming-call-modal').classList.add('hidden');
-                if (incomingCallObj) {
-                    const isVideo = incomingCallObj.metadata && incomingCallObj.metadata.type === 'video';
-                    const stream = await getLocalMediaStream(isVideo);
-                    if (stream) {
-                        incomingCallObj.answer(stream);
-                        handleCallStream(incomingCallObj);
-                    }
-                    incomingCallObj = null;
-                }
-            });
-
-            document.getElementById('btn-decline-call').addEventListener('click', () => {
-                stopRingtoneSound();
-                document.getElementById('incoming-call-modal').classList.add('hidden');
-                if (incomingCallObj) {
-                    incomingCallObj.close();
-                    incomingCallObj = null;
-                }
-            });
-
-            document.getElementById('btn-end-call').addEventListener('click', resetCallUI);
-
-            document.getElementById('chat-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const input = document.getElementById('chat-input');
-                const msg = input.value.trim();
-                if (!msg || !activeDataConn) return;
-                activeDataConn.send(msg);
-                appendChatMessage("You", msg, true);
-                input.value = '';
-            });
-
-            // OPEN SETTINGS MODAL & INITIALIZE STAGED VALUES
-            document.getElementById('btn-show-settings').addEventListener('click', () => {
-                stagedThemeMode = appliedThemeMode;
-                stagedAccentColorKey = appliedAccentColorKey;
-                stagedLanguage = appliedLanguage;
-                stagedFont = appliedFont;
-                stagedAvatarData = null; // reset uncommitted avatar state
-
-                highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
-                highlightStagedLanguageButtons(stagedLanguage);
-                document.getElementById('select-app-font').value = stagedFont;
-
+            document.getElementById('btn-show-settings').onclick = () => {
+                stagedLang = appLanguage; stagedFont = appFont;
                 document.getElementById('settings-modal').classList.remove('hidden');
-            });
+            };
 
-            document.getElementById('close-settings-btn').addEventListener('click', () => {
-                // Revert any staged modal preview back to actual saved profile avatar
-                const savedAvatar = localStorage.getItem('user_avatar') || '';
-                const imgPreview = document.getElementById('profile-img-preview');
-                const placeholder = document.getElementById('profile-img-placeholder');
-                const removeAvatarBtn = document.getElementById('btn-remove-avatar');
-
-                if (savedAvatar) {
-                    imgPreview.src = savedAvatar;
-                    imgPreview.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-                    removeAvatarBtn.classList.remove('hidden');
-                    removeAvatarBtn.classList.add('flex');
-                } else {
-                    imgPreview.src = '';
-                    imgPreview.classList.add('hidden');
-                    placeholder.classList.remove('hidden');
-                    removeAvatarBtn.classList.add('hidden');
-                    removeAvatarBtn.classList.remove('flex');
-                }
-
+            document.getElementById('close-settings-btn').onclick = () => {
                 document.getElementById('settings-modal').classList.add('hidden');
+            };
+
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.onclick = (e) => stagedLang = e.currentTarget.dataset.lang;
             });
 
-            document.querySelectorAll('.theme-picker-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    stagedThemeMode = e.currentTarget.dataset.theme;
-                    highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
-                });
-            });
+            document.getElementById('select-app-font').onchange = (e) => stagedFont = e.target.value;
 
-            document.querySelectorAll('.color-picker-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    stagedAccentColorKey = e.currentTarget.dataset.color;
-                    highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
-                });
-            });
-
-            document.getElementById('btn-upload-avatar').addEventListener('click', () => {
-                document.getElementById('profile-img-input').click();
-            });
-
-            document.getElementById('profile-img-input').addEventListener('change', (e) => {
+            document.getElementById('btn-upload-avatar').onclick = () => document.getElementById('profile-img-input').click();
+            document.getElementById('profile-img-input').onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    stagedAvatarData = event.target.result;
-                    const imgPreview = document.getElementById('profile-img-preview');
-                    const placeholder = document.getElementById('profile-img-placeholder');
-                    const removeAvatarBtn = document.getElementById('btn-remove-avatar');
-
-                    imgPreview.src = stagedAvatarData;
-                    imgPreview.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-                    removeAvatarBtn.classList.remove('hidden');
-                    removeAvatarBtn.classList.add('flex');
+                const r = new FileReader();
+                r.onload = (ev) => {
+                    stagedAvatar = ev.target.result;
+                    document.getElementById('profile-img-preview').src = stagedAvatar;
+                    document.getElementById('profile-img-preview').classList.remove('hidden');
+                    document.getElementById('btn-remove-avatar').classList.remove('hidden');
                 };
-                reader.readAsDataURL(file);
-            });
+                r.readAsDataURL(file);
+            };
 
-            // WHATSAPP-STYLE IN-AVATAR DELETE BUTTON EVENT (STAGED)
-            document.getElementById('btn-remove-avatar').addEventListener('click', () => {
-                stagedAvatarData = ''; // Stage deletion
-                const imgPreview = document.getElementById('profile-img-preview');
-                const placeholder = document.getElementById('profile-img-placeholder');
-                const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+            document.getElementById('btn-remove-avatar').onclick = () => {
+                stagedAvatar = '';
+                document.getElementById('profile-img-preview').classList.add('hidden');
+                document.getElementById('btn-remove-avatar').classList.add('hidden');
+            };
 
-                imgPreview.src = '';
-                imgPreview.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                removeAvatarBtn.classList.add('hidden');
-                removeAvatarBtn.classList.remove('flex');
-            });
-
-            // SAVE CHANGES BUTTON: APPLIES & PERSISTS ALL STAGED SETTINGS AT ONCE
-            document.getElementById('save-settings-btn').addEventListener('click', () => {
-                const email = document.getElementById('user-email-input').value.trim();
-                const phone = document.getElementById('user-phone-input').value.trim();
-
-                localStorage.setItem('user_email', email);
-                localStorage.setItem('user_phone', phone);
-                localStorage.setItem('user_theme_mode', stagedThemeMode);
-                localStorage.setItem('user_accent_color', stagedAccentColorKey);
-                localStorage.setItem('user_language', stagedLanguage);
+            document.getElementById('save-settings-btn').onclick = () => {
+                localStorage.setItem('user_language', stagedLang);
                 localStorage.setItem('user_font', stagedFont);
-
-                // Handle Staged Avatar Image Deletion/Update
-                if (stagedAvatarData === '') {
-                    localStorage.removeItem('user_avatar');
-                } else if (stagedAvatarData !== null) {
-                    localStorage.setItem('user_avatar', stagedAvatarData);
-                }
-
-                // Apply choices to actual app
-                applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
-                updateLanguageUI(stagedLanguage);
-                updateFontUI(stagedFont);
-
+                if (stagedAvatar === '') localStorage.removeItem('user_avatar');
+                else if (stagedAvatar) localStorage.setItem('user_avatar', stagedAvatar);
+                
+                applySettings(stagedLang, stagedFont);
                 document.getElementById('settings-modal').classList.add('hidden');
-                alert("All settings and profile updates saved successfully!");
-            });
-
-            document.getElementById('btn-toggle-mic').addEventListener('click', () => {
-                if (localStream) {
-                    micMuted = !micMuted;
-                    localStream.getAudioTracks().forEach(track => track.enabled = !micMuted);
-                    document.getElementById('btn-toggle-mic').innerHTML = micMuted ? '<i class="fa-solid fa-microphone-slash text-rose-400"></i>' : '<i class="fa-solid fa-microphone"></i>';
-                }
-            });
-
-            document.getElementById('btn-toggle-cam').addEventListener('click', () => {
-                if (localStream) {
-                    camOff = !camOff;
-                    localStream.getVideoTracks().forEach(track => track.enabled = !camOff);
-                    document.getElementById('btn-toggle-cam').innerHTML = camOff ? '<i class="fa-solid fa-video-slash text-rose-400"></i>' : '<i class="fa-solid fa-video"></i>';
-                    renderVideoGrid();
-                }
-            });
+                alert("Settings Saved Successfully!");
+            };
         }
     </script>
 </body>
