@@ -39,7 +39,7 @@
     <!-- PeerJS CDN for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Custom Styles & Theme Dynamic Variables -->
+    <!-- Custom Styles & Screenshot Prevention CSS -->
     <style>
         :root {
             --color-primary: #6366f1;
@@ -48,17 +48,29 @@
             --color-text: #818cf8;
         }
 
+        /* Prevent Selection and Dragging */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #09090e;
             color: #f1f5f9;
             overflow-x: hidden;
             transition: background-color 0.3s, color 0.3s;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         html.light body {
             background-color: #e2e8f0;
             color: #0f172a;
+        }
+
+        /* Obfuscation overlay when focus is lost (Screen Recording / Screenshot protection) */
+        body.screen-protected {
+            filter: blur(25px) grayscale(100%);
+            pointer-events: none;
         }
 
         .font-display { font-family: 'Orbitron', sans-serif; }
@@ -170,6 +182,7 @@
             <div class="glass-panel rounded-2xl p-3 space-y-3">
                 <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
+                <!-- ACTION BUTTONS: VIDEO CALL, VOICE CALL, CHAT -->
                 <div class="grid grid-cols-2 gap-2">
                     <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-video"></i> Video Call
@@ -178,6 +191,9 @@
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
+                <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-comments"></i> Chat
+                </button>
 
                 <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS...</p>
             </div>
@@ -197,7 +213,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video or Voice call.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video, Voice, or Chat.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
@@ -434,6 +450,33 @@
             crimson: { primary: '#e11d48', hover: '#be123c', border: 'rgba(225, 29, 72, 0.3)', text: '#fb7185' },
             teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
         };
+
+        // Screen Capture & Screenshot Blocking Protection Event Listeners
+        window.addEventListener('blur', () => {
+            document.body.classList.add('screen-protected');
+        });
+
+        window.addEventListener('focus', () => {
+            document.body.classList.remove('screen-protected');
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'PrintScreen') {
+                navigator.clipboard.writeText('');
+                alert('Screenshots are disabled for privacy & security.');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (
+                e.key === 'PrintScreen' ||
+                (e.ctrlKey && e.key === 'p') ||
+                (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'))
+            ) {
+                e.preventDefault();
+                alert('Screen capture keyboard shortcuts are disabled.');
+            }
+        });
 
         function applyThemeAndAccent(themeMode, colorKey) {
             document.documentElement.className = themeMode;
@@ -891,13 +934,32 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        async function initiateCall(isVideo = true) {
+        async function initiateCall(connectionType = 'video') {
             const targetId = document.getElementById('target-peer-id').value.trim();
             if (!targetId) { alert("Please enter your friend ID."); return; }
 
             currentFriendId = targetId;
             resetChatSession();
 
+            // Automatically switch to the Chat tab if Chat button is pressed
+            if (connectionType === 'chat') {
+                document.getElementById('tab-chat-btn').click();
+            }
+
+            if (connectionType === 'chat') {
+                setConnectionStatus(`Connecting chat to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
+                const conn = peer.connect(targetId);
+                activeDataConn = conn;
+                conn.on('open', () => {
+                    setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
+                    enableChat();
+                    setupDataConnectionListeners(conn);
+                    updateMemberTabInfo(conn.peer, true);
+                });
+                return;
+            }
+
+            const isVideo = connectionType === 'video';
             const stream = await getLocalMediaStream(isVideo);
             if (!stream) return;
 
@@ -916,6 +978,10 @@
         }
 
         function setupUIEventListeners() {
+            document.getElementById('btn-start-video').addEventListener('click', () => initiateCall('video'));
+            document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall('voice'));
+            document.getElementById('btn-start-chat').addEventListener('click', () => initiateCall('chat'));
+
             // Chat vs Members Tab Switcher
             const tabChatBtn = document.getElementById('tab-chat-btn');
             const tabPeersBtn = document.getElementById('tab-peers-btn');
@@ -942,9 +1008,6 @@
                     alert("Copied your ID to clipboard!");
                 }
             });
-
-            document.getElementById('btn-start-video').addEventListener('click', () => initiateCall(true));
-            document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall(false));
 
             document.getElementById('btn-swap-feeds').addEventListener('click', () => {
                 isMainRemote = !isMainRemote;
