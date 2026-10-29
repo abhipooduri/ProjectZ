@@ -39,7 +39,12 @@
     <!-- PeerJS CDN for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Custom Styles & Screenshot Prevention CSS -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Custom Styles & Privacy Protection CSS -->
     <style>
         :root {
             --color-primary: #6366f1;
@@ -48,7 +53,7 @@
             --color-text: #818cf8;
         }
 
-        /* Prevent Selection and Dragging */
+        /* Prevent Text Selection and Copying */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #09090e;
@@ -67,7 +72,7 @@
             color: #0f172a;
         }
 
-        /* Obfuscation overlay when focus is lost (Screen Recording / Screenshot protection) */
+        /* Blur/obfuscate application when window loses focus (Screenshot & Screen Recording Protection) */
         body.screen-protected {
             filter: blur(25px) grayscale(100%);
             pointer-events: none;
@@ -135,8 +140,11 @@
                 <span id="window-status-text" class="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
             </div>
 
-            <!-- SETTINGS ICON BUTTON -->
+            <!-- AUTH & SETTINGS ICON BUTTONS -->
             <div class="flex items-center gap-2">
+                <button id="btn-show-auth" title="Login / Register" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-user"></i> <span id="auth-btn-text">Account</span>
+                </button>
                 <button id="btn-show-settings" title="Settings" class="w-9 h-9 rounded-lg dynamic-bg-primary dynamic-bg-hover text-white text-sm font-semibold transition flex items-center justify-center shadow-md">
                     <i class="fa-solid fa-gear"></i>
                 </button>
@@ -167,11 +175,11 @@
                 </div>
             </div>
 
-            <!-- YOUR ID -->
+            <!-- YOUR ID & USERNAME -->
             <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
                 <div class="truncate mr-2">
-                    <span class="text-slate-500">Your ID:</span>
-                    <span id="my-peer-id" class="dynamic-text font-bold ml-1">Initializing...</span>
+                    <div class="text-slate-400">User: <span id="display-user-handle" class="font-bold text-cyan-400">Guest</span></div>
+                    <div class="text-slate-500">Your ID: <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
                 </div>
                 <button id="copy-id-btn" class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition text-xs px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded">
                     <i class="fa-regular fa-copy"></i>
@@ -180,14 +188,14 @@
 
             <!-- CONNECT CONTROLS -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter friend Peer ID or Username" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
-                <!-- ACTION BUTTONS: VIDEO CALL, VOICE CALL, CHAT -->
+                <!-- ACTION BUTTONS -->
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled>
                         <i class="fa-solid fa-video"></i> Video Call
                     </button>
-                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md opacity-50 cursor-not-allowed" disabled>
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
@@ -213,7 +221,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video, Voice, or Chat.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Accept or send a connection request in Members tab to unlock video & voice calling.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
@@ -262,7 +270,7 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL WITH TABS -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL & MEMBERS DIRECTORY WITH TABS -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
             
             <!-- TAB BAR -->
@@ -304,20 +312,76 @@
                 </form>
             </div>
 
-            <!-- TAB CONTENT: MEMBERS / PEERS VIEW -->
+            <!-- TAB CONTENT: DIRECTORY / MEMBERS VIEW -->
             <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
-                <div class="text-[11px] text-slate-500 mb-1">Active Connected Peer:</div>
-                <div class="p-3 rounded-xl bg-slate-200 dark:bg-slate-900 border dynamic-border flex items-center justify-between">
-                    <div class="truncate mr-2">
-                        <span id="active-peer-member-label" class="font-bold text-slate-700 dark:text-slate-300">No active connection</span>
-                    </div>
-                    <div class="w-2.5 h-2.5 rounded-full bg-slate-500" id="member-status-dot"></div>
+                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
+                    <span>Registered Members Directory:</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">0 Online</span>
+                </div>
+                
+                <div id="members-list-container" class="flex flex-col gap-2">
+                    <p class="text-slate-500 text-[11px] italic">Loading registered users...</p>
                 </div>
             </div>
 
         </section>
 
     </main>
+
+    <!-- AUTHENTICATION MODAL (REGISTER / LOGIN) -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 id="auth-modal-title" class="font-display font-bold text-base dynamic-text flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Register Account
+                </h3>
+                <button id="close-auth-modal-btn" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="auth-form" class="space-y-3">
+                <div>
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Email Address</label>
+                    <input id="auth-email" type="email" required placeholder="user@domain.com" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+                <div>
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Password</label>
+                    <input id="auth-password" type="password" required placeholder="••••••••" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+                <div id="username-field-wrapper">
+                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Custom Username</label>
+                    <input id="auth-username" type="text" placeholder="e.g. cyber_hero" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400 font-mono">
+                </div>
+
+                <button id="auth-submit-btn" type="submit" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition shadow-lg mt-2">
+                    REGISTER
+                </button>
+            </form>
+
+            <div class="text-center text-[11px] text-slate-400 font-mono pt-2 border-t border-slate-800">
+                <span id="auth-toggle-prompt">Already registered?</span>
+                <button id="auth-toggle-btn" class="dynamic-text font-bold ml-1 hover:underline">Login here</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONNECTION REQUEST PROMPT MODAL -->
+    <div id="conn-req-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-indigo-950 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div>
+                <h3 class="font-display font-bold text-base text-cyan-300">CONNECTION REQUEST</h3>
+                <p id="conn-req-text" class="text-xs text-slate-300 font-mono mt-1 font-bold">User wants to connect with you...</p>
+            </div>
+            <div class="flex gap-3 w-full mt-2">
+                <button id="btn-decline-req" class="flex-1 py-2.5 rounded-xl bg-rose-900 hover:bg-rose-800 font-bold text-white text-xs transition">DECLINE</button>
+                <button id="btn-accept-req" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs transition">ACCEPT</button>
+            </div>
+        </div>
+    </div>
 
     <!-- SETTINGS & PROFILE MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -392,8 +456,13 @@
                 </div>
             </div>
 
-            <button id="save-settings-btn" class="w-full py.2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
+            <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
                 SAVE CHANGES
+            </button>
+
+            <!-- REMOVE PROFILE BUTTON -->
+            <button id="btn-remove-profile" class="w-full py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 font-bold text-rose-400 text-xs transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> REMOVE PROFILE
             </button>
         </div>
     </div>
@@ -421,6 +490,21 @@
 
     <!-- INLINE SCRIPT LOGIC -->
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoConfigKeyForConnectingApp123",
+            authDomain: "connect-app-p2p.firebaseapp.com",
+            projectId: "connect-app-p2p",
+            storageBucket: "connect-app-p2p.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isAuthModeLogin = false;
+
         let peer = null;
         let myPeerId = null;
         let currentFriendId = null;
@@ -431,13 +515,15 @@
         let micMuted = false;
         let camOff = false;
         
+        let acceptedConnections = new Set();
+        let pendingIncomingRequestDoc = null;
+
         let isMainRemote = true; 
         let isPipLarge = false;
         let ringtoneInterval = null;
 
         let stagedAccentColorKey = 'default';
         let stagedThemeMode = 'dark';
-
         let audioCtx = null;
 
         const themeColors = {
@@ -451,14 +537,9 @@
             teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
         };
 
-        // Screen Capture & Screenshot Blocking Protection Event Listeners
-        window.addEventListener('blur', () => {
-            document.body.classList.add('screen-protected');
-        });
-
-        window.addEventListener('focus', () => {
-            document.body.classList.remove('screen-protected');
-        });
+        // Privacy & Screenshot Obfuscation Listeners
+        window.addEventListener('blur', () => document.body.classList.add('screen-protected'));
+        window.addEventListener('focus', () => document.body.classList.remove('screen-protected'));
 
         document.addEventListener('keyup', (e) => {
             if (e.key === 'PrintScreen') {
@@ -489,21 +570,14 @@
 
         function highlightStagedUI(themeMode, colorKey) {
             document.querySelectorAll('.theme-picker-btn').forEach(btn => {
-                if (btn.dataset.theme === themeMode) {
-                    btn.classList.add('ring-2', 'ring-white', 'border-white');
-                } else {
-                    btn.classList.remove('ring-2', 'ring-white', 'border-white');
-                }
+                btn.classList.toggle('ring-2', btn.dataset.theme === themeMode);
+                btn.classList.toggle('ring-white', btn.dataset.theme === themeMode);
             });
 
             document.querySelectorAll('.color-picker-btn').forEach(btn => {
-                if (btn.dataset.color === colorKey) {
-                    btn.classList.add('border-white', 'ring-2', 'ring-white');
-                    btn.classList.remove('border-transparent');
-                } else {
-                    btn.classList.remove('border-white', 'ring-2', 'ring-white');
-                    btn.classList.add('border-transparent');
-                }
+                btn.classList.toggle('border-white', btn.dataset.color === colorKey);
+                btn.classList.toggle('ring-2', btn.dataset.color === colorKey);
+                btn.classList.toggle('ring-white', btn.dataset.color === colorKey);
             });
         }
 
@@ -512,12 +586,8 @@
         }
 
         function initAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
         window.addEventListener('click', initAudioContext, { once: true });
@@ -527,25 +597,18 @@
             try {
                 initAudioContext();
                 if (!audioCtx) return;
-
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
-                
                 gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-                
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.25);
-            } catch (e) {
-                console.warn("Audio Context error:", e);
-            }
+            } catch (e) {}
         }
 
         function startRingtoneSound() {
@@ -553,30 +616,22 @@
             try {
                 initAudioContext();
                 if (!audioCtx) return;
-
                 const playChime = () => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(440, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
-                    
                     gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                    
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.6);
                 };
-
                 playChime();
                 ringtoneInterval = setInterval(playChime, 1500);
-            } catch (e) {
-                console.warn("Ringtone audio error:", e);
-            }
+            } catch (e) {}
         }
 
         function stopRingtoneSound() {
@@ -603,7 +658,7 @@
                         <span class="text-[10px] font-mono dynamic-text font-bold uppercase tracking-wider">${title}</span>
                         <span class="text-[9px] font-mono text-slate-500">just now</span>
                     </div>
-                    <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">Message from ID: ${senderId}</p>
+                    <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">${senderId}</p>
                     <p class="text-[11px] text-slate-400 truncate">${messageText}</p>
                 </div>
                 <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-slate-300 text-xs px-1">
@@ -612,7 +667,6 @@
             `;
 
             document.body.appendChild(toast);
-
             setTimeout(() => {
                 if (toast && toast.parentElement) {
                     toast.classList.add('opacity-0', '-translate-y-2');
@@ -632,10 +686,151 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
             initPeerJS();
             setupUIEventListeners();
             loadSavedProfile();
         });
+
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                auth = firebase.auth();
+                db = firebase.firestore();
+
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    const authBtnText = document.getElementById('auth-btn-text');
+                    const handleDisplay = document.getElementById('display-user-handle');
+
+                    if (user) {
+                        authBtnText.innerText = "Logout";
+                        db.collection("users").doc(user.uid).get().then((doc) => {
+                            if (doc.exists) {
+                                const data = doc.data();
+                                handleDisplay.innerText = data.username || user.email.split('@')[0];
+                                syncPeerToFirestore();
+                            }
+                        });
+                    } else {
+                        authBtnText.innerText = "Account";
+                        handleDisplay.innerText = "Guest";
+                    }
+                });
+
+                listenToMembersDirectory();
+                listenToConnectionRequests();
+            } catch (err) {
+                console.warn("Firebase Init fallback/offline mode:", err);
+            }
+        }
+
+        function syncPeerToFirestore() {
+            if (currentUser && db && myPeerId) {
+                const handle = document.getElementById('display-user-handle').innerText;
+                db.collection("users").doc(currentUser.uid).set({
+                    email: currentUser.email,
+                    username: handle,
+                    peerId: myPeerId,
+                    isOnline: true,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            }
+        }
+
+        function listenToMembersDirectory() {
+            if (!db) return;
+            db.collection("users").onSnapshot((snapshot) => {
+                const container = document.getElementById('members-list-container');
+                container.innerHTML = '';
+                let count = 0;
+
+                snapshot.forEach((doc) => {
+                    const u = doc.data();
+                    if (currentUser && doc.id === currentUser.uid) return;
+                    if (u.isOnline) count++;
+
+                    const div = document.createElement('div');
+                    div.className = "p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-between gap-2";
+                    
+                    const isAccepted = acceptedConnections.has(u.peerId);
+
+                    div.innerHTML = `
+                        <div class="truncate flex flex-col">
+                            <span class="font-bold text-slate-200 text-xs">${u.username || 'User'}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">ID: ${u.peerId || 'Offline'}</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="w-2 h-2 rounded-full ${u.isOnline ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}"></div>
+                            <button onclick="requestConnection('${u.peerId}', '${u.username}')" class="px-2.5 py-1 rounded-lg ${isAccepted ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold">
+                                ${isAccepted ? 'Connected' : 'Connect'}
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('online-counter').innerText = `${count} Online`;
+            });
+        }
+
+        function requestConnection(targetPeerId, targetUsername) {
+            if (!targetPeerId) return;
+            document.getElementById('target-peer-id').value = targetPeerId;
+            
+            if (acceptedConnections.has(targetPeerId)) {
+                unlockCallControls(targetPeerId);
+                alert(`You are already connected with ${targetUsername || targetPeerId}. Calls unlocked!`);
+                return;
+            }
+
+            if (db && currentUser) {
+                db.collection("requests").add({
+                    fromUid: currentUser.uid,
+                    fromPeerId: myPeerId,
+                    fromUsername: document.getElementById('display-user-handle').innerText,
+                    toPeerId: targetPeerId,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    showNotification("REQUEST SENT", targetPeerId, "Awaiting friend's acceptance...");
+                });
+            } else {
+                acceptedConnections.add(targetPeerId);
+                unlockCallControls(targetPeerId);
+                alert("P2P Local Connection Granted.");
+            }
+        }
+
+        function listenToConnectionRequests() {
+            if (!db) return;
+            db.collection("requests").onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const req = change.doc.data();
+                    if (req.toPeerId === myPeerId && req.status === 'pending') {
+                        pendingIncomingRequestDoc = change.doc.ref;
+                        document.getElementById('conn-req-text').innerText = `${req.fromUsername || req.fromPeerId} wants to connect with you.`;
+                        document.getElementById('conn-req-modal').classList.remove('hidden');
+                        startRingtoneSound();
+                    } else if (req.fromPeerId === myPeerId && req.status === 'accepted') {
+                        acceptedConnections.add(req.toPeerId);
+                        unlockCallControls(req.toPeerId);
+                        showNotification("REQUEST ACCEPTED", req.toPeerId, "Calling features unlocked!");
+                    }
+                });
+            });
+        }
+
+        function unlockCallControls(targetPeerId) {
+            const vBtn = document.getElementById('btn-start-video');
+            const aBtn = document.getElementById('btn-start-voice');
+            vBtn.removeAttribute('disabled');
+            aBtn.removeAttribute('disabled');
+            vBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            aBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
 
         function loadSavedProfile() {
             const email = localStorage.getItem('user_email') || '';
@@ -662,15 +857,12 @@
         }
 
         async function getLocalMediaStream(enableVideo = true) {
-            if (localStream) {
-                localStream.getTracks().forEach(t => t.stop());
-            }
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: enableVideo, audio: true });
                 updateVideoElements();
                 return localStream;
             } catch (err) {
-                console.warn("Camera/Microphone access denied:", err);
                 alert("Microphone/Camera permission is required to place or answer a call.");
                 return null;
             }
@@ -690,17 +882,7 @@
                     secure: true,
                     port: 443,
                     debug: 3,
-                    config: { 
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            {
-                                urls: 'turn:openrelay.metered.ca:80',
-                                username: 'openrelay',
-                                credential: 'openrelay'
-                            }
-                        ] 
-                    }
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
                 });
 
                 peer.on('open', (id) => {
@@ -708,26 +890,7 @@
                     document.getElementById('my-peer-id').innerText = id;
                     document.getElementById('chat-header-id').innerText = `ID: ${id}`;
                     setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
-                });
-
-                peer.on('disconnected', () => {
-                    setConnectionStatus('Reconnecting to peer server...', 'text-amber-500 dark:text-amber-400');
-                    peer.reconnect();
-                });
-
-                peer.on('error', (err) => {
-                    console.error("PeerJS error:", err);
-                    if (err.type === 'server-error') {
-                        setConnectionStatus('Server error. Retrying in 3s...', 'text-amber-500 dark:text-amber-400');
-                        setTimeout(() => {
-                            if (peer) peer.destroy();
-                            initPeerJS();
-                        }, 3000);
-                    } else if (err.type === 'unavailable-id') {
-                        initPeerJS();
-                    } else {
-                        setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-500 dark:text-rose-400');
-                    }
+                    syncPeerToFirestore();
                 });
 
                 peer.on('call', (call) => {
@@ -739,15 +902,11 @@
                     document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
                     document.getElementById('incoming-peer-id').innerText = `From Friend ID: ${call.peer}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
-                    
-                    showNotification(isVideo ? "INCOMING VIDEO CALL" : "INCOMING VOICE CALL", call.peer, `Friend ID ${call.peer} is calling you...`);
                     startRingtoneSound();
                 });
 
                 peer.on('connection', (conn) => {
-                    if (activeDataConn) {
-                        activeDataConn.close();
-                    }
+                    if (activeDataConn) activeDataConn.close();
                     activeDataConn = conn;
                     currentFriendId = conn.peer;
                     resetChatSession();
@@ -755,24 +914,10 @@
                         setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                         enableChat();
                         setupDataConnectionListeners(conn);
-                        updateMemberTabInfo(conn.peer, true);
                     });
                 });
             } catch (err) {
-                console.error("PeerJS initialization exception:", err);
                 setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
-            }
-        }
-
-        function updateMemberTabInfo(peerId, isConnected) {
-            const label = document.getElementById('active-peer-member-label');
-            const dot = document.getElementById('member-status-dot');
-            if (isConnected) {
-                label.innerText = `ID: ${peerId}`;
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
-            } else {
-                label.innerText = "No active connection";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
             }
         }
 
@@ -780,17 +925,14 @@
             conn.on('data', (data) => {
                 if (typeof data === 'object' && data.type === 'file') {
                     appendFileMessage(`ID: ${conn.peer}`, data, false);
-                    showNotification("NEW FILE", conn.peer, `Sent a file: ${data.fileName}`);
                 } else {
                     appendChatMessage(`ID: ${conn.peer}`, data, false);
-                    showNotification("NEW MESSAGE", conn.peer, data);
                 }
                 playMessageSound();
             });
             conn.on('close', () => {
                 setConnectionStatus('Chat connection closed.', 'text-amber-500 dark:text-amber-400');
                 disableChat();
-                updateMemberTabInfo(null, false);
             });
         }
 
@@ -799,16 +941,12 @@
             call.on('stream', (remoteStream) => {
                 window.remoteStreamObj = remoteStream;
                 updateVideoElements();
-                
                 document.getElementById('remote-placeholder').classList.add('hidden');
                 document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
                 document.getElementById('peer-info-label').innerText = `Connected: ${call.peer}`;
                 setConnectionStatus('Call active!', 'text-emerald-500 dark:text-emerald-300');
-                updateMemberTabInfo(call.peer, true);
             });
-            call.on('close', () => {
-                resetCallUI();
-            });
+            call.on('close', resetCallUI);
         }
 
         function updateVideoElements() {
@@ -816,14 +954,10 @@
             const pipVideo = document.getElementById('pip-video');
             const pipOffPlaceholder = document.getElementById('pip-off-placeholder');
             const pipTagName = document.getElementById('pip-tag-name');
-
             const remoteStream = window.remoteStreamObj;
 
             if (isMainRemote) {
-                if (remoteStream) {
-                    mainVideo.srcObject = remoteStream;
-                    mainVideo.classList.remove('hidden');
-                }
+                if (remoteStream) { mainVideo.srcObject = remoteStream; mainVideo.classList.remove('hidden'); }
                 if (localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled) {
                     pipVideo.srcObject = localStream;
                     pipVideo.classList.remove('hidden');
@@ -834,10 +968,7 @@
                 }
                 pipTagName.innerText = "You";
             } else {
-                if (localStream) {
-                    mainVideo.srcObject = localStream;
-                    mainVideo.classList.remove('hidden');
-                }
+                if (localStream) { mainVideo.srcObject = localStream; mainVideo.classList.remove('hidden'); }
                 if (remoteStream) {
                     pipVideo.srcObject = remoteStream;
                     pipVideo.classList.remove('hidden');
@@ -865,14 +996,12 @@
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
             document.getElementById('peer-info-label').innerText = "Awaiting to connect";
             setConnectionStatus('Call ended.', 'text-amber-500 dark:text-amber-300');
-            updateMemberTabInfo(null, false);
             
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
             document.getElementById('pip-off-placeholder').classList.remove('hidden');
-
             if (activeCall) { activeCall.close(); activeCall = null; }
             resetChatSession();
         }
@@ -906,48 +1035,24 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            
             const isImage = fileData.fileType.startsWith('image/');
-            let contentHtml = '';
+            let contentHtml = isImage ? `<div class="mb-1 rounded-lg overflow-hidden border border-slate-700 max-w-[200px]"><img src="${fileData.fileContent}" alt="${fileData.fileName}" class="w-full object-cover"></div>` : '';
+            contentHtml += `<a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold dynamic-text hover:opacity-80"><i class="fa-solid fa-file-arrow-down"></i> ${fileData.fileName}</a>`;
 
-            if (isImage) {
-                contentHtml = `
-                    <div class="mb-1 rounded-lg overflow-hidden border border-slate-700 max-w-[200px]">
-                        <img src="${fileData.fileContent}" alt="${fileData.fileName}" class="w-full object-cover">
-                    </div>
-                `;
-            }
-
-            contentHtml += `
-                <a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold dynamic-text hover:opacity-80">
-                    <i class="fa-solid fa-file-arrow-down"></i> ${fileData.fileName}
-                </a>
-            `;
-
-            div.innerHTML = `
-                <span class="text-[9px] text-slate-500 mb-0.5">${sender} (File Attached)</span>
-                <div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">
-                    ${contentHtml}
-                </div>
-            `;
-
+            div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender} (File)</span><div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">${contentHtml}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
 
         async function initiateCall(connectionType = 'video') {
             const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Please enter your friend ID."); return; }
+            if (!targetId) { alert("Please enter your friend Peer ID."); return; }
 
             currentFriendId = targetId;
             resetChatSession();
 
-            // Automatically switch to the Chat tab if Chat button is pressed
             if (connectionType === 'chat') {
                 document.getElementById('tab-chat-btn').click();
-            }
-
-            if (connectionType === 'chat') {
                 setConnectionStatus(`Connecting chat to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
                 const conn = peer.connect(targetId);
                 activeDataConn = conn;
@@ -955,8 +1060,12 @@
                     setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                     enableChat();
                     setupDataConnectionListeners(conn);
-                    updateMemberTabInfo(conn.peer, true);
                 });
+                return;
+            }
+
+            if (!acceptedConnections.has(targetId)) {
+                alert("You must first send and have your connection request accepted in the Members tab before placing voice or video calls!");
                 return;
             }
 
@@ -964,14 +1073,13 @@
             const stream = await getLocalMediaStream(isVideo);
             if (!stream) return;
 
-            setConnectionStatus(`Connecting to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
+            setConnectionStatus(`Calling ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
             const conn = peer.connect(targetId);
             activeDataConn = conn;
             conn.on('open', () => {
                 setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                 enableChat();
                 setupDataConnectionListeners(conn);
-                updateMemberTabInfo(conn.peer, true);
             });
 
             const call = peer.call(targetId, stream, { metadata: { type: isVideo ? 'video' : 'voice' } });
@@ -979,11 +1087,74 @@
         }
 
         function setupUIEventListeners() {
+            // Auth Modals
+            document.getElementById('btn-show-auth').addEventListener('click', () => {
+                if (currentUser) {
+                    auth.signOut().then(() => alert("Logged out successfully!"));
+                } else {
+                    document.getElementById('auth-modal').classList.remove('hidden');
+                }
+            });
+            document.getElementById('close-auth-modal-btn').addEventListener('click', () => {
+                document.getElementById('auth-modal').classList.add('hidden');
+            });
+            document.getElementById('auth-toggle-btn').addEventListener('click', () => {
+                isAuthModeLogin = !isAuthModeLogin;
+                document.getElementById('auth-modal-title').innerHTML = isAuthModeLogin ? '<i class="fa-solid fa-right-to-bracket"></i> Login' : '<i class="fa-solid fa-user-plus"></i> Register Account';
+                document.getElementById('username-field-wrapper').style.display = isAuthModeLogin ? 'none' : 'block';
+                document.getElementById('auth-submit-btn').innerText = isAuthModeLogin ? 'LOGIN' : 'REGISTER';
+                document.getElementById('auth-toggle-prompt').innerText = isAuthModeLogin ? "Need an account?" : "Already registered?";
+                document.getElementById('auth-toggle-btn').innerText = isAuthModeLogin ? 'Register here' : 'Login here';
+            });
+
+            document.getElementById('auth-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('auth-email').value.trim();
+                const pass = document.getElementById('auth-password').value.trim();
+                const uname = document.getElementById('auth-username').value.trim();
+
+                if (isAuthModeLogin) {
+                    auth.signInWithEmailAndPassword(email, pass).then(() => {
+                        document.getElementById('auth-modal').classList.add('hidden');
+                    }).catch(err => alert(err.message));
+                } else {
+                    if (!uname) { alert("Please set your custom username."); return; }
+                    auth.createUserWithEmailAndPassword(email, pass).then((cred) => {
+                        db.collection("users").doc(cred.user.uid).set({
+                            email: email,
+                            username: uname,
+                            peerId: myPeerId || '',
+                            isOnline: true,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            document.getElementById('auth-modal').classList.add('hidden');
+                        });
+                    }).catch(err => alert(err.message));
+                }
+            });
+
+            // Connection Request Responses
+            document.getElementById('btn-accept-req').addEventListener('click', () => {
+                stopRingtoneSound();
+                document.getElementById('conn-req-modal').classList.add('hidden');
+                if (pendingIncomingRequestDoc) {
+                    pendingIncomingRequestDoc.update({ status: 'accepted' });
+                }
+            });
+            document.getElementById('btn-decline-req').addEventListener('click', () => {
+                stopRingtoneSound();
+                document.getElementById('conn-req-modal').classList.add('hidden');
+                if (pendingIncomingRequestDoc) {
+                    pendingIncomingRequestDoc.update({ status: 'declined' });
+                }
+            });
+
+            // Calling Actions
             document.getElementById('btn-start-video').addEventListener('click', () => initiateCall('video'));
             document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall('voice'));
             document.getElementById('btn-start-chat').addEventListener('click', () => initiateCall('chat'));
 
-            // Chat vs Members Tab Switcher
+            // Tab Navigation
             const tabChatBtn = document.getElementById('tab-chat-btn');
             const tabPeersBtn = document.getElementById('tab-peers-btn');
             const viewChat = document.getElementById('view-chat');
@@ -1006,7 +1177,7 @@
             document.getElementById('copy-id-btn').addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
-                    alert("Copied your ID to clipboard!");
+                    alert("Copied your Peer ID!");
                 }
             });
 
@@ -1018,34 +1189,21 @@
             document.getElementById('btn-resize-pip').addEventListener('click', () => {
                 const pipContainer = document.getElementById('pip-container');
                 isPipLarge = !isPipLarge;
-                if (isPipLarge) {
-                    pipContainer.className = "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
-                } else {
-                    pipContainer.className = "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
-                }
+                pipContainer.className = isPipLarge ? 
+                    "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all" : 
+                    "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
             });
 
-            document.getElementById('file-attach-btn').addEventListener('click', () => {
-                document.getElementById('file-input').click();
-            });
-
+            document.getElementById('file-attach-btn').addEventListener('click', () => document.getElementById('file-input').click());
             document.getElementById('file-input').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file || !activeDataConn) return;
-
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const filePayload = {
-                        type: 'file',
-                        fileName: file.name,
-                        fileType: file.type,
-                        fileContent: event.target.result
-                    };
-
+                    const filePayload = { type: 'file', fileName: file.name, fileType: file.type, fileContent: event.target.result };
                     activeDataConn.send(filePayload);
                     appendFileMessage("You", filePayload, true);
                 };
-
                 reader.readAsDataURL(file);
                 e.target.value = '';
             });
@@ -1073,9 +1231,7 @@
                 }
             });
 
-            document.getElementById('btn-end-call').addEventListener('click', () => {
-                resetCallUI();
-            });
+            document.getElementById('btn-end-call').addEventListener('click', resetCallUI);
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1087,6 +1243,7 @@
                 input.value = '';
             });
 
+            // Settings Modal & Remove Profile
             document.getElementById('btn-show-settings').addEventListener('click', () => {
                 highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
                 document.getElementById('settings-modal').classList.remove('hidden');
@@ -1096,7 +1253,6 @@
                 document.getElementById('settings-modal').classList.add('hidden');
             });
 
-            // Theme Switcher Selection (Staged until saved)
             document.querySelectorAll('.theme-picker-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     stagedThemeMode = e.currentTarget.dataset.theme;
@@ -1104,7 +1260,6 @@
                 });
             });
 
-            // Color Picker Selection (Staged until saved)
             document.querySelectorAll('.color-picker-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     stagedAccentColorKey = e.currentTarget.dataset.color;
@@ -1112,7 +1267,6 @@
                 });
             });
 
-            // Avatar Upload Handling
             document.getElementById('btn-upload-avatar').addEventListener('click', () => {
                 document.getElementById('profile-img-input').click();
             });
@@ -1120,7 +1274,6 @@
             document.getElementById('profile-img-input').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const avatarData = event.target.result;
@@ -1133,7 +1286,6 @@
                 reader.readAsDataURL(file);
             });
 
-            // Save Settings & Profile (Commits Staged Theme, Color & Profile options)
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 const email = document.getElementById('user-email-input').value.trim();
                 const phone = document.getElementById('user-phone-input').value.trim();
@@ -1144,17 +1296,35 @@
                 localStorage.setItem('user_accent_color', stagedAccentColorKey);
 
                 applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
-
                 document.getElementById('settings-modal').classList.add('hidden');
                 alert("Settings & profile saved successfully!");
+            });
+
+            // Remove Profile Implementation
+            document.getElementById('btn-remove-profile').addEventListener('click', () => {
+                if (confirm("Are you sure you want to remove your stored profile details?")) {
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_phone');
+                    localStorage.removeItem('user_avatar');
+
+                    document.getElementById('user-email-input').value = '';
+                    document.getElementById('user-phone-input').value = '';
+
+                    const imgPreview = document.getElementById('profile-img-preview');
+                    imgPreview.src = '';
+                    imgPreview.classList.add('hidden');
+                    document.getElementById('profile-img-placeholder').classList.remove('hidden');
+
+                    showNotification("PROFILE REMOVED", "Local Storage", "Stored profile details were cleared.");
+                    alert("Profile details cleared!");
+                }
             });
 
             document.getElementById('btn-toggle-mic').addEventListener('click', () => {
                 if (localStream) {
                     micMuted = !micMuted;
                     localStream.getAudioTracks().forEach(track => track.enabled = !micMuted);
-                    const btn = document.getElementById('btn-toggle-mic');
-                    btn.innerHTML = micMuted ? '<i class="fa-solid fa-microphone-slash text-rose-400"></i>' : '<i class="fa-solid fa-microphone"></i>';
+                    document.getElementById('btn-toggle-mic').innerHTML = micMuted ? '<i class="fa-solid fa-microphone-slash text-rose-400"></i>' : '<i class="fa-solid fa-microphone"></i>';
                 }
             });
 
@@ -1162,8 +1332,7 @@
                 if (localStream) {
                     camOff = !camOff;
                     localStream.getVideoTracks().forEach(track => track.enabled = !camOff);
-                    const btn = document.getElementById('btn-toggle-cam');
-                    btn.innerHTML = camOff ? '<i class="fa-solid fa-video-slash text-rose-400"></i>' : '<i class="fa-solid fa-video"></i>';
+                    document.getElementById('btn-toggle-cam').innerHTML = camOff ? '<i class="fa-solid fa-video-slash text-rose-400"></i>' : '<i class="fa-solid fa-video"></i>';
                     updateVideoElements();
                 }
             });
