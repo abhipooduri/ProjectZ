@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONNECT // Hyper-Local Campus & Community Matcher</title>
+    <title>CONNECT</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,19 +13,11 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#f0f3ff',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            900: '#1e1b4b',
-                            950: '#0f0e26',
-                        },
-                        neon: {
-                            cyan: '#00f3ff',
-                            pink: '#ff007f',
-                            lime: '#39ff14',
-                            amber: '#ffb703'
+                        theme: {
+                            primary: 'var(--color-primary)',
+                            hover: 'var(--color-hover)',
+                            border: 'var(--color-border)',
+                            text: 'var(--color-text)'
                         }
                     },
                     fontFamily: {
@@ -47,13 +39,26 @@
     <!-- PeerJS CDN for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Custom Styles -->
+    <!-- Custom Styles & Theme Dynamic Variables -->
     <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-hover: #4f46e5;
+            --color-border: rgba(99, 102, 241, 0.3);
+            --color-text: #818cf8;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #09090e;
             color: #f1f5f9;
             overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        html.light body {
+            background-color: #e2e8f0;
+            color: #0f172a;
         }
 
         .font-display { font-family: 'Orbitron', sans-serif; }
@@ -62,8 +67,21 @@
         .glass-panel {
             background: rgba(15, 14, 38, 0.75);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(99, 102, 241, 0.25);
+            border: 1px solid var(--color-border);
+            transition: background 0.3s, border-color 0.3s;
         }
+
+        html.light .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+        }
+
+        .dynamic-bg-primary { background-color: var(--color-primary); }
+        .dynamic-bg-hover:hover { background-color: var(--color-hover); }
+        .dynamic-border { border-color: var(--color-border); }
+        .dynamic-text { color: var(--color-text); }
 
         .scanlines {
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
@@ -73,8 +91,7 @@
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #09090e; }
-        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
 
         video {
             object-fit: cover;
@@ -85,32 +102,31 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between text-slate-100 bg-[#09090e] selection:bg-indigo-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
     <!-- TOP HEADER -->
-    <header class="w-full border-b border-indigo-900/40 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+    <header class="w-full border-b dynamic-border dark:bg-slate-950/80 bg-white/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 transition-colors">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-satellite-dish text-white text-lg animate-pulse"></i>
+                <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center shadow-lg text-white">
+                    <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
+                    <h1 class="font-display font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
                         CONNECT
                     </h1>
-                    <p class="text-[10px] md:text-xs text-slate-400 font-mono tracking-tight">Hyper-Local Campus & Community Peer Network</p>
                 </div>
             </div>
 
-            <div id="window-status-banner" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-300 text-xs font-mono">
+            <div id="window-status-banner" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-500 dark:text-emerald-300 text-xs font-mono">
                 <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
-                <span id="window-status-text" class="font-bold text-emerald-400">ONLINE</span>
+                <span id="window-status-text" class="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
             </div>
 
+            <!-- SETTINGS ICON BUTTON -->
             <div class="flex items-center gap-2">
-                <button id="btn-show-arch" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5">
-                    <i class="fa-solid fa-code-branch text-pink-400"></i>
-                    <span class="hidden md:inline">How It Works</span>
+                <button id="btn-show-settings" title="Settings" class="w-9 h-9 rounded-lg dynamic-bg-primary dynamic-bg-hover text-white text-sm font-semibold transition flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
         </div>
@@ -123,13 +139,13 @@
         <section class="lg:col-span-3 flex flex-col gap-4">
             
             <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
-                <div class="flex items-center gap-2 text-indigo-400 font-display text-sm font-bold border-b border-indigo-900/40 pb-2">
-                    <i class="fa-solid fa-location-crosshairs text-cyan-400"></i>
+                <div class="flex items-center gap-2 dynamic-text font-display text-sm font-bold border-b border-indigo-900/40 pb-2">
+                    <i class="fa-solid fa-location-crosshairs"></i>
                     <span>SELECT YOUR NEXUS ZONE</span>
                 </div>
                 <div>
-                    <label class="text-[11px] font-mono text-slate-400 mb-1 block">Campus / Region Hub</label>
-                    <select id="select-campus" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none font-semibold">
+                    <label class="text-[11px] font-mono text-slate-600 dark:text-slate-400 mb-1 block">Campus / Region Hub</label>
+                    <select id="select-campus" class="w-full bg-slate-200 dark:bg-slate-900 border dynamic-border rounded-xl p-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-semibold transition-colors">
                         <option value="" disabled selected>Select your college</option>
                         <option value="cmr_ec">CMR Engineering College</option>
                         <option value="vnr_vjiet">VNR VJIET</option>
@@ -143,61 +159,61 @@
             <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
                 <div class="truncate mr-2">
                     <span class="text-slate-500">Your ID:</span>
-                    <span id="my-peer-id" class="text-indigo-300 font-bold ml-1">Initializing...</span>
+                    <span id="my-peer-id" class="dynamic-text font-bold ml-1">Initializing...</span>
                 </div>
-                <button id="copy-id-btn" class="text-slate-400 hover:text-cyan-300 transition text-xs px-2 py-1 bg-slate-800 rounded">
+                <button id="copy-id-btn" class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition text-xs px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded">
                     <i class="fa-regular fa-copy"></i>
                 </button>
             </div>
 
             <!-- CONNECT CONTROLS -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400 font-mono">
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-video"></i> Video Call
                     </button>
-                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-700 hover:bg-emerald-600 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
 
-                <p id="connection-status" class="text-[11px] text-amber-300 font-mono">Initializing PeerJS...</p>
+                <p id="connection-status" class="text-[11px] text-amber-600 dark:text-amber-300 font-mono">Initializing PeerJS...</p>
             </div>
 
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL SCREEN (WHATSAPP / ZOOM STYLE LAYOUT) -->
+        <!-- CENTER COLUMN: MAIN CALL SCREEN -->
         <section class="lg:col-span-6 flex flex-col gap-4">
-            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950">
+            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-900 dark:bg-slate-950">
                 
                 <!-- MAIN DISPLAY VIDEO -->
                 <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror absolute inset-0"></video>
                 
                 <!-- PLACEHOLDER WHEN NO CALL ACTIVE -->
-                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 scanlines">
-                    <div class="w-20 h-20 rounded-full bg-indigo-950 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg shadow-indigo-500/20">
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 dark:bg-slate-950/90 scanlines">
+                    <div class="w-20 h-20 rounded-full bg-slate-800/80 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
-                    <h3 class="font-display font-bold text-base text-indigo-200">READY TO CALL</h3>
+                    <h3 class="font-display font-bold text-base text-slate-200">READY TO CALL</h3>
                     <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video or Voice call.</p>
                 </div>
 
                 <!-- TOP BAR OVERLAY -->
                 <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
-                    <div class="bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-indigo-500/30 flex items-center gap-2">
+                    <div class="bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border dynamic-border flex items-center gap-2">
                         <i id="peer-status-dot" class="fa-solid fa-circle text-[10px] text-slate-500"></i>
-                        <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200">Awaiting Peer...</span>
+                        <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200">Awaiting to connect</span>
                     </div>
                     
-                    <button id="btn-swap-feeds" title="Swap Main & PIP Screen" class="pointer-events-auto bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white p-2 rounded-full border border-slate-700/80 text-xs transition">
+                    <button id="btn-swap-feeds" title="Swap Main & PIP Screen" class="pointer-events-auto bg-slate-900/80 dark:bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white p-2 rounded-full border border-slate-700/80 text-xs transition">
                         <i class="fa-solid fa-right-left"></i>
                     </button>
                 </div>
 
-                <!-- PIP (PICTURE-IN-PICTURE) SECONDARY SCREEN -->
-                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all">
+                <!-- PIP SECONDARY SCREEN -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     
                     <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-2">
@@ -206,7 +222,7 @@
                     </div>
 
                     <div class="absolute top-1.5 left-1.5 pointer-events-none">
-                        <span id="pip-tag-name" class="bg-slate-950/80 px-1.5 py-0.5 rounded text-[9px] font-mono text-cyan-300 border border-slate-700">You</span>
+                        <span id="pip-tag-name" class="bg-slate-950/80 px-1.5 py-0.5 rounded text-[9px] font-mono dynamic-text border border-slate-700">You</span>
                     </div>
 
                     <button id="btn-resize-pip" title="Resize PIP Screen" class="absolute bottom-1.5 right-1.5 bg-slate-950/90 text-slate-300 hover:text-white p-1 rounded text-[10px]">
@@ -215,7 +231,7 @@
                 </div>
 
                 <!-- FLOATING CALL CONTROLS -->
-                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-indigo-900/50 px-4 py-2 rounded-2xl z-30 shadow-2xl">
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-900/85 dark:bg-slate-950/85 backdrop-blur-md border border-slate-800/80 px-4 py-2 rounded-2xl z-30 shadow-2xl">
                     <button id="btn-toggle-mic" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 flex items-center justify-center text-sm transition">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
@@ -232,31 +248,31 @@
 
         <!-- RIGHT COLUMN: CHAT TERMINAL -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
-            <div class="p-3 bg-slate-950/90 border-b border-indigo-900/40 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-200">
-                    <i class="fa-solid fa-comments text-cyan-400"></i>
+            <div class="p-3 bg-slate-200 dark:bg-slate-950/90 border-b dynamic-border flex items-center justify-between transition-colors">
+                <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-800 dark:text-slate-200">
+                    <i class="fa-solid fa-comments dynamic-text"></i>
                     <span>CAMPUS CHAT</span>
                 </div>
                 <span id="chat-status" class="text-[10px] font-mono text-slate-500">OFFLINE</span>
             </div>
 
             <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
+                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
                     -- P2P ENCRYPTED CHAT & FILE STREAM --
                 </div>
             </div>
 
             <!-- CHAT FORM -->
-            <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex items-center gap-2">
+            <form id="chat-form" class="p-2 bg-slate-200 dark:bg-slate-950 border-t dynamic-border flex items-center gap-2 transition-colors">
                 <input id="file-input" type="file" class="hidden">
                 
-                <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-400 border border-slate-700 text-xs transition flex items-center justify-center">
+                <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-300 dark:bg-slate-900 hover:bg-slate-400 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-500 border border-slate-300 dark:border-slate-700 text-xs transition flex items-center justify-center">
                     <i class="fa-solid fa-paperclip"></i>
                 </button>
 
-                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none font-mono">
+                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none font-mono transition-colors">
                 
-                <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 hover:bg-cyan-500 text-white hover:text-slate-950 font-bold rounded-xl text-xs transition">
+                <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
@@ -264,10 +280,89 @@
 
     </main>
 
+    <!-- SETTINGS & PROFILE MODAL -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="font-display font-bold text-lg dynamic-text flex items-center gap-2">
+                    <i class="fa-solid fa-gear"></i> SETTINGS
+                </h3>
+                <button id="close-settings-btn" class="text-slate-400 hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- THEME SELECTION -->
+            <div class="space-y-2">
+                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">THEME</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button data-theme="dark" class="theme-picker-btn py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-moon"></i> Dark
+                    </button>
+                    <button data-theme="light" class="theme-picker-btn py-2 px-3 rounded-xl border border-slate-300 bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-sun"></i> Light
+                    </button>
+                </div>
+            </div>
+
+            <!-- COLOR ACCENT CUSTOMIZATION -->
+            <div class="space-y-2">
+                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">ACCENT COLOR CUSTOMIZATION</label>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button data-color="default" class="color-picker-btn w-8 h-8 rounded-full bg-indigo-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="cyan" class="color-picker-btn w-8 h-8 rounded-full bg-cyan-400 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="emerald" class="color-picker-btn w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="pink" class="color-picker-btn w-8 h-8 rounded-full bg-pink-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="amber" class="color-picker-btn w-8 h-8 rounded-full bg-amber-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="purple" class="color-picker-btn w-8 h-8 rounded-full bg-purple-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="crimson" class="color-picker-btn w-8 h-8 rounded-full bg-rose-600 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                    <button data-color="teal" class="color-picker-btn w-8 h-8 rounded-full bg-teal-500 border-2 border-transparent shadow-md transition transform hover:scale-110"></button>
+                </div>
+            </div>
+
+            <hr class="border-slate-300 dark:border-slate-800">
+
+            <!-- PROFILE DETAILS -->
+            <div class="space-y-4">
+                <label class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 block">PROFILE DETAILS</label>
+                
+                <!-- Profile Image Upload -->
+                <div class="flex items-center gap-4">
+                    <div class="relative w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-900 border-2 dynamic-border overflow-hidden shrink-0 flex items-center justify-center">
+                        <img id="profile-img-preview" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                        <i id="profile-img-placeholder" class="fa-solid fa-user text-2xl dynamic-text"></i>
+                    </div>
+                    <div>
+                        <input id="profile-img-input" type="file" accept="image/*" class="hidden">
+                        <button id="btn-upload-avatar" type="button" class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition">
+                            <i class="fa-solid fa-camera mr-1"></i> Upload Image
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Email ID -->
+                <div>
+                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Email ID</label>
+                    <input id="user-email-input" type="email" placeholder="Enter your email" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                </div>
+
+                <!-- Phone Number -->
+                <div>
+                    <label class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1 block">Phone Number</label>
+                    <input id="user-phone-input" type="tel" placeholder="Enter your phone number" class="w-full rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-400 font-mono transition-colors">
+                </div>
+            </div>
+
+            <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
+                SAVE CHANGES
+            </button>
+        </div>
+    </div>
+
     <!-- INCOMING CALL MODAL -->
     <div id="incoming-call-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-cyan-500/50 flex flex-col items-center gap-4 text-center">
-            <div class="w-16 h-16 rounded-full bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-300 text-2xl animate-pulse">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center dynamic-text text-2xl animate-pulse">
                 <i id="incoming-call-icon" class="fa-solid fa-video"></i>
             </div>
             <div>
@@ -281,32 +376,8 @@
         </div>
     </div>
 
-    <!-- ARCHITECTURE MODAL -->
-    <div id="arch-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-indigo-900/60 pb-3">
-                <h3 class="font-display font-bold text-lg text-cyan-300 flex items-center gap-2">
-                    <i class="fa-solid fa-network-wired"></i> CONNECT - ARCHITECTURE
-                </h3>
-                <button id="close-modal-btn" class="text-slate-400 hover:text-white text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="space-y-4 text-xs leading-relaxed text-slate-300 font-mono">
-                <div class="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30">
-                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Video & File Transmission</h4>
-                    <p>Audio, video, and attachments flow directly browser-to-browser with low latency using public STUN & TURN relay servers.</p>
-                </div>
-            </div>
-            <button id="modal-ack-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 font-bold text-white text-xs hover:bg-indigo-500 transition">
-                GOT IT - BACK TO APP
-            </button>
-        </div>
-    </div>
-
     <!-- FOOTER -->
-    <footer class="w-full border-t border-indigo-900/30 bg-slate-950/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
-        CONNECT // Built for Campus Connections • WebRTC PeerJS Engine
+    <footer class="w-full border-t border-indigo-900/30 dark:bg-slate-950/80 bg-white/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
     </footer>
 
     <!-- INLINE SCRIPT LOGIC -->
@@ -321,11 +392,54 @@
         let micMuted = false;
         let camOff = false;
         
-        let isMainRemote = true; // Main screen displays remote stream by default
+        let isMainRemote = true; 
         let isPipLarge = false;
         let ringtoneInterval = null;
 
+        let stagedAccentColorKey = 'default';
+        let stagedThemeMode = 'dark';
+
         let audioCtx = null;
+
+        const themeColors = {
+            default: { primary: '#6366f1', hover: '#4f46e5', border: 'rgba(99, 102, 241, 0.3)', text: '#818cf8' },
+            cyan:    { primary: '#06b6d4', hover: '#0891b2', border: 'rgba(6, 182, 212, 0.3)', text: '#22d3ee' },
+            emerald: { primary: '#10b981', hover: '#059669', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
+            pink:    { primary: '#ec4899', hover: '#db2777', border: 'rgba(236, 72, 153, 0.3)', text: '#f472b6' },
+            amber:   { primary: '#f59e0b', hover: '#d97706', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
+            purple:  { primary: '#9333ea', hover: '#7e22ce', border: 'rgba(147, 51, 234, 0.3)', text: '#c084fc' },
+            crimson: { primary: '#e11d48', hover: '#be123c', border: 'rgba(225, 29, 72, 0.3)', text: '#fb7185' },
+            teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
+        };
+
+        function applyThemeAndAccent(themeMode, colorKey) {
+            document.documentElement.className = themeMode;
+            const config = themeColors[colorKey] || themeColors.default;
+            document.documentElement.style.setProperty('--color-primary', config.primary);
+            document.documentElement.style.setProperty('--color-hover', config.hover);
+            document.documentElement.style.setProperty('--color-border', config.border);
+            document.documentElement.style.setProperty('--color-text', config.text);
+        }
+
+        function highlightStagedUI(themeMode, colorKey) {
+            document.querySelectorAll('.theme-picker-btn').forEach(btn => {
+                if (btn.dataset.theme === themeMode) {
+                    btn.classList.add('ring-2', 'ring-white', 'border-white');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-white', 'border-white');
+                }
+            });
+
+            document.querySelectorAll('.color-picker-btn').forEach(btn => {
+                if (btn.dataset.color === colorKey) {
+                    btn.classList.add('border-white', 'ring-2', 'ring-white');
+                    btn.classList.remove('border-transparent');
+                } else {
+                    btn.classList.remove('border-white', 'ring-2', 'ring-white');
+                    btn.classList.add('border-transparent');
+                }
+            });
+        }
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
@@ -412,15 +526,15 @@
 
             const toast = document.createElement('div');
             toast.id = 'nexus-toast';
-            toast.className = 'fixed top-4 right-4 z-50 max-w-xs w-full glass-panel rounded-2xl p-3 border border-cyan-500/50 shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100';
+            toast.className = 'fixed top-4 right-4 z-50 max-w-xs w-full glass-panel rounded-2xl p-3 border dynamic-border shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100';
 
             toast.innerHTML = `
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center text-white shrink-0 shadow-md">
                     <i class="fa-solid fa-bell text-sm animate-pulse"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">${title}</span>
+                        <span class="text-[10px] font-mono dynamic-text font-bold uppercase tracking-wider">${title}</span>
                         <span class="text-[9px] font-mono text-slate-500">just now</span>
                     </div>
                     <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">Message from ID: ${senderId}</p>
@@ -444,7 +558,7 @@
         function resetChatSession() {
             const box = document.getElementById('chat-messages');
             box.innerHTML = `
-                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
+                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
                     -- NEW P2P CHAT SESSION STARTED --
                 </div>
             `;
@@ -454,7 +568,32 @@
         window.addEventListener('DOMContentLoaded', () => {
             initPeerJS();
             setupUIEventListeners();
+            loadSavedProfile();
         });
+
+        function loadSavedProfile() {
+            const email = localStorage.getItem('user_email') || '';
+            const phone = localStorage.getItem('user_phone') || '';
+            const avatar = localStorage.getItem('user_avatar') || '';
+            const savedColorKey = localStorage.getItem('user_accent_color') || 'default';
+            const savedThemeMode = localStorage.getItem('user_theme_mode') || 'dark';
+
+            stagedThemeMode = savedThemeMode;
+            stagedAccentColorKey = savedColorKey;
+
+            document.getElementById('user-email-input').value = email;
+            document.getElementById('user-phone-input').value = phone;
+
+            applyThemeAndAccent(savedThemeMode, savedColorKey);
+            highlightStagedUI(savedThemeMode, savedColorKey);
+
+            if (avatar) {
+                const imgPreview = document.getElementById('profile-img-preview');
+                imgPreview.src = avatar;
+                imgPreview.classList.remove('hidden');
+                document.getElementById('profile-img-placeholder').classList.add('hidden');
+            }
+        }
 
         async function getLocalMediaStream(enableVideo = true) {
             if (localStream) {
@@ -471,13 +610,13 @@
             }
         }
 
-        function setConnectionStatus(message, color = "text-amber-300") {
+        function setConnectionStatus(message, color = "text-amber-500 dark:text-amber-300") {
             const el = document.getElementById('connection-status');
             if (el) { el.textContent = message; el.className = `text-[11px] ${color} font-mono`; }
         }
 
         function initPeerJS() {
-            setConnectionStatus('Connecting to signaling server...', 'text-amber-300');
+            setConnectionStatus('Connecting to signaling server...', 'text-amber-500 dark:text-amber-300');
             const custom7DigitId = generate7DigitId();
             try {
                 peer = new Peer(custom7DigitId, {
@@ -501,18 +640,18 @@
                 peer.on('open', (id) => {
                     myPeerId = id;
                     document.getElementById('my-peer-id').innerText = id;
-                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-300');
+                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
                 });
 
                 peer.on('disconnected', () => {
-                    setConnectionStatus('Reconnecting to peer server...', 'text-amber-400');
+                    setConnectionStatus('Reconnecting to peer server...', 'text-amber-500 dark:text-amber-400');
                     peer.reconnect();
                 });
 
                 peer.on('error', (err) => {
                     console.error("PeerJS error:", err);
                     if (err.type === 'server-error') {
-                        setConnectionStatus('Server error. Retrying in 3s...', 'text-amber-400');
+                        setConnectionStatus('Server error. Retrying in 3s...', 'text-amber-500 dark:text-amber-400');
                         setTimeout(() => {
                             if (peer) peer.destroy();
                             initPeerJS();
@@ -520,7 +659,7 @@
                     } else if (err.type === 'unavailable-id') {
                         initPeerJS();
                     } else {
-                        setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-400');
+                        setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-500 dark:text-rose-400');
                     }
                 });
 
@@ -531,7 +670,7 @@
                     
                     document.getElementById('incoming-call-title').innerText = isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL';
                     document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
-                    document.getElementById('incoming-peer-id').innerText = `Call from Friend ID: ${call.peer}`;
+                    document.getElementById('incoming-peer-id').innerText = `From Friend ID: ${call.peer}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
                     
                     showNotification(isVideo ? "INCOMING VIDEO CALL" : "INCOMING VOICE CALL", call.peer, `Friend ID ${call.peer} is calling you...`);
@@ -546,14 +685,14 @@
                     currentFriendId = conn.peer;
                     resetChatSession();
                     conn.on('open', () => {
-                        setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-300');
+                        setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                         enableChat();
                         setupDataConnectionListeners(conn);
                     });
                 });
             } catch (err) {
                 console.error("PeerJS initialization exception:", err);
-                setConnectionStatus('Failed to initialize P2P network.', 'text-rose-400');
+                setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
             }
         }
 
@@ -569,7 +708,7 @@
                 playMessageSound();
             });
             conn.on('close', () => {
-                setConnectionStatus('Chat connection closed.', 'text-amber-400');
+                setConnectionStatus('Chat connection closed.', 'text-amber-500 dark:text-amber-400');
                 disableChat();
             });
         }
@@ -583,7 +722,7 @@
                 document.getElementById('remote-placeholder').classList.add('hidden');
                 document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
                 document.getElementById('peer-info-label').innerText = `Connected: ${call.peer}`;
-                setConnectionStatus('Call active!', 'text-emerald-300');
+                setConnectionStatus('Call active!', 'text-emerald-500 dark:text-emerald-300');
             });
             call.on('close', () => {
                 resetCallUI();
@@ -642,8 +781,8 @@
 
             document.getElementById('remote-placeholder').classList.remove('hidden');
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
-            document.getElementById('peer-info-label').innerText = "Awaiting Peer...";
-            setConnectionStatus('Call ended.', 'text-amber-300');
+            document.getElementById('peer-info-label').innerText = "Awaiting to connect";
+            setConnectionStatus('Call ended.', 'text-amber-500 dark:text-amber-300');
             
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -660,7 +799,7 @@
             document.getElementById('chat-send-btn').removeAttribute('disabled');
             document.getElementById('file-attach-btn').removeAttribute('disabled');
             document.getElementById('chat-status').innerText = "ONLINE";
-            document.getElementById('chat-status').className = "text-[10px] font-mono text-emerald-400";
+            document.getElementById('chat-status').className = "text-[10px] font-mono text-emerald-500 dark:text-emerald-400";
         }
 
         function disableChat() {
@@ -675,7 +814,7 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-700 text-slate-200'}">${text}</div>`;
+            div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">${text}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -697,14 +836,14 @@
             }
 
             contentHtml += `
-                <a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold text-cyan-300 hover:text-cyan-200">
+                <a href="${fileData.fileContent}" download="${fileData.fileName}" class="flex items-center gap-2 underline font-bold dynamic-text hover:opacity-80">
                     <i class="fa-solid fa-file-arrow-down"></i> ${fileData.fileName}
                 </a>
             `;
 
             div.innerHTML = `
                 <span class="text-[9px] text-slate-500 mb-0.5">${sender} (File Attached)</span>
-                <div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-900/80 border border-indigo-500/50 text-white' : 'bg-slate-900 border border-slate-700 text-slate-200'}">
+                <div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-300 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200'}">
                     ${contentHtml}
                 </div>
             `;
@@ -723,11 +862,11 @@
             const stream = await getLocalMediaStream(isVideo);
             if (!stream) return;
 
-            setConnectionStatus(`Connecting to ID: ${targetId}...`, 'text-cyan-300');
+            setConnectionStatus(`Connecting to ID: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
             const conn = peer.connect(targetId);
             activeDataConn = conn;
             conn.on('open', () => {
-                setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-300');
+                setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
                 enableChat();
                 setupDataConnectionListeners(conn);
             });
@@ -756,9 +895,9 @@
                 const pipContainer = document.getElementById('pip-container');
                 isPipLarge = !isPipLarge;
                 if (isPipLarge) {
-                    pipContainer.className = "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all";
+                    pipContainer.className = "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
                 } else {
-                    pipContainer.className = "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all";
+                    pipContainer.className = "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20 transition-all";
                 }
             });
 
@@ -824,16 +963,68 @@
                 input.value = '';
             });
 
-            document.getElementById('btn-show-arch').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.remove('hidden');
+            document.getElementById('btn-show-settings').addEventListener('click', () => {
+                // Sync settings modal options to current active values before showing
+                highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
+                document.getElementById('settings-modal').classList.remove('hidden');
             });
 
-            document.getElementById('close-modal-btn').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.add('hidden');
+            document.getElementById('close-settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.add('hidden');
             });
 
-            document.getElementById('modal-ack-btn').addEventListener('click', () => {
-                document.getElementById('arch-modal').classList.add('hidden');
+            // Theme Switcher Selection (Staged until saved)
+            document.querySelectorAll('.theme-picker-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    stagedThemeMode = e.currentTarget.dataset.theme;
+                    highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
+                });
+            });
+
+            // Color Picker Selection (Staged until saved)
+            document.querySelectorAll('.color-picker-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    stagedAccentColorKey = e.currentTarget.dataset.color;
+                    highlightStagedUI(stagedThemeMode, stagedAccentColorKey);
+                });
+            });
+
+            // Avatar Upload Handling
+            document.getElementById('btn-upload-avatar').addEventListener('click', () => {
+                document.getElementById('profile-img-input').click();
+            });
+
+            document.getElementById('profile-img-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const avatarData = event.target.result;
+                    const imgPreview = document.getElementById('profile-img-preview');
+                    imgPreview.src = avatarData;
+                    imgPreview.classList.remove('hidden');
+                    document.getElementById('profile-img-placeholder').classList.add('hidden');
+                    localStorage.setItem('user_avatar', avatarData);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Save Settings & Profile (Commits Staged Theme, Color & Profile options)
+            document.getElementById('save-settings-btn').addEventListener('click', () => {
+                const email = document.getElementById('user-email-input').value.trim();
+                const phone = document.getElementById('user-phone-input').value.trim();
+
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('user_phone', phone);
+                localStorage.setItem('user_theme_mode', stagedThemeMode);
+                localStorage.setItem('user_accent_color', stagedAccentColorKey);
+
+                // Commit and apply theme and accent choices
+                applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
+
+                document.getElementById('settings-modal').classList.add('hidden');
+                alert("Settings & profile saved successfully!");
             });
 
             document.getElementById('btn-toggle-mic').addEventListener('click', () => {
