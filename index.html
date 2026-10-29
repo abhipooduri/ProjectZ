@@ -321,6 +321,30 @@
             initLocalWebcam(true, true);
         });
 
+        // Built-in Web Audio API Notification Chime
+        function playMessageSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12); // A5 note
+                
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } catch (e) {
+                console.warn("Audio Context error:", e);
+            }
+        }
+
         async function initLocalWebcam(videoOn, audioOn) {
             try {
                 if (localStream) {
@@ -356,7 +380,6 @@
                             { urls: 'stun:stun2.l.google.com:19302' },
                             { urls: 'stun:stun3.l.google.com:19302' },
                             { urls: 'stun:stun4.l.google.com:19302' },
-                            // OpenRelay Public TURN Server fallback for cross-network connectivity
                             {
                                 urls: 'turn:openrelay.metered.ca:80',
                                 username: 'openrelay',
@@ -411,6 +434,7 @@
         function setupDataConnectionListeners(conn) {
             conn.on('data', (data) => {
                 appendChatMessage("Peer", data, false);
+                playMessageSound(); // Play notification chime on incoming message
             });
             conn.on('close', () => {
                 setConnectionStatus('Chat connection closed.', 'text-amber-400');
