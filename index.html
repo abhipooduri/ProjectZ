@@ -278,13 +278,13 @@
             <!-- TAB CONTENT: CHAT VIEW -->
             <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
                 <div class="p-2 bg-slate-100 dark:bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
-                    <span class="text-slate-500">Secure P2P Stream</span>
+                    <span id="chat-header-id" class="text-slate-500 font-bold">ID: ---</span>
                     <span id="chat-status" class="text-slate-500 font-bold">OFFLINE</span>
                 </div>
 
                 <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                        -- P2P ENCRYPTED CHAT & FILE STREAM --
+                        -- NEW P2P CHAT SESSION STARTED --
                     </div>
                 </div>
 
@@ -392,7 +392,7 @@
                 </div>
             </div>
 
-            <button id="save-settings-btn" class="w-full py-2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
+            <button id="save-settings-btn" class="w-full py.2.5 rounded-xl dynamic-bg-primary dynamic-bg-hover font-bold text-white text-xs transition mt-2 shadow-lg">
                 SAVE CHANGES
             </button>
         </div>
@@ -706,6 +706,7 @@
                 peer.on('open', (id) => {
                     myPeerId = id;
                     document.getElementById('my-peer-id').innerText = id;
+                    document.getElementById('chat-header-id').innerText = `ID: ${id}`;
                     setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
                 });
 
