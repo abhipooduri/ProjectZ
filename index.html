@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS LOCAL // Hyper-Local Campus & Community Peer Network</title>
+    <title>CONNECT // Hyper-Local Campus & Community Matcher</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -78,23 +78,10 @@
 
         video {
             object-fit: cover;
-        }
-        .mirror {
             transform: scaleX(-1);
         }
-
-        /* PIP Sizing Utilities */
-        .pip-small {
-            width: 8rem;   /* 128px */
-            height: 11rem; /* 176px */
-        }
-        .pip-medium {
-            width: 12rem;  /* 192px */
-            height: 16rem; /* 256px */
-        }
-        .pip-large {
-            width: 16rem;  /* 256px */
-            height: 22rem; /* 352px */
+        .no-mirror {
+            transform: scaleX(1) !important;
         }
     </style>
 </head>
@@ -168,11 +155,11 @@
                 <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400 font-mono">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-video-call" class="rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 text-white">
-                        <i class="fa-solid fa-video text-xs"></i> Video Call
+                    <button id="btn-start-video" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-video"></i> Video Call
                     </button>
-                    <button id="btn-voice-call" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 text-white">
-                        <i class="fa-solid fa-phone text-xs"></i> Voice Call
+                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-700 hover:bg-emerald-600 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
 
@@ -181,60 +168,53 @@
 
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL SCREEN (CUSTOMIZABLE ZOOM / WHATSAPP LAYOUT) -->
+        <!-- CENTER COLUMN: MAIN CALL SCREEN (WHATSAPP / ZOOM STYLE LAYOUT) -->
         <section class="lg:col-span-6 flex flex-col gap-4">
-            <div id="video-stage" class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950 border border-indigo-900/50 shadow-2xl">
+            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950">
                 
-                <!-- MAIN VIEW CONTAINER -->
-                <div id="main-view-wrapper" class="absolute inset-0 w-full h-full flex items-center justify-center">
-                    <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-                    
-                    <!-- DEFAULT / VOICE PLACEHOLDER FOR MAIN VIEW -->
-                    <div id="main-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 scanlines">
-                        <div id="main-avatar" class="w-20 h-20 rounded-full bg-indigo-950 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg shadow-indigo-500/20">
-                            <i class="fa-solid fa-user text-3xl"></i>
-                        </div>
-                        <h3 id="main-status-title" class="font-display font-bold text-base text-indigo-200">NO PEER CONNECTED</h3>
-                        <p id="main-status-desc" class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video Call or Voice Call.</p>
+                <!-- MAIN DISPLAY VIDEO -->
+                <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden no-mirror absolute inset-0"></video>
+                
+                <!-- PLACEHOLDER WHEN NO CALL ACTIVE -->
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 scanlines">
+                    <div class="w-20 h-20 rounded-full bg-indigo-950 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-user text-3xl"></i>
                     </div>
+                    <h3 class="font-display font-bold text-base text-indigo-200">READY TO CALL</h3>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Enter your friend's ID and choose Video or Voice call.</p>
                 </div>
 
-                <!-- TOP BAR OVERLAY: PEER INFO & SCREEN CUSTOMIZER CONTROLS -->
-                <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-30 pointer-events-none">
-                    <div class="bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-indigo-500/30 flex items-center gap-2 pointer-events-auto shadow-md">
+                <!-- TOP BAR OVERLAY -->
+                <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
+                    <div class="bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-indigo-500/30 flex items-center gap-2">
                         <i id="peer-status-dot" class="fa-solid fa-circle text-[10px] text-slate-500"></i>
                         <span id="peer-info-label" class="text-xs font-mono font-bold text-slate-200">Awaiting Peer...</span>
                     </div>
-
-                    <!-- DISPLAY CUSTOMIZER TOOLBAR -->
-                    <div id="screen-controls" class="flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md px-2 py-1 rounded-xl border border-indigo-500/30 pointer-events-auto shadow-md">
-                        <button id="btn-swap-feeds" title="Swap Main and Floating Screens" class="p-1.5 hover:bg-indigo-600/50 rounded-lg text-cyan-300 hover:text-white transition text-xs">
-                            <i class="fa-solid fa-right-left"></i>
-                        </button>
-                        <button id="btn-resize-pip" title="Resize Floating Video" class="p-1.5 hover:bg-indigo-600/50 rounded-lg text-indigo-300 hover:text-white transition text-xs">
-                            <i class="fa-solid fa-expand"></i>
-                        </button>
-                    </div>
+                    
+                    <button id="btn-swap-feeds" title="Swap Main & PIP Screen" class="pointer-events-auto bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white p-2 rounded-full border border-slate-700/80 text-xs transition">
+                        <i class="fa-solid fa-right-left"></i>
+                    </button>
                 </div>
 
-                <!-- FLOATING PIP (PICTURE-IN-PICTURE) CONTAINER -->
-                <div id="pip-container" class="absolute bottom-16 right-4 pip-medium rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all duration-300 group cursor-pointer" title="Click to swap feeds">
+                <!-- PIP (PICTURE-IN-PICTURE) SECONDARY SCREEN -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     
-                    <div id="pip-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 text-slate-400 text-center p-2">
-                        <i id="pip-icon" class="fa-solid fa-user-shield text-xl mb-1 text-cyan-400"></i>
-                        <span id="pip-label" class="text-[9px] font-mono leading-tight">You</span>
+                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-2">
+                        <i class="fa-solid fa-user-slash text-xl mb-1 text-slate-500"></i>
+                        <span id="pip-label-text" class="text-[9px] font-mono leading-tight">Camera Off</span>
                     </div>
 
-                    <!-- Overlay Swap Hint -->
-                    <div class="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
-                        <span class="text-[10px] font-mono font-bold text-cyan-200 bg-black/80 px-2 py-1 rounded-md border border-cyan-400/50">
-                            <i class="fa-solid fa-rotate"></i> Swap
-                        </span>
+                    <div class="absolute top-1.5 left-1.5 pointer-events-none">
+                        <span id="pip-tag-name" class="bg-slate-950/80 px-1.5 py-0.5 rounded text-[9px] font-mono text-cyan-300 border border-slate-700">You</span>
                     </div>
+
+                    <button id="btn-resize-pip" title="Resize PIP Screen" class="absolute bottom-1.5 right-1.5 bg-slate-950/90 text-slate-300 hover:text-white p-1 rounded text-[10px]">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
                 </div>
 
-                <!-- FLOATING CALL CONTROLS BAR (ZOOM / WHATSAPP STYLE) -->
+                <!-- FLOATING CALL CONTROLS -->
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-indigo-900/50 px-4 py-2 rounded-2xl z-30 shadow-2xl">
                     <button id="btn-toggle-mic" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 flex items-center justify-center text-sm transition">
                         <i class="fa-solid fa-microphone"></i>
@@ -250,7 +230,7 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT TERMINAL & FILE TRANSFER -->
+        <!-- RIGHT COLUMN: CHAT TERMINAL -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
             <div class="p-3 bg-slate-950/90 border-b border-indigo-900/40 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-xs font-display font-bold text-slate-200">
@@ -261,12 +241,12 @@
             </div>
 
             <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                <div id="chat-start-notice" class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
-                    -- P2P ENCRYPTED CHAT SESSION --
+                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
+                    -- P2P ENCRYPTED CHAT & FILE STREAM --
                 </div>
             </div>
 
-            <!-- CHAT & FILE ATTACHMENT FORM -->
+            <!-- CHAT FORM -->
             <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex items-center gap-2">
                 <input id="file-input" type="file" class="hidden">
                 
@@ -291,8 +271,8 @@
                 <i id="incoming-call-icon" class="fa-solid fa-video"></i>
             </div>
             <div>
-                <h3 class="font-display font-bold text-base text-cyan-300">INCOMING <span id="incoming-call-type">CALL</span></h3>
-                <p id="incoming-peer-id" class="text-xs text-slate-400 font-mono mt-1">From Node: ...</p>
+                <h3 id="incoming-call-title" class="font-display font-bold text-base text-cyan-300">INCOMING VIDEO CALL</h3>
+                <p id="incoming-peer-id" class="text-xs text-slate-300 font-mono mt-1 font-bold">From ID: ...</p>
             </div>
             <div class="flex gap-3 w-full mt-2">
                 <button id="btn-decline-call" class="flex-1 py-2.5 rounded-xl bg-red-900 hover:bg-red-800 font-bold text-white text-xs transition">DECLINE</button>
@@ -306,7 +286,7 @@
         <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-indigo-900/60 pb-3">
                 <h3 class="font-display font-bold text-lg text-cyan-300 flex items-center gap-2">
-                    <i class="fa-solid fa-network-wired"></i> NEXUS LOCAL - ARCHITECTURE
+                    <i class="fa-solid fa-network-wired"></i> CONNECT - ARCHITECTURE
                 </h3>
                 <button id="close-modal-btn" class="text-slate-400 hover:text-white text-lg">
                     <i class="fa-solid fa-xmark"></i>
@@ -314,8 +294,8 @@
             </div>
             <div class="space-y-4 text-xs leading-relaxed text-slate-300 font-mono">
                 <div class="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30">
-                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Transmission</h4>
-                    <p>Audio, video, and attachments flow directly browser-to-browser with low latency using public STUN/TURN relays.</p>
+                    <h4 class="font-bold text-cyan-400 text-sm mb-1">Pure WebRTC P2P Video & File Transmission</h4>
+                    <p>Audio, video, and attachments flow directly browser-to-browser with low latency using public STUN & TURN relay servers.</p>
                 </div>
             </div>
             <button id="modal-ack-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 font-bold text-white text-xs hover:bg-indigo-500 transition">
@@ -326,26 +306,24 @@
 
     <!-- FOOTER -->
     <footer class="w-full border-t border-indigo-900/30 bg-slate-950/80 px-4 py-3 text-center text-[11px] font-mono text-slate-500">
-        NEXUS LOCAL // Built for Campus Connections • WebRTC PeerJS Engine
+        CONNECT // Built for Campus Connections • WebRTC PeerJS Engine
     </footer>
 
     <!-- INLINE SCRIPT LOGIC -->
     <script>
         let peer = null;
         let myPeerId = null;
+        let currentFriendId = null;
         let activeCall = null;
         let activeDataConn = null;
         let localStream = null;
-        let remoteStream = null;
         let incomingCallObj = null;
-        
-        let isVoiceOnlyMode = false;
-        let isFeedsSwapped = false; // false = Remote is Main, Local is PiP
-        let pipSizeIndex = 1; // 0: Small, 1: Medium, 2: Large
-        const pipSizes = ['pip-small', 'pip-medium', 'pip-large'];
-
         let micMuted = false;
         let camOff = false;
+        
+        let isMainRemote = true; // Main screen displays remote stream by default
+        let isPipLarge = false;
+        let ringtoneInterval = null;
 
         let audioCtx = null;
 
@@ -390,7 +368,45 @@
             }
         }
 
-        function showNexusNotification(sender, messageText) {
+        function startRingtoneSound() {
+            stopRingtoneSound();
+            try {
+                initAudioContext();
+                if (!audioCtx) return;
+
+                const playChime = () => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+                    
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                };
+
+                playChime();
+                ringtoneInterval = setInterval(playChime, 1500);
+            } catch (e) {
+                console.warn("Ringtone audio error:", e);
+            }
+        }
+
+        function stopRingtoneSound() {
+            if (ringtoneInterval) {
+                clearInterval(ringtoneInterval);
+                ringtoneInterval = null;
+            }
+        }
+
+        function showNotification(title, senderId, messageText) {
             const existingToast = document.getElementById('nexus-toast');
             if (existingToast) existingToast.remove();
 
@@ -400,14 +416,14 @@
 
             toast.innerHTML = `
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-md">
-                    <i class="fa-solid fa-comment-dots text-sm animate-pulse"></i>
+                    <i class="fa-solid fa-bell text-sm animate-pulse"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">NEXUS CHAT</span>
+                        <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">${title}</span>
                         <span class="text-[9px] font-mono text-slate-500">just now</span>
                     </div>
-                    <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">${sender}</p>
+                    <p class="text-xs font-semibold text-slate-200 truncate mt-0.5">Message from ID: ${senderId}</p>
                     <p class="text-[11px] text-slate-400 truncate">${messageText}</p>
                 </div>
                 <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-slate-300 text-xs px-1">
@@ -425,28 +441,32 @@
             }, 4000);
         }
 
+        function resetChatSession() {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML = `
+                <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
+                    -- NEW P2P CHAT SESSION STARTED --
+                </div>
+            `;
+            disableChat();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             initPeerJS();
             setupUIEventListeners();
         });
 
-        // Requests media permissions ON-DEMAND when starting or answering a call
-        async function getLocalMediaStream(wantVideo = true) {
+        async function getLocalMediaStream(enableVideo = true) {
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+            }
             try {
-                if (localStream) {
-                    localStream.getTracks().forEach(t => t.stop());
-                }
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: wantVideo, 
-                    audio: true 
-                });
-                
-                isVoiceOnlyMode = !wantVideo;
-                updateVideoLayout();
+                localStream = await navigator.mediaDevices.getUserMedia({ video: enableVideo, audio: true });
+                updateVideoElements();
                 return localStream;
             } catch (err) {
-                console.warn("Camera/Microphone access denied or error:", err);
-                alert("Camera & Microphone access is required for calls.");
+                console.warn("Camera/Microphone access denied:", err);
+                alert("Microphone/Camera permission is required to place or answer a call.");
                 return null;
             }
         }
@@ -506,20 +526,27 @@
 
                 peer.on('call', (call) => {
                     incomingCallObj = call;
-                    const isVideo = !(call.metadata && call.metadata.voiceOnly);
+                    currentFriendId = call.peer;
+                    const isVideo = call.metadata && call.metadata.type === 'video';
                     
-                    document.getElementById('incoming-call-type').innerText = isVideo ? 'VIDEO CALL' : 'VOICE CALL';
+                    document.getElementById('incoming-call-title').innerText = isVideo ? 'INCOMING VIDEO CALL' : 'INCOMING VOICE CALL';
                     document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video' : 'fa-solid fa-phone';
-                    document.getElementById('incoming-peer-id').innerText = `From Node: ${call.peer}`;
+                    document.getElementById('incoming-peer-id').innerText = `Call from Friend ID: ${call.peer}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
+                    
+                    showNotification(isVideo ? "INCOMING VIDEO CALL" : "INCOMING VOICE CALL", call.peer, `Friend ID ${call.peer} is calling you...`);
+                    startRingtoneSound();
                 });
 
                 peer.on('connection', (conn) => {
-                    // New incoming chat connection: Reset chat state for new session
-                    resetChatSession();
+                    if (activeDataConn) {
+                        activeDataConn.close();
+                    }
                     activeDataConn = conn;
+                    currentFriendId = conn.peer;
+                    resetChatSession();
                     conn.on('open', () => {
-                        setConnectionStatus(`Connected to chat: ${conn.peer}`, 'text-emerald-300');
+                        setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-300');
                         enableChat();
                         setupDataConnectionListeners(conn);
                     });
@@ -533,39 +560,27 @@
         function setupDataConnectionListeners(conn) {
             conn.on('data', (data) => {
                 if (typeof data === 'object' && data.type === 'file') {
-                    appendFileMessage("Peer", data, false);
+                    appendFileMessage(`ID: ${conn.peer}`, data, false);
+                    showNotification("NEW FILE", conn.peer, `Sent a file: ${data.fileName}`);
                 } else {
-                    appendChatMessage("Peer", data, false);
+                    appendChatMessage(`ID: ${conn.peer}`, data, false);
+                    showNotification("NEW MESSAGE", conn.peer, data);
                 }
                 playMessageSound();
             });
             conn.on('close', () => {
                 setConnectionStatus('Chat connection closed.', 'text-amber-400');
-                resetChatSession();
+                disableChat();
             });
-        }
-
-        // AUTO-RESET CHAT SESSION FOR A NEW FRIEND CONNECTION
-        function resetChatSession() {
-            const box = document.getElementById('chat-messages');
-            box.innerHTML = `
-                <div id="chat-start-notice" class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800/60">
-                    -- NEW P2P ENCRYPTED SESSION --
-                </div>
-            `;
-            disableChat();
-            if (activeDataConn) {
-                try { activeDataConn.close(); } catch(e){}
-                activeDataConn = null;
-            }
         }
 
         function handleCallStream(call) {
             activeCall = call;
-            call.on('stream', (stream) => {
-                remoteStream = stream;
-                updateVideoLayout();
+            call.on('stream', (remoteStream) => {
+                window.remoteStreamObj = remoteStream;
+                updateVideoElements();
                 
+                document.getElementById('remote-placeholder').classList.add('hidden');
                 document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-emerald-400";
                 document.getElementById('peer-info-label').innerText = `Connected: ${call.peer}`;
                 setConnectionStatus('Call active!', 'text-emerald-300');
@@ -575,83 +590,69 @@
             });
         }
 
-        // SWAP AND RESIZING LAYOUT LOGIC (WHATSAPP / ZOOM STYLE)
-        function updateVideoLayout() {
+        function updateVideoElements() {
             const mainVideo = document.getElementById('main-video');
             const pipVideo = document.getElementById('pip-video');
-            const mainPlaceholder = document.getElementById('main-placeholder');
-            const pipPlaceholder = document.getElementById('pip-placeholder');
-            
-            const mainAvatar = document.getElementById('main-avatar');
-            const mainStatusTitle = document.getElementById('main-status-title');
-            const mainStatusDesc = document.getElementById('main-status-desc');
-            const pipLabel = document.getElementById('pip-label');
+            const pipOffPlaceholder = document.getElementById('pip-off-placeholder');
+            const pipTagName = document.getElementById('pip-tag-name');
 
-            const primaryStream = isFeedsSwapped ? localStream : remoteStream;
-            const secondaryStream = isFeedsSwapped ? remoteStream : localStream;
+            const remoteStream = window.remoteStreamObj;
 
-            // Update Main Screen
-            if (primaryStream && primaryStream.getVideoTracks().length > 0 && primaryStream.getVideoTracks()[0].enabled && !isVoiceOnlyMode) {
-                mainVideo.srcObject = primaryStream;
-                mainVideo.classList.remove('hidden');
-                mainPlaceholder.classList.add('hidden');
-                if (isFeedsSwapped) mainVideo.classList.add('mirror'); else mainVideo.classList.remove('mirror');
-            } else {
-                mainVideo.srcObject = null;
-                mainVideo.classList.add('hidden');
-                mainPlaceholder.classList.remove('hidden');
-
-                if (activeCall) {
-                    mainStatusTitle.innerText = isVoiceOnlyMode ? "VOICE CALL ACTIVE" : "CAMERA OFF";
-                    mainStatusDesc.innerText = isFeedsSwapped ? "Your camera is muted." : "Friend's camera is muted.";
-                    mainAvatar.innerHTML = `<i class="fa-solid ${isVoiceOnlyMode ? 'fa-microphone text-emerald-400' : 'fa-user text-indigo-400'} text-3xl"></i>`;
-                } else {
-                    mainStatusTitle.innerText = "NO PEER CONNECTED";
-                    mainStatusDesc.innerText = "Enter your friend's ID and choose Video Call or Voice Call.";
-                    mainAvatar.innerHTML = `<i class="fa-solid fa-user text-3xl"></i>`;
+            if (isMainRemote) {
+                if (remoteStream) {
+                    mainVideo.srcObject = remoteStream;
+                    mainVideo.classList.remove('hidden');
                 }
-            }
-
-            // Update Floating PiP Screen
-            if (secondaryStream && secondaryStream.getVideoTracks().length > 0 && secondaryStream.getVideoTracks()[0].enabled && !isVoiceOnlyMode) {
-                pipVideo.srcObject = secondaryStream;
-                pipVideo.classList.remove('hidden');
-                pipPlaceholder.classList.add('hidden');
-                if (!isFeedsSwapped) pipVideo.classList.add('mirror'); else pipVideo.classList.remove('mirror');
+                if (localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled) {
+                    pipVideo.srcObject = localStream;
+                    pipVideo.classList.remove('hidden');
+                    pipOffPlaceholder.classList.add('hidden');
+                } else {
+                    pipVideo.classList.add('hidden');
+                    pipOffPlaceholder.classList.remove('hidden');
+                }
+                pipTagName.innerText = "You";
             } else {
-                pipVideo.srcObject = null;
-                pipVideo.classList.add('hidden');
-                pipPlaceholder.classList.remove('hidden');
-                pipLabel.innerText = isFeedsSwapped ? "Friend" : "You";
+                if (localStream) {
+                    mainVideo.srcObject = localStream;
+                    mainVideo.classList.remove('hidden');
+                }
+                if (remoteStream) {
+                    pipVideo.srcObject = remoteStream;
+                    pipVideo.classList.remove('hidden');
+                    pipOffPlaceholder.classList.add('hidden');
+                } else {
+                    pipVideo.classList.add('hidden');
+                    pipOffPlaceholder.classList.remove('hidden');
+                }
+                pipTagName.innerText = currentFriendId ? `Friend (${currentFriendId})` : "Friend";
             }
         }
 
         function resetCallUI() {
-            if (remoteStream) {
-                remoteStream.getTracks().forEach(t => t.stop());
-                remoteStream = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(t => t.stop());
-                localStream = null;
-            }
+            stopRingtoneSound();
+            window.remoteStreamObj = null;
 
-            document.getElementById('main-video').srcObject = null;
-            document.getElementById('main-video').classList.add('hidden');
-            document.getElementById('pip-video').srcObject = null;
-            document.getElementById('pip-video').classList.add('hidden');
-            document.getElementById('main-placeholder').classList.remove('hidden');
-            document.getElementById('pip-placeholder').classList.remove('hidden');
+            const mainVideo = document.getElementById('main-video');
+            const pipVideo = document.getElementById('pip-video');
+            mainVideo.srcObject = null;
+            pipVideo.srcObject = null;
+            mainVideo.classList.add('hidden');
+            pipVideo.classList.add('hidden');
 
+            document.getElementById('remote-placeholder').classList.remove('hidden');
             document.getElementById('peer-status-dot').className = "fa-solid fa-circle text-[10px] text-slate-500";
             document.getElementById('peer-info-label').innerText = "Awaiting Peer...";
             setConnectionStatus('Call ended.', 'text-amber-300');
             
-            isFeedsSwapped = false;
-            updateVideoLayout();
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            document.getElementById('pip-off-placeholder').classList.remove('hidden');
 
             if (activeCall) { activeCall.close(); activeCall = null; }
-            resetChatSession(); // Clear chat on call termination
+            resetChatSession();
         }
 
         function enableChat() {
@@ -677,10 +678,6 @@
             div.innerHTML = `<span class="text-[9px] text-slate-500 mb-0.5">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-700 text-slate-200'}">${text}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
-
-            if (!isSelf) {
-                showNexusNotification(sender, text);
-            }
         }
 
         function appendFileMessage(sender, fileData, isSelf) {
@@ -706,7 +703,7 @@
             `;
 
             div.innerHTML = `
-                <span class="text-[9px] text-slate-500 mb-0.5">${sender} (File)</span>
+                <span class="text-[9px] text-slate-500 mb-0.5">${sender} (File Attached)</span>
                 <div class="px-3 py-2 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-900/80 border border-indigo-500/50 text-white' : 'bg-slate-900 border border-slate-700 text-slate-200'}">
                     ${contentHtml}
                 </div>
@@ -714,34 +711,29 @@
 
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
-
-            if (!isSelf) {
-                showNexusNotification(sender, `Sent file: ${fileData.fileName}`);
-            }
         }
 
-        function initiateCallProcess(targetId, wantVideo) {
-            // Establish data connection if not active
-            if (!activeDataConn || activeDataConn.peer !== targetId) {
-                resetChatSession();
-                const conn = peer.connect(targetId);
-                activeDataConn = conn;
-                conn.on('open', () => {
-                    setConnectionStatus(`Connected to chat: ${conn.peer}`, 'text-emerald-300');
-                    enableChat();
-                    setupDataConnectionListeners(conn);
-                });
-            }
+        async function initiateCall(isVideo = true) {
+            const targetId = document.getElementById('target-peer-id').value.trim();
+            if (!targetId) { alert("Please enter your friend ID."); return; }
 
-            // Get media and place call
-            getLocalMediaStream(wantVideo).then(stream => {
-                if (!stream) return;
-                setConnectionStatus(`Calling ${targetId}...`, 'text-cyan-300');
-                const call = peer.call(targetId, stream, {
-                    metadata: { voiceOnly: !wantVideo }
-                });
-                handleCallStream(call);
+            currentFriendId = targetId;
+            resetChatSession();
+
+            const stream = await getLocalMediaStream(isVideo);
+            if (!stream) return;
+
+            setConnectionStatus(`Connecting to ID: ${targetId}...`, 'text-cyan-300');
+            const conn = peer.connect(targetId);
+            activeDataConn = conn;
+            conn.on('open', () => {
+                setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-300');
+                enableChat();
+                setupDataConnectionListeners(conn);
             });
+
+            const call = peer.call(targetId, stream, { metadata: { type: isVideo ? 'video' : 'voice' } });
+            handleCallStream(call);
         }
 
         function setupUIEventListeners() {
@@ -749,6 +741,24 @@
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
                     alert("Copied your ID to clipboard!");
+                }
+            });
+
+            document.getElementById('btn-start-video').addEventListener('click', () => initiateCall(true));
+            document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall(false));
+
+            document.getElementById('btn-swap-feeds').addEventListener('click', () => {
+                isMainRemote = !isMainRemote;
+                updateVideoElements();
+            });
+
+            document.getElementById('btn-resize-pip').addEventListener('click', () => {
+                const pipContainer = document.getElementById('pip-container');
+                isPipLarge = !isPipLarge;
+                if (isPipLarge) {
+                    pipContainer.className = "absolute bottom-16 right-4 w-48 h-64 sm:w-56 sm:h-72 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all";
+                } else {
+                    pipContainer.className = "absolute bottom-16 right-4 w-32 h-44 sm:w-36 sm:h-48 rounded-xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-2xl z-20 transition-all";
                 }
             });
 
@@ -777,23 +787,12 @@
                 e.target.value = '';
             });
 
-            document.getElementById('btn-video-call').addEventListener('click', () => {
-                const targetId = document.getElementById('target-peer-id').value.trim();
-                if (!targetId) { alert("Please enter your friend ID."); return; }
-                initiateCallProcess(targetId, true);
-            });
-
-            document.getElementById('btn-voice-call').addEventListener('click', () => {
-                const targetId = document.getElementById('target-peer-id').value.trim();
-                if (!targetId) { alert("Please enter your friend ID."); return; }
-                initiateCallProcess(targetId, false);
-            });
-
             document.getElementById('btn-accept-call').addEventListener('click', async () => {
+                stopRingtoneSound();
                 document.getElementById('incoming-call-modal').classList.add('hidden');
                 if (incomingCallObj) {
-                    const wantVideo = !(incomingCallObj.metadata && incomingCallObj.metadata.voiceOnly);
-                    const stream = await getLocalMediaStream(wantVideo);
+                    const isVideo = incomingCallObj.metadata && incomingCallObj.metadata.type === 'video';
+                    const stream = await getLocalMediaStream(isVideo);
                     if (stream) {
                         incomingCallObj.answer(stream);
                         handleCallStream(incomingCallObj);
@@ -803,6 +802,7 @@
             });
 
             document.getElementById('btn-decline-call').addEventListener('click', () => {
+                stopRingtoneSound();
                 document.getElementById('incoming-call-modal').classList.add('hidden');
                 if (incomingCallObj) {
                     incomingCallObj.close();
@@ -812,22 +812,6 @@
 
             document.getElementById('btn-end-call').addEventListener('click', () => {
                 resetCallUI();
-            });
-
-            // Feed Swapping and PiP Resizing Events
-            const swapFeeds = () => {
-                isFeedsSwapped = !isFeedsSwapped;
-                updateVideoLayout();
-            };
-
-            document.getElementById('btn-swap-feeds').addEventListener('click', swapFeeds);
-            document.getElementById('pip-container').addEventListener('click', swapFeeds);
-
-            document.getElementById('btn-resize-pip').addEventListener('click', () => {
-                const pip = document.getElementById('pip-container');
-                pip.classList.remove(pipSizes[pipSizeIndex]);
-                pipSizeIndex = (pipSizeIndex + 1) % pipSizes.length;
-                pip.classList.add(pipSizes[pipSizeIndex]);
             });
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
@@ -862,12 +846,12 @@
             });
 
             document.getElementById('btn-toggle-cam').addEventListener('click', () => {
-                if (localStream && localStream.getVideoTracks().length > 0) {
+                if (localStream) {
                     camOff = !camOff;
                     localStream.getVideoTracks().forEach(track => track.enabled = !camOff);
                     const btn = document.getElementById('btn-toggle-cam');
                     btn.innerHTML = camOff ? '<i class="fa-solid fa-video-slash text-rose-400"></i>' : '<i class="fa-solid fa-video"></i>';
-                    updateVideoLayout();
+                    updateVideoElements();
                 }
             });
         }
