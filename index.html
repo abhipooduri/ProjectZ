@@ -122,7 +122,7 @@
     <!-- MAIN CONTENT -->
     <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        <!-- LEFT COLUMN: CONTROLS & PEER ID -->
+        <!-- LEFT COLUMN: CONTROLS & USER ID -->
         <section class="lg:col-span-3 flex flex-col gap-4">
             
             <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
@@ -133,17 +133,19 @@
                 <div>
                     <label class="text-[11px] font-mono text-slate-400 mb-1 block">Campus / Region Hub</label>
                     <select id="select-campus" class="w-full bg-slate-900 border border-indigo-500/30 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none font-semibold">
+                        <option value="" disabled selected>Select your college</option>
                         <option value="cmr_ec">CMR Engineering College</option>
                         <option value="vnr_vjiet">VNR VJIET</option>
                         <option value="iit_hyd">IIT Hyderabad</option>
+                        <option value="other">Other</option>
                     </select>
                 </div>
             </div>
 
-            <!-- MY PEER ID -->
+            <!-- YOUR ID -->
             <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
                 <div class="truncate mr-2">
-                    <span class="text-slate-500">MY NODE:</span>
+                    <span class="text-slate-500">Your ID:</span>
                     <span id="my-peer-id" class="text-indigo-300 font-bold ml-1">Initializing...</span>
                 </div>
                 <button id="copy-id-btn" class="text-slate-400 hover:text-cyan-300 transition text-xs px-2 py-1 bg-slate-800 rounded">
@@ -153,26 +155,11 @@
 
             <!-- CONNECT & CALL CONTROLS -->
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <div class="text-xs font-display font-bold text-cyan-300">PEER CONNECTION</div>
-                <input id="target-peer-id" type="text" autocomplete="off" placeholder="Paste friend's Peer ID" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400 font-mono">
-                <button id="btn-connect-peer" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2 text-xs font-bold transition">CONNECT TEXT CHAT</button>
+                <input id="target-peer-id" type="text" autocomplete="off" placeholder="enter your friend ID" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400 font-mono">
                 
-                <!-- CALL MODE TABS -->
-                <div class="pt-2 border-t border-slate-800">
-                    <label class="text-[11px] font-mono text-slate-400 mb-1.5 block">Call Type Mode</label>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button id="tab-video-call" class="py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-video text-xs"></i> Video Call
-                        </button>
-                        <button id="tab-voice-call" class="py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-phone text-xs"></i> Voice Call
-                        </button>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button id="btn-start-call" class="flex-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 py-2 text-xs font-bold transition">START CALL</button>
-                        <button id="btn-end-call" class="rounded-lg bg-red-900 hover:bg-red-800 px-3 text-xs font-bold transition">END</button>
-                    </div>
+                <div class="flex gap-2">
+                    <button id="btn-connect-peer" class="flex-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2 text-xs font-bold transition">CONNECT</button>
+                    <button id="btn-end-call" class="rounded-lg bg-red-900 hover:bg-red-800 px-3 text-xs font-bold transition">END</button>
                 </div>
 
                 <p id="connection-status" class="text-[11px] text-amber-300 font-mono">Initializing PeerJS...</p>
@@ -193,7 +180,7 @@
                             <i class="fa-solid fa-satellite text-2xl"></i>
                         </div>
                         <h3 class="font-display font-bold text-sm text-indigo-200">NO PEER CONNECTED</h3>
-                        <p class="text-xs text-slate-400 max-w-xs mt-1">Connect with a peer and start a video or voice call.</p>
+                        <p class="text-xs text-slate-400 max-w-xs mt-1">Enter a friend's ID and click CONNECT to start video and audio call.</p>
                     </div>
 
                     <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -251,7 +238,6 @@
 
             <!-- CHAT & FILE ATTACHMENT FORM -->
             <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-900/40 flex items-center gap-2">
-                <!-- Hidden file input -->
                 <input id="file-input" type="file" class="hidden">
                 
                 <button id="file-attach-btn" type="button" disabled class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-400 border border-slate-700 text-xs transition flex items-center justify-center">
@@ -275,7 +261,7 @@
                 <i id="incoming-call-icon" class="fa-solid fa-video"></i>
             </div>
             <div>
-                <h3 class="font-display font-bold text-base text-cyan-300">INCOMING <span id="incoming-call-type">VIDEO</span> CALL</h3>
+                <h3 class="font-display font-bold text-base text-cyan-300">INCOMING CALL</h3>
                 <p id="incoming-peer-id" class="text-xs text-slate-400 font-mono mt-1">From Node: ...</p>
             </div>
             <div class="flex gap-3 w-full mt-2">
@@ -321,11 +307,14 @@
         let activeDataConn = null;
         let localStream = null;
         let incomingCallObj = null;
-        let selectedCallMode = 'video';
         let micMuted = false;
         let camOff = false;
 
         let audioCtx = null;
+
+        function generate7DigitId() {
+            return Math.floor(1000000 + Math.random() * 9000000).toString();
+        }
 
         function initAudioContext() {
             if (!audioCtx) {
@@ -428,8 +417,9 @@
 
         function initPeerJS() {
             setConnectionStatus('Connecting to signaling server...', 'text-amber-300');
+            const custom7DigitId = generate7DigitId();
             try {
-                peer = new Peer({
+                peer = new Peer(custom7DigitId, {
                     host: '0.peerjs.com',
                     secure: true,
                     port: 443,
@@ -466,6 +456,8 @@
                             if (peer) peer.destroy();
                             initPeerJS();
                         }, 3000);
+                    } else if (err.type === 'unavailable-id') {
+                        initPeerJS(); // Try again with a new 7-digit ID if collision occurs
                     } else {
                         setConnectionStatus(`P2P Error: ${err.type}`, 'text-rose-400');
                     }
@@ -473,12 +465,7 @@
 
                 peer.on('call', (call) => {
                     incomingCallObj = call;
-                    const isVideo = call.metadata && call.metadata.type === 'video';
-                    
-                    document.getElementById('incoming-call-type').innerText = isVideo ? 'VIDEO' : 'VOICE';
-                    document.getElementById('incoming-call-icon').className = isVideo ? 'fa-solid fa-video text-2xl' : 'fa-solid fa-phone text-2xl';
                     document.getElementById('incoming-peer-id').innerText = `From Node: ${call.peer}`;
-                    
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
                 });
 
@@ -608,7 +595,7 @@
             document.getElementById('copy-id-btn').addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
-                    alert("Copied your Peer ID to clipboard!");
+                    alert("Copied your ID to clipboard!");
                 }
             });
 
@@ -637,26 +624,11 @@
                 e.target.value = '';
             });
 
-            document.getElementById('tab-video-call').addEventListener('click', async () => {
-                selectedCallMode = 'video';
-                document.getElementById('tab-video-call').className = "py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5";
-                document.getElementById('tab-voice-call').className = "py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5";
-                await initLocalWebcam(true, true);
-                document.getElementById('local-cam-off').classList.add('hidden');
-            });
-
-            document.getElementById('tab-voice-call').addEventListener('click', async () => {
-                selectedCallMode = 'voice';
-                document.getElementById('tab-voice-call').className = "py-1.5 px-3 rounded-lg bg-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5";
-                document.getElementById('tab-video-call').className = "py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5";
-                await initLocalWebcam(false, true);
-                document.getElementById('local-cam-off').classList.remove('hidden');
-            });
-
-            document.getElementById('btn-connect-peer').addEventListener('click', () => {
+            document.getElementById('btn-connect-peer').addEventListener('click', async () => {
                 const targetId = document.getElementById('target-peer-id').value.trim();
-                if (!targetId) { alert("Please enter a valid Peer ID."); return; }
+                if (!targetId) { alert("Please enter your friend ID."); return; }
                 
+                // Connect data chat
                 setConnectionStatus(`Connecting to ${targetId}...`, 'text-cyan-300');
                 const conn = peer.connect(targetId);
                 activeDataConn = conn;
@@ -665,29 +637,20 @@
                     enableChat();
                     setupDataConnectionListeners(conn);
                 });
-            });
 
-            document.getElementById('btn-start-call').addEventListener('click', async () => {
-                const targetId = document.getElementById('target-peer-id').value.trim();
-                if (!targetId) { alert("Please enter a target Peer ID to call."); return; }
-                
-                const useVideo = selectedCallMode === 'video';
+                // Start video/audio call
                 if (!localStream) {
-                    await initLocalWebcam(useVideo, true);
+                    await initLocalWebcam(true, true);
                 }
                 
-                setConnectionStatus(`Calling ${targetId} (${selectedCallMode})...`, 'text-cyan-300');
-                const call = peer.call(targetId, localStream, {
-                    metadata: { type: selectedCallMode }
-                });
+                const call = peer.call(targetId, localStream);
                 handleCallStream(call);
             });
 
             document.getElementById('btn-accept-call').addEventListener('click', async () => {
                 document.getElementById('incoming-call-modal').classList.add('hidden');
                 if (incomingCallObj) {
-                    const isVideo = incomingCallObj.metadata && incomingCallObj.metadata.type === 'video';
-                    await initLocalWebcam(isVideo, true);
+                    await initLocalWebcam(true, true);
                     incomingCallObj.answer(localStream);
                     handleCallStream(incomingCallObj);
                     incomingCallObj = null;
