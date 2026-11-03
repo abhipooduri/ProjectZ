@@ -821,7 +821,7 @@
         function connectRandomPeer() {
             if (activeConns.length > 0) {
                 const connectedNames = getConnectedNamesList().join(', ');
-                const warningMsg = `You are already there in call with ${connectedNames || 'someone'}`;
+                const warningMsg = `You are already in a call with ${connectedNames || 'someone'}. Please end the current connection first.`;
                 showToast("Active Call", warningMsg);
                 alert(warningMsg);
                 return;
