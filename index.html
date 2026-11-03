@@ -352,10 +352,15 @@
                 initMQTTDiscovery();
             });
 
+            // When someone connects TO you (Incoming Data Connection)
             peer.on('connection', (conn) => {
                 activeConn = conn;
                 setupDataConn(conn);
-                const pData = activePeersMap.get(conn.peer);
+                
+                const callerPeerId = conn.peer;
+                document.getElementById('target-peer-id').value = callerPeerId;
+
+                const pData = activePeersMap.get(callerPeerId);
                 currentTargetName = pData ? pData.name : 'Peer';
                 
                 document.getElementById('chat-header-id').innerText = `Connected to ${currentTargetName}`;
@@ -364,9 +369,12 @@
                 showToast("Connected!", `You are now connected to ${currentTargetName}`);
             });
 
+            // When someone calls you
             peer.on('call', (call) => {
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
+                document.getElementById('target-peer-id').value = callerPeerId;
+
                 const callerData = activePeersMap.get(callerPeerId);
                 currentTargetName = callerData ? callerData.name : `User (${callerPeerId.slice(-4)})`;
                 
