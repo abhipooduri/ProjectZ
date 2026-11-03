@@ -57,6 +57,17 @@
 
         video { object-fit: cover; transform: scaleX(-1); }
         .app-logo-icon { object-fit: cover; width: 100%; height: 100%; }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
+
+        .drop-zone-active {
+            border: 2px dashed #6366f1 !important;
+            background: rgba(99, 102, 241, 0.15) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
@@ -127,7 +138,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member to chat or call.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member to chat, share files, or call.</p>
                 </div>
 
                 <!-- PIP LOCAL PREVIEW -->
@@ -169,7 +180,7 @@
             </div>
 
             <!-- CHAT VIEW -->
-            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
+            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden relative">
                 <div class="p-2.5 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
                     <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[150px]">No active session</span>
                     <div class="flex items-center gap-1.5">
@@ -182,14 +193,23 @@
                     </div>
                 </div>
 
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
+                <!-- CHAT MESSAGES CONTAINER & DROP ZONE -->
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono transition-all">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
-                        -- Connect to a member from the Members tab --
+                        -- Connect to a member to chat and share files --
                     </div>
                 </div>
-                <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-2">
-                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-300 rounded-xl px-3 py-2 text-xs dark:text-slate-200 text-slate-800 outline-none">
-                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition">
+
+                <!-- HIDDEN FILE INPUT -->
+                <input type="file" id="file-input" class="hidden" multiple>
+
+                <!-- CHAT FORM -->
+                <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-1.5">
+                    <button type="button" id="btn-attach-file" disabled class="p-2 rounded-xl text-slate-400 hover:text-indigo-400 disabled:opacity-40 transition flex items-center justify-center" title="Attach file or image">
+                        <i class="fa-solid fa-paperclip text-sm"></i>
+                    </button>
+                    <input id="chat-input" type="text" placeholder="Message or drag files..." disabled class="flex-1 dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-300 rounded-xl px-3 py-2 text-xs dark:text-slate-200 text-slate-800 outline-none">
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition disabled:opacity-40">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
@@ -278,6 +298,15 @@
         </div>
     </div>
 
+    <!-- IMAGE PREVIEW LIGHTBOX MODAL -->
+    <div id="modal-image-lightbox" class="fixed inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50 hidden">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800/80 text-white hover:bg-slate-700 flex items-center justify-center text-lg transition">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img id="lightbox-img" src="" alt="Full view" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain">
+        <p id="lightbox-caption" class="text-xs text-slate-300 mt-3 font-mono"></p>
+    </div>
+
     <script>
         let peer = null;
         let myPeerId = null;
@@ -294,6 +323,8 @@
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
 
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
         }
@@ -302,6 +333,7 @@
             initTheme();
             checkUserIdentity();
             setupUIEvents();
+            setupDragAndDrop();
         });
 
         function checkUserIdentity() {
@@ -371,7 +403,7 @@
             });
 
             peer.on('connection', (conn) => {
-                // If busy with another data connection
+                // Check if already in an active session with someone else
                 if (activeConn && activeConn.open && activeConn.peer !== conn.peer) {
                     conn.on('open', () => {
                         conn.send(JSON.stringify({ type: 'BUSY_NOTICE', busyWith: connectedPartnerName || 'another user' }));
@@ -539,15 +571,22 @@
             conn.on('open', () => {
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
+                document.getElementById('btn-attach-file').removeAttribute('disabled');
             });
             conn.on('data', (rawMsg) => {
+                // Try JSON parsing for structured messages (files / system notices)
                 try {
-                    const parsed = JSON.parse(rawMsg);
-                    if (parsed.type === 'BUSY_NOTICE') {
-                        showToast("User Busy", `${currentTargetName} is currently connected to another user (${parsed.busyWith})`);
-                        alert(`${currentTargetName} is currently connected to another user (${parsed.busyWith}).`);
-                        conn.close();
-                        return;
+                    const parsed = typeof rawMsg === 'string' ? JSON.parse(rawMsg) : rawMsg;
+                    if (parsed && typeof parsed === 'object') {
+                        if (parsed.type === 'BUSY_NOTICE') {
+                            showToast("User Busy", `${currentTargetName} is currently connected to another user (${parsed.busyWith})`);
+                            conn.close();
+                            return;
+                        }
+                        if (parsed.type === 'FILE') {
+                            handleIncomingFile(parsed);
+                            return;
+                        }
                     }
                 } catch(e) {}
 
@@ -556,12 +595,7 @@
                     appendSystemMessage(cleanMsg);
                 } else {
                     appendMessage(currentTargetName, rawMsg, false);
-                    if (document.getElementById('view-chat').classList.contains('hidden')) {
-                        unreadCount++;
-                        const badge = document.getElementById('unread-badge');
-                        badge.innerText = unreadCount;
-                        badge.classList.remove('hidden');
-                    }
+                    incrementUnreadBadge();
                 }
             });
             conn.on('close', () => {
@@ -577,8 +611,162 @@
             document.getElementById('chat-header-id').innerText = "No active session";
             document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
             document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
+            document.getElementById('chat-input').setAttribute('disabled', 'true');
+            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
+            document.getElementById('btn-attach-file').setAttribute('disabled', 'true');
         }
 
+        function incrementUnreadBadge() {
+            if (document.getElementById('view-chat').classList.contains('hidden')) {
+                unreadCount++;
+                const badge = document.getElementById('unread-badge');
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        /* -------------------------------------------------------------
+           FILE & IMAGE SHARING LOGIC
+        ------------------------------------------------------------- */
+        function processFiles(files) {
+            if (!activeConn || !activeConn.open) {
+                showToast("Not Connected", "Please connect to a member before sending files.");
+                return;
+            }
+
+            Array.from(files).forEach(file => {
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast("File Too Large", `${file.name} exceeds the 10MB limit.`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileData = {
+                        type: 'FILE',
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileSize: file.size,
+                        dataUrl: e.target.result
+                    };
+
+                    activeConn.send(JSON.stringify(fileData));
+                    appendFileMessage('You', fileData, true);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleIncomingFile(fileObj) {
+            appendFileMessage(currentTargetName, fileObj, false);
+            incrementUnreadBadge();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function appendFileMessage(sender, fileObj, isSelf) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+
+            const isImage = fileObj.fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileObj.fileName);
+
+            let contentHtml = '';
+            if (isImage) {
+                contentHtml = `
+                    <div class="group relative rounded-2xl overflow-hidden border dark:border-slate-800 border-slate-300 max-w-[240px] sm:max-w-[280px] cursor-pointer shadow-lg bg-black/20" onclick="openLightbox('${fileObj.dataUrl}', '${escapeHtml(fileObj.fileName)}')">
+                        <img src="${fileObj.dataUrl}" alt="${escapeHtml(fileObj.fileName)}" class="w-full max-h-[220px] object-cover transition transform group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                            <i class="fa-solid fa-expand"></i> View Image
+                        </div>
+                    </div>
+                `;
+            } else {
+                let fileIcon = 'fa-file';
+                if (fileObj.fileType.includes('pdf')) fileIcon = 'fa-file-pdf text-red-400';
+                else if (fileObj.fileType.includes('zip') || fileObj.fileType.includes('compressed')) fileIcon = 'fa-file-zipper text-amber-400';
+                else if (fileObj.fileType.includes('text')) fileIcon = 'fa-file-lines text-cyan-400';
+
+                contentHtml = `
+                    <div class="flex items-center gap-3 p-3 rounded-xl border max-w-[260px] ${isSelf ? 'bg-indigo-700/80 border-indigo-500 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 dark:text-slate-200 text-slate-900'} shadow-md">
+                        <div class="w-9 h-9 rounded-lg bg-black/20 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid ${fileIcon}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-xs truncate" title="${escapeHtml(fileObj.fileName)}">${escapeHtml(fileObj.fileName)}</p>
+                            <p class="text-[10px] opacity-75">${formatBytes(fileObj.fileSize)}</p>
+                        </div>
+                        <a href="${fileObj.dataUrl}" download="${escapeHtml(fileObj.fileName)}" class="p-2 rounded-lg bg-black/30 hover:bg-black/50 text-white transition flex items-center justify-center" title="Download File">
+                            <i class="fa-solid fa-download text-xs"></i>
+                        </a>
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <span class="text-[9px] text-slate-500 mb-1">${sender}</span>
+                ${contentHtml}
+            `;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function openLightbox(src, name) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox-caption').innerText = name;
+            document.getElementById('modal-image-lightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('modal-image-lightbox').classList.add('hidden');
+        }
+
+        function setupDragAndDrop() {
+            const dropArea = document.getElementById('chat-messages');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    if (activeConn && activeConn.open) {
+                        dropArea.classList.add('drop-zone-active');
+                    }
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('drop-zone-active');
+                }, false);
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    processFiles(files);
+                }
+            }, false);
+        }
+
+        /* -------------------------------------------------------------
+           WEBRTC MEDIA / AUDIO / VIDEO CALL LOGIC
+        ------------------------------------------------------------- */
         async function getLocalMediaStream(video = true) {
             try {
                 if (localStream) {
@@ -591,14 +779,14 @@
                 document.getElementById('pip-off-placeholder').classList.add('hidden');
                 return localStream;
             } catch (err) {
-                alert("Camera and microphone permission required for calls.");
+                showToast("Permission Denied", "Camera/Microphone permissions required for call.");
                 return null;
             }
         }
 
         async function requestCall(video) {
             const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Please connect to a member first!"); return; }
+            if (!targetId) { showToast("Notice", "Please connect to a member first!"); return; }
 
             const stream = await getLocalMediaStream(video);
             if (!stream) return;
@@ -665,7 +853,7 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${text}</div>`;
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${escapeHtml(text)}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -674,7 +862,7 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex justify-center my-2`;
-            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${text}</div>`;
+            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${escapeHtml(text)}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -754,6 +942,17 @@
                     activeConn.send(msg);
                     appendMessage("You", msg, true);
                     input.value = '';
+                }
+            });
+
+            document.getElementById('btn-attach-file').addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    processFiles(e.target.files);
+                    e.target.value = '';
                 }
             });
 
