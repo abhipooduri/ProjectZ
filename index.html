@@ -144,7 +144,7 @@
                     <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
                     <video id="local-swapped-video" autoplay playsinline muted class="w-full h-full object-cover hidden absolute inset-0"></video>
                     
-                    <!-- Placeholder "Are you ready to engage" shown ONLY when not in call -->
+                    <!-- Placeholder -->
                     <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/95 bg-slate-900/95 z-20">
                         <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
                             <i class="fa-solid fa-user text-3xl"></i>
@@ -491,7 +491,6 @@
         }
 
         function initTheme() {
-            // Set 'light' as the default theme if no preference is saved yet
             const savedTheme = localStorage.getItem('connect_theme') || 'light';
             setTheme(savedTheme);
         }
