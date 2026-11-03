@@ -465,7 +465,9 @@
                 uploadImage: "Upload Image",
                 emailId: "Email ID",
                 phoneNumber: "Phone Number",
-                saveChanges: "SAVE CHANGES"
+                saveChanges: "SAVE CHANGES",
+                noMembersOnline: "No active members online right now.",
+                noMembersTip: "Open another browser tab or invite a friend to connect!"
             },
             te: {
                 account: "ఖాతా",
@@ -501,7 +503,9 @@
                 uploadImage: "చిత్రాన్ని అప్‌లోడ్ చేయండి",
                 emailId: "ఇమెయిల్ ID",
                 phoneNumber: "ఫోన్ నంబర్",
-                saveChanges: "మార్పులను సేవ్ చేయండి"
+                saveChanges: "మార్పులను సేవ్ చేయండి",
+                noMembersOnline: "ప్రస్తుతం ఆన్‌లైన్‌లో ఉన్న సభ్యులు ఎవరూ లేరు.",
+                noMembersTip: "కనెక్ట్ కావడానికి మరొక ట్యాబ్‌ను తెరవండి లేదా స్నేహితుడిని ఆహ్వానించండి!"
             },
             hi: {
                 account: "खाता",
@@ -537,7 +541,9 @@
                 uploadImage: "छवि अपलोड करें",
                 emailId: "ईमेल ID",
                 phoneNumber: "फ़ोन नंबर",
-                saveChanges: "बदलाव सहेजें"
+                saveChanges: "बदलाव सहेजें",
+                noMembersOnline: "अभी कोई सक्रिय सदस्य ऑनलाइन नहीं है।",
+                noMembersTip: "कनेक्ट करने के लिए एक और टैब खोलें या किसी मित्र को आमंत्रित करें!"
             }
         };
 
@@ -763,18 +769,18 @@
                 </div>
             `;
 
-            let onlineCount = 1;
+            let otherOnlineCount = 0;
 
             Object.values(activePeers).forEach(p => {
                 if (p.peerId === myPeerId) return;
                 
-                // Expire stale heartbeats after 12 seconds
-                if (now - p.timestamp > 12000) {
+                // Expire stale heartbeats after 10 seconds
+                if (now - p.timestamp > 10000) {
                     delete activePeers[p.peerId];
                     return;
                 }
 
-                onlineCount++;
+                otherOnlineCount++;
                 const isConnected = activeDataConn && activeDataConn.peer === p.peerId;
 
                 const div = document.createElement('div');
@@ -794,15 +800,35 @@
                 container.appendChild(div);
             });
 
+            // IF NO OTHER ONLINE MEMBERS ARE FOUND: DISPLAY EXPLICIT EMPTY STATE
+            if (otherOnlineCount === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = "p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 text-center flex flex-col items-center justify-center gap-1.5 my-2";
+                
+                const dict = translations[appliedLanguage] || translations.en;
+                const noMembersTitle = dict.noMembersOnline || "No active members online right now.";
+                const noMembersTip = dict.noMembersTip || "Open another browser tab or invite a friend to connect!";
+
+                emptyDiv.innerHTML = `
+                    <i class="fa-solid fa-users-slash text-slate-600 text-xl mb-1"></i>
+                    <span class="font-bold text-slate-400 text-xs">${noMembersTitle}</span>
+                    <span class="text-[10px] text-slate-500 max-w-[200px] leading-tight">${noMembersTip}</span>
+                `;
+                container.appendChild(emptyDiv);
+            }
+
             // Persist pruned peers list
             localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
-            document.getElementById('online-counter').innerText = `${onlineCount} Online`;
+            
+            // Update counter UI
+            const totalCount = otherOnlineCount + 1;
+            document.getElementById('online-counter').innerText = `${totalCount} Online ${otherOnlineCount === 0 ? '(You)' : ''}`;
         }
 
-        // Heartbeat interval (updates presence every 4 seconds)
+        // Heartbeat interval (updates presence every 3 seconds)
         setInterval(() => {
             registerPeerInLocalStorage();
-        }, 4000);
+        }, 3000);
 
         // One-click connection to active online members
         function requestConnection(targetPeerId, targetUsername) {
@@ -860,7 +886,7 @@
             if (!targetId) { alert("Please select or enter a friend Peer ID."); return; }
 
             if (connectionType === 'chat') {
-                setConnectionStatus(`Connecting to active member: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
+                setConnectionStatus(`Connecting to member: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
                 const conn = peer.connect(targetId);
                 activeDataConn = conn;
                 conn.on('open', () => {
