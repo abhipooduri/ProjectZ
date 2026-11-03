@@ -57,17 +57,6 @@
 
         video { object-fit: cover; transform: scaleX(-1); }
         .app-logo-icon { object-fit: cover; width: 100%; height: 100%; }
-
-        /* Custom scrollbars */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
-
-        .drop-zone-active {
-            border: 2px dashed #6366f1 !important;
-            background: rgba(99, 102, 241, 0.15) !important;
-        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
@@ -82,6 +71,14 @@
                 <h4 id="toast-title" class="text-xs font-bold text-slate-100 dark:text-slate-100 text-slate-900">Connected</h4>
                 <p id="toast-desc" class="text-[11px] text-slate-400">Successfully connected to user.</p>
             </div>
+        </div>
+    </div>
+
+    <!-- FULL IMAGE LIGHTBOX MODAL -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-4xl max-h-[90vh]">
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl border border-slate-700">
         </div>
     </div>
 
@@ -138,7 +135,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member to chat, share files, or call.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member or use Quick Match.</p>
                 </div>
 
                 <!-- PIP LOCAL PREVIEW -->
@@ -172,17 +169,20 @@
 
             <!-- MEMBERS DIRECTORY VIEW -->
             <div id="view-peers" class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
-                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
-                    <span>Available Active Members:</span>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] text-slate-500">Online Members:</span>
                     <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
                 </div>
-                <div id="members-list-container" class="flex flex-col gap-2"></div>
+                <button onclick="connectRandomPeer()" class="w-full py-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:opacity-90 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-shuffle"></i> Quick Random Connect
+                </button>
+                <div id="members-list-container" class="flex flex-col gap-2 mt-2"></div>
             </div>
 
             <!-- CHAT VIEW -->
-            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden relative">
+            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
                 <div class="p-2.5 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
-                    <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[150px]">No active session</span>
+                    <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[140px]">No active session</span>
                     <div class="flex items-center gap-1.5">
                         <button id="btn-chat-video" onclick="requestCall(true)" disabled class="p-1.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition" title="Video Call">
                             <i class="fa-solid fa-video text-xs"></i>
@@ -193,23 +193,25 @@
                     </div>
                 </div>
 
-                <!-- CHAT MESSAGES CONTAINER & DROP ZONE -->
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono transition-all">
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
-                        -- Connect to a member to chat and share files --
+                        -- Connect to a member from Members tab --
                     </div>
                 </div>
+                
+                <!-- FILE ATTACHMENT PREVIEW BAR -->
+                <div id="file-preview-bar" class="hidden px-3 py-1.5 bg-indigo-950/40 border-t border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
+                    <span id="file-preview-name" class="text-indigo-300 truncate max-w-[180px]">File attached</span>
+                    <button onclick="clearFileAttachment()" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-xmark"></i></button>
+                </div>
 
-                <!-- HIDDEN FILE INPUT -->
-                <input type="file" id="file-input" class="hidden" multiple>
-
-                <!-- CHAT FORM -->
-                <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-1.5">
-                    <button type="button" id="btn-attach-file" disabled class="p-2 rounded-xl text-slate-400 hover:text-indigo-400 disabled:opacity-40 transition flex items-center justify-center" title="Attach file or image">
+                <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-2">
+                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelected(this)">
+                    <button type="button" onclick="document.getElementById('file-input').click()" class="p-2 text-indigo-400 hover:text-indigo-300 transition" title="Attach file or image">
                         <i class="fa-solid fa-paperclip text-sm"></i>
                     </button>
-                    <input id="chat-input" type="text" placeholder="Message or drag files..." disabled class="flex-1 dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-300 rounded-xl px-3 py-2 text-xs dark:text-slate-200 text-slate-800 outline-none">
-                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition disabled:opacity-40">
+                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-300 rounded-xl px-3 py-2 text-xs dark:text-slate-200 text-slate-800 outline-none">
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
@@ -298,32 +300,21 @@
         </div>
     </div>
 
-    <!-- IMAGE PREVIEW LIGHTBOX MODAL -->
-    <div id="modal-image-lightbox" class="fixed inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50 hidden">
-        <button onclick="closeLightbox()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800/80 text-white hover:bg-slate-700 flex items-center justify-center text-lg transition">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <img id="lightbox-img" src="" alt="Full view" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain">
-        <p id="lightbox-caption" class="text-xs text-slate-300 mt-3 font-mono"></p>
-    </div>
-
     <script>
         let peer = null;
         let myPeerId = null;
         let mqttClient = null;
-        let activeConn = null;
-        let activeCall = null;
+        let activeConns = []; // Supports multi-peer/group connections
+        let activeCalls = []; // Supports multi-person video calls
         let localStream = null;
         let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
-        let currentTargetName = 'Peer';
         let unreadCount = 0;
-        let connectedPartnerName = null;
+        let attachedFile = null;
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
-
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+        const MAX_GROUP_PARTICIPANTS = 3; // Max capacity limit for calls/rooms
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
@@ -333,7 +324,6 @@
             initTheme();
             checkUserIdentity();
             setupUIEvents();
-            setupDragAndDrop();
         });
 
         function checkUserIdentity() {
@@ -390,8 +380,7 @@
                 port: 443,
                 config: { iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
+                    { urls: 'stun:stun1.l.google.com:19302' }
                 ] }
             });
 
@@ -403,53 +392,46 @@
             });
 
             peer.on('connection', (conn) => {
-                // Check if already in an active session with someone else
-                if (activeConn && activeConn.open && activeConn.peer !== conn.peer) {
+                // Check if our room reached max capacity
+                if (activeConns.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
                     conn.on('open', () => {
-                        conn.send(JSON.stringify({ type: 'BUSY_NOTICE', busyWith: connectedPartnerName || 'another user' }));
+                        conn.send(JSON.stringify({ type: 'BUSY_NOTICE', reason: 'MAX_CAPACITY' }));
                         setTimeout(() => { conn.close(); }, 500);
                     });
                     return;
                 }
 
-                activeConn = conn;
-                setupDataConn(conn);
-                
-                const callerPeerId = conn.peer;
-                document.getElementById('target-peer-id').value = callerPeerId;
+                // Check if target is already in another call/session
+                const remotePeerId = conn.peer;
+                const peerData = activePeersMap.get(remotePeerId);
+                const pName = peerData ? peerData.name : 'Peer';
 
-                const pData = activePeersMap.get(callerPeerId);
-                currentTargetName = pData ? pData.name : 'Peer';
-                connectedPartnerName = currentTargetName;
-                
-                document.getElementById('chat-header-id').innerText = `Connected to ${currentTargetName}`;
+                activeConns.push(conn);
+                setupDataConn(conn);
+
+                document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
                 document.getElementById('btn-chat-video').removeAttribute('disabled');
                 document.getElementById('btn-chat-voice').removeAttribute('disabled');
-                
+
                 const log = document.getElementById('conn-log');
-                log.innerText = `Connected to ${currentTargetName}`;
+                log.innerText = `Connected with group`;
                 log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
-                showToast("Connected!", `You are now connected to ${currentTargetName}`);
-
-                setTimeout(() => {
-                    appendSystemMessage(`${userName} is connected with you`);
-                }, 500);
+                showToast("Connected!", `${pName} joined your session.`);
+                appendSystemMessage(`${pName} joined the session`);
             });
 
             peer.on('call', (call) => {
-                if (activeCall) {
+                if (activeCalls.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
                     call.close();
                     return;
                 }
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
-                document.getElementById('target-peer-id').value = callerPeerId;
-
                 const callerData = activePeersMap.get(callerPeerId);
-                currentTargetName = callerData ? callerData.name : `User (${callerPeerId.slice(-4)})`;
-                
-                document.getElementById('caller-name').innerText = currentTargetName;
+                const callerName = callerData ? callerData.name : `User`;
+
+                document.getElementById('caller-name').innerText = callerName;
                 document.getElementById('modal-incoming-call').classList.remove('hidden');
             });
         }
@@ -467,7 +449,11 @@
                 try {
                     const data = JSON.parse(message.toString());
                     if (data.peerId && data.peerId !== myPeerId) {
-                        activePeersMap.set(data.peerId, { name: data.name, lastSeen: Date.now() });
+                        activePeersMap.set(data.peerId, { 
+                            name: data.name, 
+                            inCall: data.inCall || false, 
+                            lastSeen: Date.now() 
+                        });
                         renderMembersList();
                     }
                 } catch(e) {}
@@ -486,7 +472,8 @@
             if (!mqttClient || !myPeerId) return;
             const payload = JSON.stringify({
                 peerId: myPeerId,
-                name: userName
+                name: userName,
+                inCall: activeConns.length > 0
             });
             mqttClient.publish(MQTT_TOPIC, payload);
         }
@@ -494,9 +481,7 @@
         function isNameTaken(newName) {
             const trimmed = newName.trim().toLowerCase();
             for (let [pId, data] of activePeersMap.entries()) {
-                if (data.name.toLowerCase() === trimmed) {
-                    return true;
-                }
+                if (data.name.toLowerCase() === trimmed) return true;
             }
             return false;
         }
@@ -520,18 +505,19 @@
                 container.innerHTML += `
                     <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed dark:border-slate-800 border-slate-300 rounded-xl mt-2">
                         <i class="fa-solid fa-users-slash text-xl mb-2 block text-slate-600"></i>
-                        No other active members online right now.<br>Open this link on another device to connect!
+                        No other members online right now.
                     </div>
                 `;
                 document.getElementById('online-counter').innerText = "1 Online (You)";
             } else {
                 document.getElementById('online-counter').innerText = `${otherPeers.length + 1} Online`;
                 otherPeers.forEach(([pId, data]) => {
-                    const isConnected = activeConn && activeConn.peer === pId;
+                    const isConnected = activeConns.some(c => c.peer === pId);
                     container.innerHTML += `
                         <div class="p-3 rounded-xl dark:bg-slate-900/80 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between gap-2 mt-2">
                             <div>
                                 <span class="font-bold dark:text-slate-200 text-slate-800 text-xs">${data.name}</span>
+                                ${data.inCall ? '<span class="block text-[9px] text-amber-400">In another call</span>' : ''}
                             </div>
                             <button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">
                                 ${isConnected ? 'Connected' : 'Connect'}
@@ -542,27 +528,61 @@
             }
         }
 
-        function connectToPeer(targetId, targetName) {
-            currentTargetName = targetName;
-            document.getElementById('target-peer-id').value = targetId;
-            activeConn = peer.connect(targetId);
-            setupDataConn(activeConn);
+        function connectRandomPeer() {
+            if (activePeersMap.size === 0) {
+                showToast("Notice", "You are the only active member online right now!");
+                alert("You are the only active member online right now!");
+                return;
+            }
 
-            document.getElementById('chat-header-id').innerText = `Connected to ${targetName}`;
+            // Filter out peers that are already connected or in another call
+            const availablePeers = Array.from(activePeersMap.entries()).filter(([pId, data]) => {
+                return !data.inCall && !activeConns.some(c => c.peer === pId);
+            });
+
+            if (availablePeers.length === 0) {
+                showToast("Notice", "No one is available now—all members are paired!");
+                alert("No one is available now—all members are paired or busy in calls!");
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * availablePeers.length);
+            const [randId, randData] = availablePeers[randomIndex];
+            connectToPeer(randId, randData.name);
+        }
+
+        function connectToPeer(targetId, targetName) {
+            const targetData = activePeersMap.get(targetId);
+            if (targetData && targetData.inCall) {
+                showToast("Busy", `${targetName} is in another call.`);
+                alert(`${targetName} is currently in another call.`);
+                return;
+            }
+
+            if (activeConns.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
+                showToast("Limit Reached", "Maximum participants reached for this session.");
+                alert("Room is at maximum capacity.");
+                return;
+            }
+
+            const conn = peer.connect(targetId);
+            activeConns.push(conn);
+            setupDataConn(conn);
+
+            document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
             
-            connectedPartnerName = targetName;
             const log = document.getElementById('conn-log');
-            log.innerText = `Connected to ${targetName}`;
+            log.innerText = `Connected with ${targetName}`;
             log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
             showToast("Connected!", `You are now connected to ${targetName}`);
             document.getElementById('tab-chat-btn').click();
 
             setTimeout(() => {
-                if (activeConn && activeConn.open) {
-                    activeConn.send(`[SYSTEM_MSG]: ${userName} is connected with you`);
+                if (conn && conn.open) {
+                    conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} joined the session` }));
                 }
             }, 500);
         }
@@ -571,52 +591,42 @@
             conn.on('open', () => {
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
-                document.getElementById('btn-attach-file').removeAttribute('disabled');
             });
-            conn.on('data', (rawMsg) => {
-                // Try JSON parsing for structured messages (files / system notices)
+            conn.on('data', (packet) => {
                 try {
-                    const parsed = typeof rawMsg === 'string' ? JSON.parse(rawMsg) : rawMsg;
-                    if (parsed && typeof parsed === 'object') {
-                        if (parsed.type === 'BUSY_NOTICE') {
-                            showToast("User Busy", `${currentTargetName} is currently connected to another user (${parsed.busyWith})`);
-                            conn.close();
-                            return;
-                        }
-                        if (parsed.type === 'FILE') {
-                            handleIncomingFile(parsed);
-                            return;
-                        }
+                    const data = typeof packet === 'string' ? JSON.parse(packet) : packet;
+                    if (data.type === 'BUSY_NOTICE') {
+                        showToast("Busy", `That member is in another call.`);
+                        alert(`That person is in another call.`);
+                        conn.close();
+                        return;
                     }
-                } catch(e) {}
-
-                if (typeof rawMsg === 'string' && rawMsg.startsWith('[SYSTEM_MSG]:')) {
-                    const cleanMsg = rawMsg.replace('[SYSTEM_MSG]:', '').trim();
-                    appendSystemMessage(cleanMsg);
-                } else {
-                    appendMessage(currentTargetName, rawMsg, false);
-                    incrementUnreadBadge();
+                    if (data.type === 'SYSTEM_MSG') {
+                        appendSystemMessage(data.text);
+                        return;
+                    }
+                    if (data.type === 'CHAT_MSG') {
+                        appendMessage(data.sender, data.content, false);
+                        checkUnread();
+                        return;
+                    }
+                    if (data.type === 'FILE_MSG') {
+                        appendFileMessage(data.sender, data.fileData, data.fileName, data.fileType, false);
+                        checkUnread();
+                        return;
+                    }
+                } catch(e) {
+                    // Fallback plain text
+                    appendMessage("Peer", packet, false);
+                    checkUnread();
                 }
             });
             conn.on('close', () => {
-                handleDisconnection();
+                handleDisconnection(conn.peer);
             });
         }
 
-        function handleDisconnection() {
-            connectedPartnerName = null;
-            const log = document.getElementById('conn-log');
-            log.innerText = `Connection ended from ${currentTargetName}`;
-            log.className = 'text-[11px] text-red-400 font-mono font-bold';
-            document.getElementById('chat-header-id').innerText = "No active session";
-            document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
-            document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
-            document.getElementById('chat-input').setAttribute('disabled', 'true');
-            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
-            document.getElementById('btn-attach-file').setAttribute('disabled', 'true');
-        }
-
-        function incrementUnreadBadge() {
+        function checkUnread() {
             if (document.getElementById('view-chat').classList.contains('hidden')) {
                 unreadCount++;
                 const badge = document.getElementById('unread-badge');
@@ -625,153 +635,37 @@
             }
         }
 
-        /* -------------------------------------------------------------
-           FILE & IMAGE SHARING LOGIC
-        ------------------------------------------------------------- */
-        function processFiles(files) {
-            if (!activeConn || !activeConn.open) {
-                showToast("Not Connected", "Please connect to a member before sending files.");
-                return;
-            }
-
-            Array.from(files).forEach(file => {
-                if (file.size > MAX_FILE_SIZE) {
-                    showToast("File Too Large", `${file.name} exceeds the 10MB limit.`);
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const fileData = {
-                        type: 'FILE',
-                        fileName: file.name,
-                        fileType: file.type,
-                        fileSize: file.size,
-                        dataUrl: e.target.result
-                    };
-
-                    activeConn.send(JSON.stringify(fileData));
-                    appendFileMessage('You', fileData, true);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function handleIncomingFile(fileObj) {
-            appendFileMessage(currentTargetName, fileObj, false);
-            incrementUnreadBadge();
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        function appendFileMessage(sender, fileObj, isSelf) {
-            const box = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-
-            const isImage = fileObj.fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileObj.fileName);
-
-            let contentHtml = '';
-            if (isImage) {
-                contentHtml = `
-                    <div class="group relative rounded-2xl overflow-hidden border dark:border-slate-800 border-slate-300 max-w-[240px] sm:max-w-[280px] cursor-pointer shadow-lg bg-black/20" onclick="openLightbox('${fileObj.dataUrl}', '${escapeHtml(fileObj.fileName)}')">
-                        <img src="${fileObj.dataUrl}" alt="${escapeHtml(fileObj.fileName)}" class="w-full max-h-[220px] object-cover transition transform group-hover:scale-105">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1.5">
-                            <i class="fa-solid fa-expand"></i> View Image
-                        </div>
-                    </div>
-                `;
+        function handleDisconnection(peerId) {
+            activeConns = activeConns.filter(c => c.peer !== peerId);
+            if (activeConns.length === 0) {
+                const log = document.getElementById('conn-log');
+                log.innerText = `Connection ended`;
+                log.className = 'text-[11px] text-red-400 font-mono font-bold';
+                document.getElementById('chat-header-id').innerText = "No active session";
+                document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
+                document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
             } else {
-                let fileIcon = 'fa-file';
-                if (fileObj.fileType.includes('pdf')) fileIcon = 'fa-file-pdf text-red-400';
-                else if (fileObj.fileType.includes('zip') || fileObj.fileType.includes('compressed')) fileIcon = 'fa-file-zipper text-amber-400';
-                else if (fileObj.fileType.includes('text')) fileIcon = 'fa-file-lines text-cyan-400';
-
-                contentHtml = `
-                    <div class="flex items-center gap-3 p-3 rounded-xl border max-w-[260px] ${isSelf ? 'bg-indigo-700/80 border-indigo-500 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 dark:text-slate-200 text-slate-900'} shadow-md">
-                        <div class="w-9 h-9 rounded-lg bg-black/20 flex items-center justify-center text-lg shrink-0">
-                            <i class="fa-solid ${fileIcon}"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-bold text-xs truncate" title="${escapeHtml(fileObj.fileName)}">${escapeHtml(fileObj.fileName)}</p>
-                            <p class="text-[10px] opacity-75">${formatBytes(fileObj.fileSize)}</p>
-                        </div>
-                        <a href="${fileObj.dataUrl}" download="${escapeHtml(fileObj.fileName)}" class="p-2 rounded-lg bg-black/30 hover:bg-black/50 text-white transition flex items-center justify-center" title="Download File">
-                            <i class="fa-solid fa-download text-xs"></i>
-                        </a>
-                    </div>
-                `;
+                document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
             }
-
-            div.innerHTML = `
-                <span class="text-[9px] text-slate-500 mb-1">${sender}</span>
-                ${contentHtml}
-            `;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
         }
 
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        function handleFileSelected(input) {
+            if (input.files && input.files[0]) {
+                attachedFile = input.files[0];
+                document.getElementById('file-preview-name').innerText = attachedFile.name;
+                document.getElementById('file-preview-bar').classList.remove('hidden');
+            }
         }
 
-        function openLightbox(src, name) {
-            document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox-caption').innerText = name;
-            document.getElementById('modal-image-lightbox').classList.remove('hidden');
+        function clearFileAttachment() {
+            attachedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-preview-bar').classList.add('hidden');
         }
 
-        function closeLightbox() {
-            document.getElementById('modal-image-lightbox').classList.add('hidden');
-        }
-
-        function setupDragAndDrop() {
-            const dropArea = document.getElementById('chat-messages');
-
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-            });
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, () => {
-                    if (activeConn && activeConn.open) {
-                        dropArea.classList.add('drop-zone-active');
-                    }
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, () => {
-                    dropArea.classList.remove('drop-zone-active');
-                }, false);
-            });
-
-            dropArea.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                if (files && files.length > 0) {
-                    processFiles(files);
-                }
-            }, false);
-        }
-
-        /* -------------------------------------------------------------
-           WEBRTC MEDIA / AUDIO / VIDEO CALL LOGIC
-        ------------------------------------------------------------- */
         async function getLocalMediaStream(video = true) {
             try {
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                }
+                if (localStream) return localStream;
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
                 const pip = document.getElementById('pip-video');
                 pip.srcObject = localStream;
@@ -779,20 +673,24 @@
                 document.getElementById('pip-off-placeholder').classList.add('hidden');
                 return localStream;
             } catch (err) {
-                showToast("Permission Denied", "Camera/Microphone permissions required for call.");
+                alert("Camera and microphone permission required for calls.");
                 return null;
             }
         }
 
         async function requestCall(video) {
-            const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { showToast("Notice", "Please connect to a member first!"); return; }
+            if (activeConns.length === 0) { alert("Please connect to a member first!"); return; }
 
             const stream = await getLocalMediaStream(video);
             if (!stream) return;
 
-            activeCall = peer.call(targetId, stream);
-            setupCallEvents(activeCall);
+            // Call all connected peers in the room
+            activeConns.forEach(conn => {
+                const call = peer.call(conn.peer, stream);
+                setupCallEvents(call);
+                activeCalls.push(call);
+            });
+            showToast("Calling", "Initiating video/audio call...");
         }
 
         async function acceptIncomingCall() {
@@ -800,8 +698,8 @@
             const stream = await getLocalMediaStream(true);
             if (stream && incomingCallObj) {
                 incomingCallObj.answer(stream);
-                activeCall = incomingCallObj;
-                setupCallEvents(activeCall);
+                activeCalls.push(incomingCallObj);
+                setupCallEvents(incomingCallObj);
             }
         }
 
@@ -812,19 +710,13 @@
                 rv.classList.remove('hidden');
                 document.getElementById('remote-placeholder').classList.add('hidden');
             });
-            callObj.on('close', () => {
-                stopCallMediaOnly();
-            });
-            callObj.on('error', () => {
-                stopCallMediaOnly();
-            });
+            callObj.on('close', () => { stopCallMediaOnly(); });
+            callObj.on('error', () => { stopCallMediaOnly(); });
         }
 
         function stopCallMediaOnly() {
-            if (activeCall) {
-                try { activeCall.close(); } catch(e) {}
-                activeCall = null;
-            }
+            activeCalls.forEach(c => { try { c.close(); } catch(e){} });
+            activeCalls = [];
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
@@ -853,7 +745,27 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
-            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${escapeHtml(text)}</div>`;
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${text}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function appendFileMessage(sender, dataUrl, fileName, fileType, isSelf) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            
+            let contentHtml = '';
+            if (fileType.startsWith('image/')) {
+                contentHtml = `<img src="${dataUrl}" class="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition border border-slate-700" onclick="openLightbox('${dataUrl}')">`;
+            } else {
+                contentHtml = `<div class="flex items-center gap-2 p-2 rounded-lg bg-slate-900 border border-slate-700">
+                    <i class="fa-solid fa-file-arrow-down text-indigo-400 text-lg"></i>
+                    <div class="overflow-hidden"><span class="text-xs font-bold block truncate max-w-[140px]">${fileName}</span><a href="${dataUrl}" download="${fileName}" class="text-[10px] text-cyan-400 underline">Download File</a></div>
+                </div>`;
+            }
+
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="p-1 rounded-xl max-w-[85%]">${contentHtml}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -862,9 +774,18 @@
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `flex justify-center my-2`;
-            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${escapeHtml(text)}</div>`;
+            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${text}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox-modal').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox-modal').classList.add('hidden');
         }
 
         function setupUIEvents() {
@@ -938,21 +859,36 @@
                 e.preventDefault();
                 const input = document.getElementById('chat-input');
                 const msg = input.value.trim();
-                if (msg && activeConn) {
-                    activeConn.send(msg);
+
+                if (activeConns.length === 0) return;
+
+                if (attachedFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const fileData = evt.target.result;
+                        const packet = JSON.stringify({
+                            type: 'FILE_MSG',
+                            sender: userName,
+                            fileData: fileData,
+                            fileName: attachedFile.name,
+                            fileType: attachedFile.type
+                        });
+                        activeConns.forEach(c => c.send(packet));
+                        appendFileMessage("You", fileData, attachedFile.name, attachedFile.type, true);
+                        clearFileAttachment();
+                    };
+                    reader.readAsDataURL(attachedFile);
+                }
+
+                if (msg) {
+                    const packet = JSON.stringify({
+                        type: 'CHAT_MSG',
+                        sender: userName,
+                        content: msg
+                    });
+                    activeConns.forEach(c => c.send(packet));
                     appendMessage("You", msg, true);
                     input.value = '';
-                }
-            });
-
-            document.getElementById('btn-attach-file').addEventListener('click', () => {
-                document.getElementById('file-input').click();
-            });
-
-            document.getElementById('file-input').addEventListener('change', (e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                    processFiles(e.target.files);
-                    e.target.value = '';
                 }
             });
 
