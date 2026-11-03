@@ -1,221 +1,467 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" id="html-root">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONNECT - Cross-Device Suite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CONNECT - Cross-Device Live Suite</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        theme: {
+                            primary: 'var(--color-primary)',
+                            hover: 'var(--color-hover)',
+                            border: 'var(--color-border)',
+                            text: 'var(--color-text)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <!-- Firebase SDKs for Cross-Device Presence Sync -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-hover: #4f46e5;
+            --color-border: rgba(99, 102, 241, 0.3);
+            --color-text: #818cf8;
+            --app-font: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--app-font);
+            background-color: #09090e;
+            color: #f1f5f9;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .font-display { font-family: 'Orbitron', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        .glass-panel {
+            background: rgba(15, 14, 38, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--color-border);
+        }
+
+        .dynamic-bg-primary { background-color: var(--color-primary); }
+        .dynamic-bg-hover:hover { background-color: var(--color-hover); }
+        .dynamic-border { border-color: var(--color-border); }
+        .dynamic-text { color: var(--color-text); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #09090e; }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
+
+        video {
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center justify-center font-sans">
+<body class="min-h-screen flex flex-col justify-between">
 
-    <div class="max-w-md w-full bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
-        
-        <!-- HEADER -->
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h1 class="font-bold text-lg text-indigo-400 flex items-center gap-2">
-                <i class="fa-solid fa-satellite-dish animate-pulse"></i> CONNECT
-            </h1>
-            <span id="status-badge" class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-amber-950 text-amber-400 border border-amber-500/30">
-                CONNECTING...
-            </span>
-        </div>
-
-        <!-- YOUR PEER ID -->
-        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono flex items-center justify-between">
-            <div>
-                <span class="text-slate-500 block text-[10px]">YOUR DEVICE ID</span>
-                <span id="my-id" class="text-indigo-300 font-bold text-sm">Generating...</span>
+    <!-- TOP HEADER -->
+    <header class="w-full border-b dynamic-border bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center shadow-lg text-white">
+                    <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
+                </div>
+                <h1 class="font-display font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
+                    CONNECT
+                </h1>
             </div>
-            <button id="copy-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
-                Copy
-            </button>
-        </div>
 
-        <!-- TARGET PEER INPUT -->
-        <div class="space-y-2">
-            <label class="text-xs font-mono text-slate-400">ENTER OTHER DEVICE ID:</label>
-            <div class="flex gap-2">
-                <input id="target-id" type="text" placeholder="e.g. 849201" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500">
-                <button id="connect-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 font-bold text-xs text-white rounded-xl transition">
-                    Connect
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
+                <span class="font-bold">ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- LEFT COLUMN: CONTROLS & STATUS -->
+        <section class="lg:col-span-3 flex flex-col gap-4">
+            <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
+                <div class="truncate mr-2">
+                    <div class="text-slate-400">User: <span id="display-user-handle" class="font-bold text-cyan-400">Guest</span></div>
+                    <div class="text-slate-500">Your ID: <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-3 space-y-3">
+                <input id="target-peer-id" type="text" readonly placeholder="Select member from directory" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-300 outline-none font-mono">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-video"></i> Video Call
+                    </button>
+                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-phone"></i> Voice Call
+                    </button>
+                </div>
+
+                <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-comments"></i> Chat Session
+                </button>
+
+                <p id="connection-status" class="text-[11px] text-amber-400 font-mono">Connecting to network...</p>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: MAIN CALL SCREEN -->
+        <section class="lg:col-span-6 flex flex-col gap-4">
+            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950">
+                <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
+                
+                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 z-0">
+                    <div class="w-20 h-20 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
+                        <i class="fa-solid fa-user text-3xl"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-base text-slate-200">READY TO CONNECT</h3>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Click **Connect** on any active user in the Members tab to start instantly.</p>
+                </div>
+
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20">
+                    <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-2">
+                        <i class="fa-solid fa-user-slash text-xl mb-1 text-slate-500"></i>
+                        <span class="text-[9px] font-mono">Camera Off</span>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30 shadow-2xl">
+                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg">
+                        <i class="fa-solid fa-phone-slash"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: CHAT & MEMBERS DIRECTORY -->
+        <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-2 bg-slate-950 border-b dynamic-border text-xs font-display font-bold">
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-900 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-comments"></i> Chat
+                </button>
+                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-users"></i> Members
                 </button>
             </div>
-        </div>
 
-        <!-- VIDEO CALL SECTION -->
-        <div class="relative bg-black rounded-xl overflow-hidden h-52 border border-slate-800 flex items-center justify-center">
-            <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-            <div id="video-placeholder" class="text-center p-4">
-                <i class="fa-solid fa-video-slash text-2xl text-slate-600 mb-1"></i>
-                <p class="text-xs text-slate-500">No active video stream</p>
+            <!-- CHAT VIEW -->
+            <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
+                <div class="p-2 bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
+                    <span id="chat-header-id" class="text-slate-500 font-bold">Select a member to chat</span>
+                    <span id="chat-status" class="text-slate-500 font-bold">OFFLINE</span>
+                </div>
+
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
+                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
+                        -- Select an active member from the Members tab --
+                    </div>
+                </div>
+
+                <form id="chat-form" class="p-2 bg-slate-950 border-t dynamic-border flex items-center gap-2">
+                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none font-mono">
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
             </div>
-            <video id="local-video" autoplay playsinline muted class="absolute bottom-2 right-2 w-20 h-28 object-cover rounded-lg border border-indigo-500 hidden"></video>
-        </div>
 
-        <!-- CALL CONTROLS -->
-        <div class="grid grid-cols-2 gap-2">
-            <button id="call-btn" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-video"></i> Start Video Call
-            </button>
-            <button id="end-btn" class="py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-phone-slash"></i> End Call
-            </button>
-        </div>
-
-        <!-- CHAT SECTION -->
-        <div class="border-t border-slate-800 pt-3 flex flex-col h-40">
-            <div id="chat-box" class="flex-1 overflow-y-auto space-y-1.5 text-xs font-mono p-1">
-                <div class="text-[10px] text-slate-600 text-center">--- Ready for data exchange ---</div>
+            <!-- MEMBERS DIRECTORY VIEW -->
+            <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
+                <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
+                    <span>Available Active Members:</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
+                </div>
+                <div id="members-list-container" class="flex flex-col gap-2"></div>
             </div>
-            <form id="chat-form" class="flex gap-2 mt-2">
-                <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none">
-                <button id="send-btn" type="submit" disabled class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl disabled:opacity-40">Send</button>
-            </form>
-        </div>
-
-    </div>
+        </section>
+    </main>
 
     <script>
+        // PUBLIC FIREBASE CONFIGURATION FOR GLOBAL CROSS-DEVICE PRESENCE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForPublicDemoRoom99",
+            authDomain: "connect-app-demo.firebaseapp.com",
+            databaseURL: "https://connect-default-rtdb.firebaseio.com",
+            projectId: "connect-app-demo",
+        };
+        
+        // Initialize Firebase safely
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
         let peer = null;
-        let myId = null;
-        let activeConn = null;
-        let activeCall = null;
+        let myPeerId = null;
+        let activeDataConn = null;
+        let activeCallObj = null;
         let localStream = null;
 
-        // Generate clean 6-digit peer ID
-        const customId = Math.floor(100000 + Math.random() * 900000).toString();
+        function generate7DigitId() {
+            return Math.floor(1000000 + Math.random() * 9000000).toString();
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
+            initPeerJS();
+            setupUIEventListeners();
+        });
+
+        function initPeerJS() {
+            const customId = generate7DigitId();
             peer = new Peer(customId, {
                 host: '0.peerjs.com',
                 secure: true,
                 port: 443,
-                debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
+                debug: 1,
+                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
             });
 
             peer.on('open', (id) => {
-                myId = id;
-                document.getElementById('my-id').innerText = id;
-                const badge = document.getElementById('status-badge');
-                badge.innerText = 'READY';
-                badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+                myPeerId = id;
+                document.getElementById('my-peer-id').innerText = id;
+                document.getElementById('connection-status').innerText = 'Online & Connected.';
+                document.getElementById('connection-status').className = 'text-[11px] text-emerald-400 font-mono';
+                
+                // Register presence in Firebase Database globally across laptop & phone
+                registerGlobalPresence();
+                listenToGlobalPeers();
             });
 
             peer.on('connection', (conn) => {
-                activeConn = conn;
-                setupConnectionListeners(conn);
+                activeDataConn = conn;
+                setupDataConn(conn);
             });
 
             peer.on('call', async (call) => {
-                const stream = await getMedia();
+                const stream = await getLocalMediaStream(true);
                 if (stream) {
                     call.answer(stream);
-                    activeCall = call;
+                    activeCallObj = call;
                     call.on('stream', (remoteStream) => {
-                        const rv = document.getElementById('remote-video');
-                        rv.srcObject = remoteStream;
-                        rv.classList.remove('hidden');
-                        document.getElementById('video-placeholder').classList.add('hidden');
+                        const videoEl = document.getElementById('main-video');
+                        videoEl.srcObject = remoteStream;
+                        videoEl.classList.remove('hidden');
+                        document.getElementById('remote-placeholder').classList.add('hidden');
                     });
                 }
             });
+        }
 
-            peer.on('error', (err) => {
-                alert('PeerJS Error: ' + err.type);
-            });
-        });
+        function registerGlobalPresence() {
+            if (!myPeerId) return;
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            const deviceName = isMobile ? 'Phone User' : 'Laptop User';
+            const userRef = db.ref('active_rooms_2026/' + myPeerId);
 
-        function setupConnectionListeners(conn) {
-            conn.on('open', () => {
-                document.getElementById('chat-input').removeAttribute('disabled');
-                document.getElementById('send-btn').removeAttribute('disabled');
-                appendMessage('System', 'Connected to ' + conn.peer, 'text-emerald-400');
-            });
-
-            conn.on('data', (data) => {
-                appendMessage('Peer', data, 'text-cyan-400');
+            userRef.set({
+                peerId: myPeerId,
+                name: `${deviceName} (${myPeerId.slice(-3)})`,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
             });
 
-            conn.on('close', () => {
-                appendMessage('System', 'Connection closed.', 'text-rose-400');
+            // Automatically clean up when tab closes or browser disconnects
+            userRef.onDisconnect().remove();
+
+            // Refresh presence ping every 5 seconds
+            setInterval(() => {
+                userRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            }, 5000);
+        }
+
+        function listenToGlobalPeers() {
+            const peersRef = db.ref('active_rooms_2026');
+            const now = Date.now();
+
+            peersRef.on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                const container = document.getElementById('members-list-container');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-200 block">You (Active)</span>
+                            <span class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+                    </div>
+                `;
+
+                let activeCount = 1;
+                const serverTime = Date.now();
+
+                Object.values(data).forEach(peerObj => {
+                    if (peerObj.peerId === myPeerId) return;
+                    
+                    // Filter out stale connections older than 15 seconds
+                    if (serverTime - peerObj.lastSeen > 15000) return;
+
+                    activeCount++;
+                    container.innerHTML += `
+                        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2 mt-2">
+                            <div>
+                                <span class="font-bold text-slate-200 text-xs">${peerObj.name}</span>
+                                <span class="text-[10px] text-slate-400 font-mono block">Status: Active & Ready</span>
+                            </div>
+                            <button onclick="connectToMember('${peerObj.peerId}', '${peerObj.name}')" class="px-3 py-1.5 rounded-lg dynamic-bg-primary text-white text-xs font-bold shadow-md hover:opacity-90">
+                                Connect
+                            </button>
+                        </div>
+                    `;
+                });
+
+                if (activeCount === 1) {
+                    container.innerHTML += `
+                        <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl mt-3">
+                            <i class="fa-solid fa-users-slash text-xl mb-2 block text-slate-600"></i>
+                            No other active members online right now.<br>Open this link on your phone and laptop simultaneously!
+                        </div>
+                    `;
+                }
+
+                document.getElementById('online-counter').innerText = `${activeCount} Online`;
             });
         }
 
-        async function getMedia() {
+        // ONE-CLICK CONNECTION WITHOUT TYPING ID
+        function connectToMember(targetPeerId, targetName) {
+            document.getElementById('target-peer-id').value = targetPeerId;
+            const conn = peer.connect(targetPeerId);
+            activeDataConn = conn;
+            setupDataConn(conn);
+
+            // Switch automatically to the Chat tab
+            document.getElementById('tab-chat-btn').click();
+            document.getElementById('chat-header-id').innerText = `Connected with: ${targetName}`;
+        }
+
+        function setupDataConn(conn) {
+            conn.on('open', () => {
+                enableChat();
+            });
+            conn.on('data', (data) => {
+                appendChatMessage(`Peer`, data, false);
+            });
+        }
+
+        async function getLocalMediaStream(video = true) {
             try {
                 if (localStream) return localStream;
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const lv = document.getElementById('local-video');
-                lv.srcObject = localStream;
-                lv.classList.remove('hidden');
+                localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
+                const pipVideo = document.getElementById('pip-video');
+                pipVideo.srcObject = localStream;
+                pipVideo.classList.remove('hidden');
+                document.getElementById('pip-off-placeholder').classList.add('hidden');
                 return localStream;
-            } catch (e) {
-                alert('Microphone/Camera permission denied or not supported over HTTP.');
+            } catch (err) {
+                alert("Camera and microphone permission required for video/voice calls.");
                 return null;
             }
         }
 
-        document.getElementById('connect-btn').addEventListener('click', () => {
-            const targetId = document.getElementById('target-id').value.trim();
-            if (!targetId) return alert('Enter target ID');
-            activeConn = peer.connect(targetId);
-            setupConnectionListeners(activeConn);
-        });
+        async function startCall(isVideo) {
+            const targetId = document.getElementById('target-peer-id').value.trim();
+            if (!targetId) { alert("Please click 'Connect' on a member from the Members tab first!"); return; }
 
-        document.getElementById('call-btn').addEventListener('click', async () => {
-            const targetId = document.getElementById('target-id').value.trim();
-            if (!targetId) return alert('Enter target ID');
-            const stream = await getMedia();
+            const stream = await getLocalMediaStream(isVideo);
             if (!stream) return;
 
-            activeCall = peer.call(targetId, stream);
-            activeCall.on('stream', (remoteStream) => {
-                const rv = document.getElementById('remote-video');
-                rv.srcObject = remoteStream;
-                rv.classList.remove('hidden');
-                document.getElementById('video-placeholder').classList.add('hidden');
+            const call = peer.call(targetId, stream);
+            activeCallObj = call;
+            call.on('stream', (remoteStream) => {
+                const videoEl = document.getElementById('main-video');
+                videoEl.srcObject = remoteStream;
+                videoEl.classList.remove('hidden');
+                document.getElementById('remote-placeholder').classList.add('hidden');
             });
-        });
+        }
 
-        document.getElementById('chat-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
-            if (msg && activeConn) {
-                activeConn.send(msg);
-                appendMessage('You', msg, 'text-indigo-400');
-                input.value = '';
-            }
-        });
+        function enableChat() {
+            document.getElementById('chat-input').removeAttribute('disabled');
+            document.getElementById('chat-send-btn').removeAttribute('disabled');
+            document.getElementById('chat-status').innerText = "ONLINE";
+            document.getElementById('chat-status').className = "text-emerald-400 font-bold";
+        }
 
-        document.getElementById('copy-btn').addEventListener('click', () => {
-            if (myId) {
-                navigator.clipboard.writeText(myId);
-                alert('Copied ID: ' + myId);
-            }
-        });
-
-        document.getElementById('end-btn').addEventListener('click', () => {
-            if (activeCall) activeCall.close();
-            if (activeConn) activeConn.close();
-            document.getElementById('remote-video').classList.add('hidden');
-            document.getElementById('video-placeholder').classList.remove('hidden');
-        });
-
-        function appendMessage(sender, text, colorClass) {
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.innerHTML = `<span class="${colorClass} font-bold">${sender}:</span> ${text}`;
-            box.appendChild(div);
+        function appendChatMessage(sender, text, isSelf) {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `
+                <div class="flex flex-col ${isSelf ? 'items-end' : 'items-start'}">
+                    <span class="text-[9px] text-slate-500 mb-0.5">${sender}</span>
+                    <div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-900 border border-slate-800 text-slate-200'}">${text}</div>
+                </div>
+            `;
             box.scrollTop = box.scrollHeight;
+        }
+
+        function setupUIEventListeners() {
+            document.getElementById('tab-chat-btn').addEventListener('click', () => {
+                document.getElementById('view-chat').classList.remove('hidden');
+                document.getElementById('view-peers').classList.add('hidden');
+            });
+
+            document.getElementById('tab-peers-btn').addEventListener('click', () => {
+                document.getElementById('view-peers').classList.remove('hidden');
+                document.getElementById('view-chat').classList.add('hidden');
+            });
+
+            document.getElementById('btn-start-video').addEventListener('click', () => startCall(true));
+            document.getElementById('btn-start-voice').addEventListener('click', () => startCall(false));
+            document.getElementById('btn-start-chat').addEventListener('click', () => {
+                if (!document.getElementById('target-peer-id').value) {
+                    alert("Please select a member from the Members tab first.");
+                }
+            });
+
+            document.getElementById('chat-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('chat-input');
+                const msg = input.value.trim();
+                if (!msg || !activeDataConn) return;
+                activeDataConn.send(msg);
+                appendChatMessage("You", msg, true);
+                input.value = '';
+            });
+
+            document.getElementById('btn-end-call').addEventListener('click', () => {
+                if (activeCallObj) activeCallObj.close();
+                document.getElementById('main-video').classList.add('hidden');
+                document.getElementById('remote-placeholder').classList.remove('hidden');
+            });
         }
     </script>
 </body>
