@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" id="html-root" class="dark">
+<html lang="en" id="html-root" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -372,7 +372,7 @@
         const MQTT_TOPIC = "connect_suite_2026_room_global_v11";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
-        const sentMessagesTracker = {}; // Tracks individual message statuses securely by unique msgId
+        const sentMessagesTracker = {}; 
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
@@ -491,7 +491,8 @@
         }
 
         function initTheme() {
-            const savedTheme = localStorage.getItem('connect_theme') || 'dark';
+            // Set 'light' as the default theme if no preference is saved yet
+            const savedTheme = localStorage.getItem('connect_theme') || 'light';
             setTheme(savedTheme);
         }
 
@@ -504,12 +505,12 @@
                 root.classList.add('dark');
                 root.classList.remove('light');
                 darkBtn.className = "py-2 px-3 rounded-xl border-2 border-indigo-500 bg-indigo-600/20 text-indigo-400 text-xs font-bold flex items-center justify-center gap-2 transition";
-                lightBtn.className = "py-2 px-3 rounded-xl border border-slate-700 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 transition";
+                lightBtn.className = "py-2 px-3 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold flex items-center justify-center gap-2 transition";
             } else {
                 root.classList.remove('dark');
                 root.classList.add('light');
                 lightBtn.className = "py-2 px-3 rounded-xl border-2 border-indigo-500 bg-indigo-600/20 text-indigo-600 text-xs font-bold flex items-center justify-center gap-2 transition";
-                darkBtn.className = "py-2 px-3 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold flex items-center justify-center gap-2 transition";
+                darkBtn.className = "py-2 px-3 rounded-xl border border-slate-700 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 transition";
             }
             localStorage.setItem('connect_theme', theme);
         }
@@ -1177,7 +1178,7 @@
             } else if (status === 'delivered') {
                 return `<span class="inline-flex items-center ml-1 text-slate-400 text-[10px]" title="Delivered"><i class="fa-solid fa-check-double"></i></span>`;
             } else if (status === 'read') {
-                return `<span class="inline-flex items-center ml-1 text-cyan-400 text-[10px]" title="Read"><i class="fa-solid fa-check-double"></i></span>`;
+                return `<span class="inline-flex items-center ml-1 text-cyan-500 text-[10px]" title="Read"><i class="fa-solid fa-check-double"></i></span>`;
             }
             return `<span class="inline-flex items-center ml-1 text-slate-400 text-[10px]"><i class="fa-solid fa-check"></i></span>`;
         }
@@ -1246,7 +1247,7 @@
             return uniqueId;
         }
 
-        // Target individual message update by unique msgId (Fixes the global bug)
+        // Target individual message update by unique msgId
         function updateMessageStatus(msgId, status) {
             if (sentMessagesTracker[msgId]) {
                 sentMessagesTracker[msgId] = status;
