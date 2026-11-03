@@ -128,7 +128,6 @@
 
             <div class="glass-panel rounded-2xl p-3 space-y-3">
                 <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="hidden">
-                <!-- CONNECTION STATUS LOG -->
                 <p id="conn-log" class="text-[11px] text-slate-400 font-mono">Not connected</p>
             </div>
         </section>
@@ -151,33 +150,38 @@
                     </div>
                 </div>
 
-                <!-- TOP RIGHT VIDEO CONTROLS (Maximize & Swap) -->
-                <div class="absolute top-3 right-3 flex items-center gap-2 z-40 bg-slate-900/70 backdrop-blur-md p-1.5 rounded-xl border border-slate-700">
+                <!-- TOP RIGHT VIDEO CONTROLS (Maximize, Swap, Resize PIP, Mute Remote) -->
+                <div class="absolute top-3 right-3 flex items-center gap-2 z-40 bg-slate-900/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700">
+                    <button onclick="toggleRemoteAudioMute()" id="btn-mute-remote" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Mute/Unmute Other User Audio">
+                        <i class="fa-solid fa-volume-high" id="mute-remote-icon"></i>
+                    </button>
                     <button onclick="swapVideos()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Swap Screens">
                         <i class="fa-solid fa-right-left"></i>
                     </button>
-                    <button onclick="toggleMaximizeVideo()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Expand / Increase Size" id="btn-maximize">
+                    <button onclick="toggleMaximizeVideo()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Expand / Theater Mode" id="btn-maximize">
                         <i class="fa-solid fa-expand"></i>
                     </button>
                 </div>
 
-                <!-- PIP SECONDARY PREVIEW SLOT (Swappable: Local PIP or Remote PIP) -->
-                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30">
+                <!-- PIP SECONDARY PREVIEW SLOT (With Default Small View & Extensible Smaller Size toggle) -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     <video id="remote-swapped-pip" autoplay playsinline class="w-full h-full object-cover hidden"></video>
                     <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-center p-2">
                         <i class="fa-solid fa-user-slash text-xl mb-1"></i>
                         <span class="text-[9px] font-mono">Camera Off</span>
                     </div>
+                    <!-- PIP SIZE TOGGLE BUTTON -->
+                    <button onclick="cyclePipSize()" class="absolute top-1 left-1 bg-black/60 hover:bg-black text-white p-1 rounded text-[9px] z-40" title="Make Smaller / Normal">
+                        <i class="fa-solid fa-compress-arrows-alt" id="pip-size-icon"></i>
+                    </button>
                 </div>
 
                 <!-- CALL ACTION BUTTONS -->
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
-                    <!-- END CALL BUTTON (Stops video/audio call only) -->
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
-                    <!-- END ENTIRE CONNECTION BUTTON -->
                     <button id="btn-end-connection" onclick="endEntireConnection()" class="w-10 h-10 rounded-full bg-rose-700 hover:bg-rose-600 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Entire Connection">
                         <i class="fa-solid fa-unlink"></i>
                     </button>
@@ -338,9 +342,11 @@
         let unreadCount = 0;
         let attachedFile = null;
         let isMaximized = false;
-        let isSwapped = false; // false = Remote Main / Local PIP; true = Local Main / Remote PIP
+        let isSwapped = false;
+        let pipSizeState = 0; // 0 = Normal Small, 1 = Extra Small, 2 = Hidden/Micro
+        let isRemoteMuted = false;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v6";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v7";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -415,6 +421,43 @@
             }
         }
 
+        function cyclePipSize() {
+            const pip = document.getElementById('pip-container');
+            pipSizeState = (pipSizeState + 1) % 3;
+
+            if (pipSizeState === 0) {
+                // Normal Small
+                pip.className = "absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
+                showToast("Screen View", "PIP screen set to normal size.");
+            } else if (pipSizeState === 1) {
+                // Extra Small (More small)
+                pip.className = "absolute bottom-16 right-4 w-20 h-28 sm:w-24 sm:h-32 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
+                showToast("Screen View", "PIP screen resized to extra small.");
+            } else {
+                // Micro / Compact
+                pip.className = "absolute bottom-16 right-4 w-14 h-20 sm:w-16 sm:h-22 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 opacity-7oha";
+                showToast("Screen View", "PIP screen minimized.");
+            }
+        }
+
+        function toggleRemoteAudioMute() {
+            isRemoteMuted = !isRemoteMuted;
+            const remoteVideo = document.getElementById('remote-video');
+            const remotePip = document.getElementById('remote-swapped-pip');
+            const icon = document.getElementById('mute-remote-icon');
+
+            remoteVideo.muted = isRemoteMuted;
+            remotePip.muted = isRemoteMuted;
+
+            if (isRemoteMuted) {
+                icon.className = "fa-solid fa-volume-xmark text-red-400";
+                showToast("Audio Muted", "Muted other user's audio.");
+            } else {
+                icon.className = "fa-solid fa-volume-high";
+                showToast("Audio Unmuted", "Unmuted other user's audio.");
+            }
+        }
+
         function swapVideos() {
             isSwapped = !isSwapped;
             const remoteVideo = document.getElementById('remote-video');
@@ -423,10 +466,10 @@
             const remoteSwappedPip = document.getElementById('remote-swapped-pip');
 
             if (isSwapped) {
-                // Move Local video to Main Slot, Remote video to PIP slot
                 if (!remoteVideo.classList.contains('hidden')) {
                     remoteVideo.classList.add('hidden');
                     remoteSwappedPip.srcObject = remoteVideo.srcObject;
+                    remoteSwappedPip.muted = isRemoteMuted;
                     remoteSwappedPip.classList.remove('hidden');
                 }
                 if (localStream) {
@@ -436,7 +479,6 @@
                 }
                 showToast("Swapped", "Local screen moved to main view.");
             } else {
-                // Restore Remote video to Main Slot, Local video to PIP slot
                 localSwappedVideo.classList.add('hidden');
                 remoteSwappedPip.classList.add('hidden');
                 if (localStream) {
@@ -446,6 +488,7 @@
                 const rvStream = remoteVideo.srcObject || remoteSwappedPip.srcObject;
                 if (rvStream) {
                     remoteVideo.srcObject = rvStream;
+                    remoteVideo.muted = isRemoteMuted;
                     remoteVideo.classList.remove('hidden');
                 }
                 showToast("Swapped", "Remote screen restored to main view.");
@@ -876,9 +919,11 @@
 
                 if (isSwapped) {
                     remotePip.srcObject = remoteStream;
+                    remotePip.muted = isRemoteMuted;
                     remotePip.classList.remove('hidden');
                 } else {
                     rv.srcObject = remoteStream;
+                    rv.muted = isRemoteMuted;
                     rv.classList.remove('hidden');
                     document.getElementById('remote-placeholder').classList.add('hidden');
                 }
