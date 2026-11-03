@@ -106,7 +106,8 @@
 
             <div class="glass-panel rounded-2xl p-3 space-y-3">
                 <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="w-full rounded-lg dark:bg-slate-950 bg-slate-100 border dark:border-slate-700 border-slate-300 px-3 py-2 text-xs dark:text-slate-300 text-slate-800 font-mono outline-none">
-                <p id="conn-log" class="text-[11px] text-amber-400 font-mono">Connecting discovery network...</p>
+                <!-- UPDATED CONNECTION STATUS LOG -->
+                <p id="conn-log" class="text-[11px] text-slate-400 font-mono">Not connected</p>
             </div>
         </section>
 
@@ -146,8 +147,10 @@
                 <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-users"></i> Members
                 </button>
-                <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 relative">
                     <i class="fa-solid fa-comments"></i> Chat
+                    <!-- WhatsApp-style Unread Message Badge -->
+                    <span id="unread-badge" class="absolute top-1.5 right-4 bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[9px] font-bold hidden">0</span>
                 </button>
             </div>
 
@@ -274,6 +277,7 @@
         let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
         let currentTargetName = 'Peer';
+        let unreadCount = 0;
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -346,13 +350,12 @@
             peer.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('my-peer-id').innerText = id;
-                document.getElementById('conn-log').innerText = 'Connected to WebRTC.';
-                document.getElementById('conn-log').className = 'text-[11px] text-emerald-400 font-mono';
+                document.getElementById('conn-log').innerText = 'Not connected';
+                document.getElementById('conn-log').className = 'text-[11px] text-slate-400 font-mono';
                 
                 initMQTTDiscovery();
             });
 
-            // When someone connects TO you (Incoming Data Connection)
             peer.on('connection', (conn) => {
                 activeConn = conn;
                 setupDataConn(conn);
@@ -366,10 +369,15 @@
                 document.getElementById('chat-header-id').innerText = `Connected to ${currentTargetName}`;
                 document.getElementById('btn-chat-video').removeAttribute('disabled');
                 document.getElementById('btn-chat-voice').removeAttribute('disabled');
+                
+                // Update status log
+                const log = document.getElementById('conn-log');
+                log.innerText = `Connected to ${currentTargetName}`;
+                log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
+
                 showToast("Connected!", `You are now connected to ${currentTargetName}`);
             });
 
-            // When someone calls you
             peer.on('call', (call) => {
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
@@ -483,6 +491,10 @@
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
             
+            const log = document.getElementById('conn-log');
+            log.innerText = `Connected to ${targetName}`;
+            log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
+
             showToast("Connected!", `You are now connected to ${targetName}`);
             document.getElementById('tab-chat-btn').click();
         }
@@ -492,7 +504,29 @@
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
             });
-            conn.on('data', (msg) => appendMessage(currentTargetName, msg, false));
+            conn.on('data', (msg) => {
+                appendMessage(currentTargetName, msg, false);
+                // If user is currently on the members tab, increment WhatsApp-style unread counter
+                if (document.getElementById('view-chat').classList.contains('hidden')) {
+                    unreadCount++;
+                    const badge = document.getElementById('unread-badge');
+                    badge.innerText = unreadCount;
+                    badge.classList.remove('hidden');
+                }
+            });
+            conn.on('close', () => {
+                handleDisconnection();
+            });
+        }
+
+        function handleDisconnection() {
+            const log = document.getElementById('conn-log');
+            log.innerText = `Connection ended from ${currentTargetName}`;
+            log.className = 'text-[11px] text-red-400 font-mono font-bold';
+            document.getElementById('chat-header-id').innerText = "No active session";
+            document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
+            document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
+            stopAllMedia();
         }
 
         async function getLocalMediaStream(video = true) {
@@ -518,12 +552,7 @@
             if (!stream) return;
 
             activeCall = peer.call(targetId, stream);
-            activeCall.on('stream', (remoteStream) => {
-                const rv = document.getElementById('remote-video');
-                rv.srcObject = remoteStream;
-                rv.classList.remove('hidden');
-                document.getElementById('remote-placeholder').classList.add('hidden');
-            });
+            setupCallEvents(activeCall);
         }
 
         async function acceptIncomingCall() {
@@ -532,13 +561,47 @@
             if (stream && incomingCallObj) {
                 incomingCallObj.answer(stream);
                 activeCall = incomingCallObj;
-                incomingCallObj.on('stream', (remoteStream) => {
-                    const rv = document.getElementById('remote-video');
-                    rv.srcObject = remoteStream;
-                    rv.classList.remove('hidden');
-                    document.getElementById('remote-placeholder').classList.add('hidden');
-                });
+                setupCallEvents(activeCall);
             }
+        }
+
+        function setupCallEvents(callObj) {
+            callObj.on('stream', (remoteStream) => {
+                const rv = document.getElementById('remote-video');
+                rv.srcObject = remoteStream;
+                rv.classList.remove('hidden');
+                document.getElementById('remote-placeholder').classList.add('hidden');
+            });
+            callObj.on('close', () => {
+                stopAllMedia();
+            });
+            callObj.on('error', () => {
+                stopAllMedia();
+            });
+        }
+
+        // FULL VIDEO & MEDIA STOP FIX
+        function stopAllMedia() {
+            if (activeCall) {
+                try { activeCall.close(); } catch(e) {}
+                activeCall = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            // Reset remote video element
+            const rv = document.getElementById('remote-video');
+            rv.srcObject = null;
+            rv.classList.add('hidden');
+            document.getElementById('remote-placeholder').classList.remove('hidden');
+
+            // Reset local PIP video element
+            const pip = document.getElementById('pip-video');
+            pip.srcObject = null;
+            pip.classList.add('hidden');
+            document.getElementById('pip-off-placeholder').classList.remove('hidden');
         }
 
         function rejectIncomingCall() {
@@ -615,9 +678,15 @@
                 document.getElementById('view-peers').classList.remove('hidden');
                 document.getElementById('view-chat').classList.add('hidden');
             });
+            
+            // Clear unread badge when opening chat tab
             document.getElementById('tab-chat-btn').addEventListener('click', () => {
                 document.getElementById('view-chat').classList.remove('hidden');
                 document.getElementById('view-peers').classList.add('hidden');
+                unreadCount = 0;
+                const badge = document.getElementById('unread-badge');
+                badge.innerText = '0';
+                badge.classList.add('hidden');
             });
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
@@ -632,9 +701,11 @@
             });
 
             document.getElementById('btn-end-call').addEventListener('click', () => {
-                if (activeCall) activeCall.close();
-                document.getElementById('remote-video').classList.add('hidden');
-                document.getElementById('remote-placeholder').classList.remove('hidden');
+                stopAllMedia();
+                if (activeConn) {
+                    try { activeConn.close(); } catch(e) {}
+                }
+                handleDisconnection();
             });
         }
     </script>
