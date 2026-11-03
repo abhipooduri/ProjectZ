@@ -101,12 +101,11 @@
         <section class="lg:col-span-3 flex flex-col gap-4">
             <div class="glass-panel rounded-2xl p-3 text-xs font-mono">
                 <div class="text-slate-400">User: <span id="display-name" class="text-cyan-400 font-bold">Setting up...</span></div>
-                <div class="text-slate-500 mt-1">Your ID: <span id="my-peer-id" class="text-indigo-400 font-bold">Initializing...</span></div>
             </div>
 
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="w-full rounded-lg dark:bg-slate-950 bg-slate-100 border dark:border-slate-700 border-slate-300 px-3 py-2 text-xs dark:text-slate-300 text-slate-800 font-mono outline-none">
-                <!-- UPDATED CONNECTION STATUS LOG -->
+                <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="hidden">
+                <!-- CONNECTION STATUS LOG -->
                 <p id="conn-log" class="text-[11px] text-slate-400 font-mono">Not connected</p>
             </div>
         </section>
@@ -149,7 +148,6 @@
                 </button>
                 <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 relative">
                     <i class="fa-solid fa-comments"></i> Chat
-                    <!-- WhatsApp-style Unread Message Badge -->
                     <span id="unread-badge" class="absolute top-1.5 right-4 bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[9px] font-bold hidden">0</span>
                 </button>
             </div>
@@ -349,7 +347,6 @@
 
             peer.on('open', (id) => {
                 myPeerId = id;
-                document.getElementById('my-peer-id').innerText = id;
                 document.getElementById('conn-log').innerText = 'Not connected';
                 document.getElementById('conn-log').className = 'text-[11px] text-slate-400 font-mono';
                 
@@ -370,12 +367,16 @@
                 document.getElementById('btn-chat-video').removeAttribute('disabled');
                 document.getElementById('btn-chat-voice').removeAttribute('disabled');
                 
-                // Update status log
                 const log = document.getElementById('conn-log');
                 log.innerText = `Connected to ${currentTargetName}`;
                 log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
                 showToast("Connected!", `You are now connected to ${currentTargetName}`);
+
+                // Send automated system notification message to Abhilash in chat
+                setTimeout(() => {
+                    appendSystemMessage(`${userName} is connected with you`);
+                }, 500);
             });
 
             peer.on('call', (call) => {
@@ -446,7 +447,6 @@
                 <div class="p-3 rounded-xl dark:bg-slate-900 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between">
                     <div>
                         <span class="font-bold dark:text-slate-200 text-slate-800 block">${userName} (You)</span>
-                        <span class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
                     </div>
                     <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Active</span>
                 </div>
@@ -470,7 +470,6 @@
                         <div class="p-3 rounded-xl dark:bg-slate-900/80 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between gap-2 mt-2">
                             <div>
                                 <span class="font-bold dark:text-slate-200 text-slate-800 text-xs">${data.name}</span>
-                                <span class="text-[10px] text-slate-400 font-mono block">ID: ${pId}</span>
                             </div>
                             <button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">
                                 ${isConnected ? 'Connected' : 'Connect'}
@@ -497,6 +496,13 @@
 
             showToast("Connected!", `You are now connected to ${targetName}`);
             document.getElementById('tab-chat-btn').click();
+
+            // Send notification message to peer via data connection after open
+            setTimeout(() => {
+                if (activeConn && activeConn.open) {
+                    activeConn.send(`[SYSTEM_MSG]: ${userName} is connected with you`);
+                }
+            }, 500);
         }
 
         function setupDataConn(conn) {
@@ -505,13 +511,17 @@
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
             });
             conn.on('data', (msg) => {
-                appendMessage(currentTargetName, msg, false);
-                // If user is currently on the members tab, increment WhatsApp-style unread counter
-                if (document.getElementById('view-chat').classList.contains('hidden')) {
-                    unreadCount++;
-                    const badge = document.getElementById('unread-badge');
-                    badge.innerText = unreadCount;
-                    badge.classList.remove('hidden');
+                if (typeof msg === 'string' && msg.startsWith('[SYSTEM_MSG]:')) {
+                    const cleanMsg = msg.replace('[SYSTEM_MSG]:', '').trim();
+                    appendSystemMessage(cleanMsg);
+                } else {
+                    appendMessage(currentTargetName, msg, false);
+                    if (document.getElementById('view-chat').classList.contains('hidden')) {
+                        unreadCount++;
+                        const badge = document.getElementById('unread-badge');
+                        badge.innerText = unreadCount;
+                        badge.classList.remove('hidden');
+                    }
                 }
             });
             conn.on('close', () => {
@@ -526,7 +536,6 @@
             document.getElementById('chat-header-id').innerText = "No active session";
             document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
             document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
-            stopAllMedia();
         }
 
         async function getLocalMediaStream(video = true) {
@@ -573,15 +582,15 @@
                 document.getElementById('remote-placeholder').classList.add('hidden');
             });
             callObj.on('close', () => {
-                stopAllMedia();
+                stopCallMediaOnly();
             });
             callObj.on('error', () => {
-                stopAllMedia();
+                stopCallMediaOnly();
             });
         }
 
-        // FULL VIDEO & MEDIA STOP FIX
-        function stopAllMedia() {
+        // STOPS ONLY VIDEO/AUDIO CALL WITHOUT DISCONNECTING TEXT CHAT
+        function stopCallMediaOnly() {
             if (activeCall) {
                 try { activeCall.close(); } catch(e) {}
                 activeCall = null;
@@ -591,13 +600,11 @@
                 localStream = null;
             }
 
-            // Reset remote video element
             const rv = document.getElementById('remote-video');
             rv.srcObject = null;
             rv.classList.add('hidden');
             document.getElementById('remote-placeholder').classList.remove('hidden');
 
-            // Reset local PIP video element
             const pip = document.getElementById('pip-video');
             pip.srcObject = null;
             pip.classList.add('hidden');
@@ -617,6 +624,15 @@
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
             div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${text}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function appendSystemMessage(text) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex justify-center my-2`;
+            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${text}</div>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -679,7 +695,6 @@
                 document.getElementById('view-chat').classList.add('hidden');
             });
             
-            // Clear unread badge when opening chat tab
             document.getElementById('tab-chat-btn').addEventListener('click', () => {
                 document.getElementById('view-chat').classList.remove('hidden');
                 document.getElementById('view-peers').classList.add('hidden');
@@ -700,12 +715,10 @@
                 }
             });
 
+            // END CALL BUTTON: Terminates only video/audio streams, leaving chat intact
             document.getElementById('btn-end-call').addEventListener('click', () => {
-                stopAllMedia();
-                if (activeConn) {
-                    try { activeConn.close(); } catch(e) {}
-                }
-                handleDisconnection();
+                stopCallMediaOnly();
+                showToast("Call Ended", "Video/Audio call has ended.");
             });
         }
     </script>
