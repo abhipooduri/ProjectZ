@@ -88,22 +88,12 @@
         <!-- LEFT CONTROLS -->
         <section class="lg:col-span-3 flex flex-col gap-4">
             <div class="glass-panel rounded-2xl p-3 text-xs font-mono">
-                <div class="text-slate-400 dark:text-slate-400 text-slate-600">User: <span id="display-name" class="text-cyan-400 font-bold">Setting up...</span></div>
+                <div class="text-slate-400">User: <span id="display-name" class="text-cyan-400 font-bold">Setting up...</span></div>
                 <div class="text-slate-500 mt-1">Your ID: <span id="my-peer-id" class="text-indigo-400 font-bold">Initializing...</span></div>
             </div>
 
             <div class="glass-panel rounded-2xl p-3 space-y-3">
                 <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="w-full rounded-lg dark:bg-slate-950 bg-slate-100 border dark:border-slate-700 border-slate-300 px-3 py-2 text-xs dark:text-slate-300 text-slate-800 font-mono outline-none">
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
-                        <i class="fa-solid fa-video"></i> Video Call
-                    </button>
-                    <button id="btn-start-voice" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
-                        <i class="fa-solid fa-phone"></i> Voice Call
-                    </button>
-                </div>
-
                 <p id="conn-log" class="text-[11px] text-amber-400 font-mono">Connecting discovery network...</p>
             </div>
         </section>
@@ -118,7 +108,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Active members update automatically.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member to chat or call.</p>
                 </div>
 
                 <!-- PIP LOCAL PREVIEW -->
@@ -131,7 +121,7 @@
                 </div>
 
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
-                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg">
+                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
                 </div>
@@ -160,12 +150,22 @@
 
             <!-- CHAT VIEW -->
             <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
-                <div class="p-2 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
-                    <span id="chat-header-id" class="text-slate-500 font-bold">No active session</span>
+                <!-- Chat Header with Direct Name Connection Status & Call Options -->
+                <div class="p-2.5 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
+                    <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[150px]">No active session</span>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btn-chat-video" onclick="requestCall(true)" disabled class="p-1.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition" title="Video Call">
+                            <i class="fa-solid fa-video text-xs"></i>
+                        </button>
+                        <button id="btn-chat-voice" onclick="requestCall(false)" disabled class="p-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition" title="Voice Call">
+                            <i class="fa-solid fa-phone text-xs"></i>
+                        </button>
+                    </div>
                 </div>
+
                 <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
-                        -- Connect to a member to start chat --
+                        -- Connect to a member from the Members tab --
                     </div>
                 </div>
                 <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-2">
@@ -178,6 +178,25 @@
         </section>
 
     </main>
+
+    <!-- INCOMING CALL REQUEST MODAL -->
+    <div id="modal-incoming-call" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-sm w-full space-y-4 text-center dark:bg-slate-900 bg-white border border-indigo-500/40 shadow-2xl">
+            <div class="w-14 h-14 rounded-full bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-2xl animate-bounce">
+                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-100 dark:text-slate-100 text-slate-900" id="incoming-call-title">Incoming Video Call</h3>
+            <p class="text-xs text-slate-400"><span id="caller-name" class="font-bold text-indigo-400">Someone</span> is calling you...</p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="rejectIncomingCall()" class="py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-phone-slash"></i> Reject
+                </button>
+                <button onclick="acceptIncomingCall()" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-phone"></i> Accept
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- FIRST TIME USER LOGIN MODAL -->
     <div id="modal-name-prompt" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
@@ -237,7 +256,9 @@
         let activeConn = null;
         let activeCall = null;
         let localStream = null;
+        let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
+        let currentTargetName = '';
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -261,7 +282,6 @@
             }
         }
 
-        // SETTINGS & THEME LOGIC
         function initTheme() {
             const savedTheme = localStorage.getItem('connect_theme') || 'dark';
             setTheme(savedTheme);
@@ -309,30 +329,24 @@
                 setupDataConn(conn);
             });
 
-            peer.on('call', async (call) => {
-                const stream = await getLocalMediaStream(true);
-                if (stream) {
-                    call.answer(stream);
-                    activeCall = call;
-                    call.on('stream', (remoteStream) => {
-                        const rv = document.getElementById('remote-video');
-                        rv.srcObject = remoteStream;
-                        rv.classList.remove('hidden');
-                        document.getElementById('remote-placeholder').classList.add('hidden');
-                    });
-                }
+            // Handle incoming calls with prompt modal
+            peer.on('call', (call) => {
+                incomingCallObj = call;
+                const callerPeerId = call.peer;
+                const callerData = activePeersMap.get(callerPeerId);
+                const callerDisplayName = callerData ? callerData.name : `User (${callerPeerId.slice(-4)})`;
+                
+                document.getElementById('caller-name').innerText = callerDisplayName;
+                document.getElementById('modal-incoming-call').classList.remove('hidden');
             });
         }
 
-        // MQTT GLOBAL PRESENCE SYNC
         function initMQTTDiscovery() {
             mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
             mqttClient.on('connect', () => {
                 mqttClient.subscribe(MQTT_TOPIC);
                 broadcastPresence();
-
-                // Heartbeat every 4 seconds
                 setInterval(broadcastPresence, 4000);
             });
 
@@ -346,7 +360,6 @@
                 } catch(e) {}
             });
 
-            // Prune stale peers every 3 seconds
             setInterval(() => {
                 const now = Date.now();
                 activePeersMap.forEach((val, key) => {
@@ -408,14 +421,20 @@
             }
         }
 
-        // ONE-CLICK CONNECT HANDLER
+        // ONE-CLICK CONNECT HANDLER -> Direct to chat with connected name display
         function connectToPeer(targetId, targetName) {
+            currentTargetName = targetName;
             document.getElementById('target-peer-id').value = targetId;
             activeConn = peer.connect(targetId);
             setupDataConn(activeConn);
 
+            // Update chat header to show connection status
+            document.getElementById('chat-header-id').innerText = `Connected to ${targetName}`;
+            document.getElementById('btn-chat-video').removeAttribute('disabled');
+            document.getElementById('btn-chat-voice').removeAttribute('disabled');
+
+            // Directly enter chat tab
             document.getElementById('tab-chat-btn').click();
-            document.getElementById('chat-header-id').innerText = `Session: ${targetName}`;
         }
 
         function setupDataConn(conn) {
@@ -441,9 +460,10 @@
             }
         }
 
-        async function startCall(video) {
+        // OUTGOING CALL REQUEST
+        async function requestCall(video) {
             const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Click 'Connect' on an active member first!"); return; }
+            if (!targetId) { alert("Please connect to a member first!"); return; }
 
             const stream = await getLocalMediaStream(video);
             if (!stream) return;
@@ -457,6 +477,31 @@
             });
         }
 
+        // INCOMING CALL ACCEPT / REJECT
+        async function acceptIncomingCall() {
+            document.getElementById('modal-incoming-call').classList.add('hidden');
+            const hasVideo = true; // default accept with video/audio support
+            const stream = await getLocalMediaStream(hasVideo);
+            if (stream && incomingCallObj) {
+                incomingCallObj.answer(stream);
+                activeCall = incomingCallObj;
+                incomingCallObj.on('stream', (remoteStream) => {
+                    const rv = document.getElementById('remote-video');
+                    rv.srcObject = remoteStream;
+                    rv.classList.remove('hidden');
+                    document.getElementById('remote-placeholder').classList.add('hidden');
+                });
+            }
+        }
+
+        function rejectIncomingCall() {
+            document.getElementById('modal-incoming-call').classList.add('hidden');
+            if (incomingCallObj) {
+                incomingCallObj.close();
+                incomingCallObj = null;
+            }
+        }
+
         function appendMessage(sender, text, isSelf) {
             const box = document.getElementById('chat-messages');
             const div = document.createElement('div');
@@ -467,7 +512,6 @@
         }
 
         function setupUIEvents() {
-            // First time login form
             document.getElementById('form-name-prompt').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const inputVal = document.getElementById('input-username').value.trim();
@@ -480,7 +524,6 @@
                 }
             });
 
-            // Settings Modal Events
             document.getElementById('btn-open-settings').addEventListener('click', () => {
                 document.getElementById('settings-username-input').value = userName;
                 document.getElementById('modal-settings').classList.remove('hidden');
@@ -502,7 +545,6 @@
                 }
             });
 
-            // Navigation Tabs
             document.getElementById('tab-peers-btn').addEventListener('click', () => {
                 document.getElementById('view-peers').classList.remove('hidden');
                 document.getElementById('view-chat').classList.add('hidden');
@@ -511,9 +553,6 @@
                 document.getElementById('view-chat').classList.remove('hidden');
                 document.getElementById('view-peers').classList.add('hidden');
             });
-
-            document.getElementById('btn-start-video').addEventListener('click', () => startCall(true));
-            document.getElementById('btn-start-voice').addEventListener('click', () => startCall(false));
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
                 e.preventDefault();
