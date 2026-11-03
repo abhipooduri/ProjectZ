@@ -372,7 +372,7 @@
         const MQTT_TOPIC = "connect_suite_2026_room_global_v11";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
-        const sentMessagesTracker = {}; // Tracks message status elements for updates
+        const sentMessagesTracker = {}; // Tracks individual message statuses securely by unique msgId
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
@@ -383,10 +383,6 @@
             initNotificationsUI();
             checkUserIdentity();
             setupUIEvents();
-            
-            // Listen to chat view visibility or window focus to mark messages as read
-            const chatMessagesContainer = document.getElementById('chat-messages');
-            chatMessagesContainer.addEventListener('scroll', checkVisibleUnreadMessages);
         });
 
         function initNotificationsUI() {
@@ -697,13 +693,6 @@
                 broadcastPresence();
                 renderMembersList();
                 switchToChatTab();
-
-                // Send DELIVERED packet back for any pending messages if needed
-                setTimeout(() => {
-                    if (conn && conn.open) {
-                        conn.send(JSON.stringify({ type: 'DELIVERED_ALL' }));
-                    }
-                }, 400);
             });
 
             peer.on('call', (call) => {
@@ -926,7 +915,6 @@
             setTimeout(() => {
                 if (conn && conn.open) {
                     conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} is connected with you` }));
-                    conn.send(JSON.stringify({ type: 'DELIVERED_ALL' }));
                 }
             }, 500);
         }
@@ -961,31 +949,14 @@
             const badge = document.getElementById('unread-badge');
             badge.innerText = '0';
             badge.classList.add('hidden');
-
-            // Send READ receipts since user is looking at chat
-            sendReadReceiptToAll();
-        }
-
-        function sendReadReceiptToAll() {
-            const packet = JSON.stringify({ type: 'READ_ALL' });
-            activeConns.forEach(c => {
-                if (c && c.open) c.send(packet);
-            });
-        }
-
-        function checkVisibleUnreadMessages() {
-            if (!document.getElementById('view-chat').classList.contains('hidden')) {
-                sendReadReceiptToAll();
-            }
         }
 
         function setupDataConn(conn) {
             conn.on('open', () => {
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
-                // Once connected, signal delivered
-                conn.send(JSON.stringify({ type: 'DELIVERED_ALL' }));
             });
+
             conn.on('data', (packet) => {
                 try {
                     const data = typeof packet === 'string' ? JSON.parse(packet) : packet;
@@ -999,14 +970,12 @@
                         appendSystemMessage(data.text);
                         return;
                     }
-                    if (data.type === 'DELIVERED_ALL') {
-                        // Mark all my sent messages as delivered (Double Grey Ticks)
-                        updateAllMySentMessagesStatus('delivered');
+                    if (data.type === 'MSG_DELIVERED') {
+                        updateMessageStatus(data.msgId, 'delivered');
                         return;
                     }
-                    if (data.type === 'READ_ALL') {
-                        // Mark all my sent messages as read (Double Blue Ticks)
-                        updateAllMySentMessagesStatus('read');
+                    if (data.type === 'MSG_READ') {
+                        updateMessageStatus(data.msgId, 'read');
                         return;
                     }
                     if (data.type === 'CHAT_MSG') {
@@ -1014,12 +983,13 @@
                         playSoundChime('msg');
                         triggerDesktopNotification(`Message from ${data.sender}`, data.content);
                         checkUnread();
-                        
-                        // Automatically notify sender that message is delivered and read if tab is active
+
+                        // Acknowledge delivery
+                        conn.send(JSON.stringify({ type: 'MSG_DELIVERED', msgId: data.msgId }));
+
+                        // If chat view is active, acknowledge read
                         if (!document.getElementById('view-chat').classList.contains('hidden')) {
-                            conn.send(JSON.stringify({ type: 'READ_ALL' }));
-                        } else {
-                            conn.send(JSON.stringify({ type: 'DELIVERED_ALL' }));
+                            conn.send(JSON.stringify({ type: 'MSG_READ', msgId: data.msgId }));
                         }
                         return;
                     }
@@ -1029,19 +999,18 @@
                         triggerDesktopNotification(`File from ${data.sender}`, data.fileName);
                         checkUnread();
 
+                        // Acknowledge delivery
+                        conn.send(JSON.stringify({ type: 'MSG_DELIVERED', msgId: data.msgId }));
+
+                        // If chat view is active, acknowledge read
                         if (!document.getElementById('view-chat').classList.contains('hidden')) {
-                            conn.send(JSON.stringify({ type: 'READ_ALL' }));
-                        } else {
-                            conn.send(JSON.stringify({ type: 'DELIVERED_ALL' }));
+                            conn.send(JSON.stringify({ type: 'MSG_READ', msgId: data.msgId }));
                         }
                         return;
                     }
-                } catch(e) {
-                    appendMessage("Peer", packet, false);
-                    playSoundChime('msg');
-                    checkUnread();
-                }
+                } catch(e) {}
             });
+
             conn.on('close', () => {
                 handleDisconnection(conn.peer);
             });
@@ -1053,8 +1022,6 @@
                 const badge = document.getElementById('unread-badge');
                 badge.innerText = unreadCount;
                 badge.classList.remove('hidden');
-            } else {
-                sendReadReceiptToAll();
             }
         }
 
@@ -1107,9 +1074,8 @@
                     localSwapped.classList.remove('hidden');
                 } else {
                     pip.srcObject = localStream;
-                    pip.classList.add('hidden'); // hidden until pip size
-                    document.getElementById('pip-off-placeholder').classList.add('hidden');
                     pip.classList.remove('hidden');
+                    document.getElementById('pip-off-placeholder').classList.add('hidden');
                 }
                 return localStream;
             } catch (err) {
@@ -1204,17 +1170,13 @@
             }
         }
 
-        // WhatsApp Style Status Ticks Render helper
-        // status: 'sent' (single grey tick), 'delivered' (double grey tick), 'read' (double blue tick)
+        // WhatsApp Style Tick Icon HTML Helpers
         function getReceiptTickHtml(status = 'sent') {
             if (status === 'sent') {
-                // Single grey tick
                 return `<span class="inline-flex items-center ml-1 text-slate-400 text-[10px]" title="Sent"><i class="fa-solid fa-check"></i></span>`;
             } else if (status === 'delivered') {
-                // Double grey ticks
                 return `<span class="inline-flex items-center ml-1 text-slate-400 text-[10px]" title="Delivered"><i class="fa-solid fa-check-double"></i></span>`;
             } else if (status === 'read') {
-                // Double blue ticks
                 return `<span class="inline-flex items-center ml-1 text-cyan-400 text-[10px]" title="Read"><i class="fa-solid fa-check-double"></i></span>`;
             }
             return `<span class="inline-flex items-center ml-1 text-slate-400 text-[10px]"><i class="fa-solid fa-check"></i></span>`;
@@ -1225,9 +1187,9 @@
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
             
-            const uniqueId = msgId || ('msg_' + Math.random().toString(36.25));
+            const uniqueId = msgId || ('msg_' + Math.random().toString(36).substring(2, 9));
             if (isSelf) {
-                sentMessagesTracker[uniqueId] = 'sent'; // initial status
+                sentMessagesTracker[uniqueId] = 'sent';
             }
 
             const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1252,7 +1214,7 @@
             const div = document.createElement('div');
             div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
             
-            const uniqueId = msgId || ('msg_' + Math.random().toString(36.25));
+            const uniqueId = msgId || ('msg_' + Math.random().toString(36).substring(2, 9));
             if (isSelf) {
                 sentMessagesTracker[uniqueId] = 'sent';
             }
@@ -1272,7 +1234,7 @@
 
             div.innerHTML = `
                 <span class="text-[9px] text-slate-500">${sender}</span>
-                <div class="p-1.5 rounded-xl max-w-[85%] ${isSelf ? 'bg-indigo-600/30 border border-indigo-500/40' : ''}">
+                <div class="p-1.5 rounded-xl max-w-[85%] ${isSelf ? 'bg-indigo-600/35 border border-indigo-500/40' : ''}">
                     ${contentHtml}
                     <div class="text-[9px] mt-1 text-right flex items-center justify-end gap-1 opacity-80 text-slate-300">
                         <span>${timeStr}</span>
@@ -1284,10 +1246,11 @@
             return uniqueId;
         }
 
-        function updateAllMySentMessagesStatus(status) {
-            for (let id in sentMessagesTracker) {
-                sentMessagesTracker[id] = status;
-                const statusSpan = document.getElementById(`status_${id}`);
+        // Target individual message update by unique msgId (Fixes the global bug)
+        function updateMessageStatus(msgId, status) {
+            if (sentMessagesTracker[msgId]) {
+                sentMessagesTracker[msgId] = status;
+                const statusSpan = document.getElementById(`status_${msgId}`);
                 if (statusSpan) {
                     statusSpan.innerHTML = getReceiptTickHtml(status);
                 }
