@@ -148,8 +148,13 @@
                 </div>
 
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
+                    <!-- END CALL BUTTON (Stops video/audio call only) -->
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
                         <i class="fa-solid fa-phone-slash"></i>
+                    </button>
+                    <!-- END ENTIRE CONNECTION BUTTON -->
+                    <button id="btn-end-connection" onclick="endEntireConnection()" class="w-10 h-10 rounded-full bg-rose-700 hover:bg-rose-600 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Entire Connection">
+                        <i class="fa-solid fa-unlink"></i>
                     </button>
                 </div>
             </div>
@@ -193,11 +198,7 @@
                     </div>
                 </div>
 
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
-                        -- Connect to a member from Members tab --
-                    </div>
-                </div>
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono"></div>
                 
                 <!-- FILE ATTACHMENT PREVIEW BAR -->
                 <div id="file-preview-bar" class="hidden px-3 py-1.5 bg-indigo-950/40 border-t border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
@@ -312,7 +313,7 @@
         let unreadCount = 0;
         let attachedFile = null;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v4";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v5";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -407,7 +408,7 @@
                 activeConns.push(conn);
                 setupDataConn(conn);
 
-                document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
+                updateConnectionStatusText();
                 document.getElementById('btn-chat-video').removeAttribute('disabled');
                 document.getElementById('btn-chat-voice').removeAttribute('disabled');
 
@@ -450,7 +451,6 @@
             mqttClient.on('message', (topic, message) => {
                 try {
                     const data = JSON.parse(message.toString());
-                    // Ignore self-echoes if any, and strictly track unique peerIds
                     if (data.peerId && data.peerId !== myPeerId) {
                         activePeersMap.set(data.peerId, { 
                             name: data.name, 
@@ -459,6 +459,7 @@
                             lastSeen: Date.now() 
                         });
                         renderMembersList();
+                        updateConnectionStatusText();
                     }
                 } catch(e) {}
             });
@@ -469,6 +470,7 @@
                     if (now - val.lastSeen > 10000) activePeersMap.delete(key);
                 });
                 renderMembersList();
+                updateConnectionStatusText();
             }, 3000);
         }
 
@@ -485,11 +487,31 @@
         }
 
         function isNameTaken(newName) {
-            // STRICT CASE-SENSITIVE CHECK: "ab" and "Ab" are treated as completely different users
             for (let [pId, data] of activePeersMap.entries()) {
                 if (data.name === newName) return true;
             }
             return false;
+        }
+
+        function getConnectedNamesList() {
+            let names = [];
+            activeConns.forEach(c => {
+                const pData = activePeersMap.get(c.peer);
+                if (pData) names.push(pData.name);
+            });
+            return names;
+        }
+
+        function updateConnectionStatusText() {
+            const names = getConnectedNamesList();
+            const headerEl = document.getElementById('chat-header-id');
+            if (names.length === 0) {
+                headerEl.innerText = "No active session";
+            } else if (names.length === 1) {
+                headerEl.innerText = `${names[0]} is connected with you`;
+            } else {
+                headerEl.innerText = `${names.join(', ')} are connected with you`;
+            }
         }
 
         function renderMembersList() {
@@ -524,12 +546,10 @@
                     let statusBadge = '';
                     let actionButton = '';
 
-                    // IF connected to EACH OTHER (bidirectional or direct)
                     if (isConnectedDirectly || remoteConnectedToUs) {
                         statusBadge = `<span class="block text-[9px] text-emerald-400 font-bold">${data.name} is connected with you</span>`;
                         actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md">Connected</button>`;
                     } else if (data.inCall) {
-                        // If they are busy with someone else
                         statusBadge = `<span class="block text-[9px] text-amber-400">${data.name} is in another call</span>`;
                         actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">Connect</button>`;
                     } else {
@@ -595,7 +615,7 @@
             activeConns.push(conn);
             setupDataConn(conn);
 
-            document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
+            updateConnectionStatusText();
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
             
@@ -614,6 +634,27 @@
                     conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} is connected with you` }));
                 }
             }, 500);
+        }
+
+        function endEntireConnection() {
+            activeConns.forEach(c => { try { c.close(); } catch(e){} });
+            activeConns = [];
+            stopCallMediaOnly();
+            updateConnectionStatusText();
+
+            document.getElementById('chat-input').setAttribute('disabled', 'true');
+            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
+            document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
+            document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
+
+            const log = document.getElementById('conn-log');
+            log.innerText = `Connection ended`;
+            log.className = 'text-[11px] text-red-400 font-mono font-bold';
+
+            showToast("Disconnected", "You have ended the entire connection.");
+            broadcastPresence();
+            renderMembersList();
+            document.getElementById('tab-peers-btn').click();
         }
 
         function switchToChatTab() {
@@ -678,16 +719,14 @@
             activeConns = activeConns.filter(c => c.peer !== peerId);
             broadcastPresence();
             renderMembersList();
+            updateConnectionStatusText();
 
             if (activeConns.length === 0) {
                 const log = document.getElementById('conn-log');
                 log.innerText = `Connection ended`;
                 log.className = 'text-[11px] text-red-400 font-mono font-bold';
-                document.getElementById('chat-header-id').innerText = "No active session";
                 document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
                 document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
-            } else {
-                document.getElementById('chat-header-id').innerText = `Connected (${activeConns.length + 1} users)`;
             }
         }
 
@@ -867,7 +906,6 @@
 
                 if (updatedName !== userName && isNameTaken(updatedName)) {
                     errorEl.innerText = "Username already exists. Please choose another name.";
-                    errorEl.classList.add('hidden'); // Fixed bug
                     errorEl.classList.remove('hidden');
                     return;
                 }
