@@ -289,8 +289,7 @@
         let userName = localStorage.getItem('connect_user_name') || '';
         let currentTargetName = 'Peer';
         let unreadCount = 0;
-        
-        let connectedPartnerName = null; // Tracks who I am currently connected with
+        let connectedPartnerName = null;
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -357,21 +356,23 @@
                 host: '0.peerjs.com',
                 secure: true,
                 port: 443,
-                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+                config: { iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ] }
             });
 
             peer.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('conn-log').innerText = 'Not connected';
                 document.getElementById('conn-log').className = 'text-[11px] text-slate-400 font-mono';
-                
                 initMQTTDiscovery();
             });
 
             peer.on('connection', (conn) => {
-                // Check if we are already connected to someone else
-                if (activeConn && activeConn.open) {
-                    // Send busy status message back to the 3rd person trying to connect
+                // If busy with another data connection
+                if (activeConn && activeConn.open && activeConn.peer !== conn.peer) {
                     conn.on('open', () => {
                         conn.send(JSON.stringify({ type: 'BUSY_NOTICE', busyWith: connectedPartnerName || 'another user' }));
                         setTimeout(() => { conn.close(); }, 500);
@@ -405,7 +406,7 @@
             });
 
             peer.on('call', (call) => {
-                if (activeConn && activeConn.open) {
+                if (activeCall) {
                     call.close();
                     return;
                 }
@@ -580,7 +581,9 @@
 
         async function getLocalMediaStream(video = true) {
             try {
-                if (localStream) return localStream;
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
                 const pip = document.getElementById('pip-video');
                 pip.srcObject = localStream;
@@ -714,7 +717,7 @@
 
                 if (updatedName.toLowerCase() !== userName.toLowerCase() && isNameTaken(updatedName)) {
                     errorEl.innerText = "Username already exists. Please choose another name.";
-                    errorEl.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
                     return;
                 }
 
