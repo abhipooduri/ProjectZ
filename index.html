@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CONNECT - Cross Device WebRTC Suite</title>
 
+    <!-- App Logo / Icon -->
+    <link rel="icon" type="image/png" href="https://images.weserv.nl/?url=i.imgur.com/your_image_placeholder.png">
+    <link rel="apple-touch-icon" href="https://images.weserv.nl/?url=i.imgur.com/your_image_placeholder.png">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -76,8 +80,8 @@
     <!-- HEADER -->
     <header class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-                <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
+            <div class="w-10 h-10 rounded-xl overflow-hidden bg-indigo-600 flex items-center justify-center text-white shadow-lg border border-indigo-500/40">
+                <img src="https://images.weserv.nl/?url=i.imgur.com/your_image_placeholder.png" alt="Logo" class="w-full h-full object-cover">
             </div>
             <h1 class="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
                 CONNECT
@@ -213,8 +217,8 @@
     <!-- FIRST TIME USER LOGIN MODAL -->
     <div id="modal-name-prompt" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
         <div class="glass-panel p-6 rounded-2xl max-w-sm w-full space-y-4 text-center dark:bg-slate-900 bg-white border border-indigo-500/30">
-            <div class="w-12 h-12 rounded-full bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-xl">
-                <i class="fa-solid fa-user-plus"></i>
+            <div class="w-12 h-12 rounded-full overflow-hidden bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-xl border border-indigo-500/40">
+                <img src="https://images.weserv.nl/?url=i.imgur.com/your_image_placeholder.png" alt="Logo" class="w-full h-full object-cover">
             </div>
             <h2 class="text-lg font-bold text-slate-100 dark:text-slate-100 text-slate-900">Welcome to CONNECT</h2>
             <p class="text-xs text-slate-400">Please choose a unique display name.</p>
@@ -373,7 +377,6 @@
 
                 showToast("Connected!", `You are now connected to ${currentTargetName}`);
 
-                // Send automated system notification message to Abhilash in chat
                 setTimeout(() => {
                     appendSystemMessage(`${userName} is connected with you`);
                 }, 500);
@@ -497,7 +500,6 @@
             showToast("Connected!", `You are now connected to ${targetName}`);
             document.getElementById('tab-chat-btn').click();
 
-            // Send notification message to peer via data connection after open
             setTimeout(() => {
                 if (activeConn && activeConn.open) {
                     activeConn.send(`[SYSTEM_MSG]: ${userName} is connected with you`);
@@ -589,7 +591,6 @@
             });
         }
 
-        // STOPS ONLY VIDEO/AUDIO CALL WITHOUT DISCONNECTING TEXT CHAT
         function stopCallMediaOnly() {
             if (activeCall) {
                 try { activeCall.close(); } catch(e) {}
@@ -715,7 +716,6 @@
                 }
             });
 
-            // END CALL BUTTON: Terminates only video/audio streams, leaving chat intact
             document.getElementById('btn-end-call').addEventListener('click', () => {
                 stopCallMediaOnly();
                 showToast("Call Ended", "Video/Audio call has ended.");
