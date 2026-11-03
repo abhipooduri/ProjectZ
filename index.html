@@ -1,47 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" class="dark" id="html-root">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONNECT - Cross-Device Live Suite</title>
-    
+    <title>CONNECT - Cross Device WebRTC Suite</title>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        theme: {
-                            primary: 'var(--color-primary)',
-                            hover: 'var(--color-hover)',
-                            border: 'var(--color-border)',
-                            text: 'var(--color-text)'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Orbitron', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
-    
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
+    <!-- PeerJS CDN -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- Firebase SDKs for Cross-Device Presence Sync -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- MQTT WebSocket Client for Global Cross-Device Presence Discovery -->
+    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 
     <style>
         :root {
@@ -49,117 +23,87 @@
             --color-hover: #4f46e5;
             --color-border: rgba(99, 102, 241, 0.3);
             --color-text: #818cf8;
-            --app-font: 'Inter', sans-serif;
         }
-
         body {
-            font-family: var(--app-font);
+            font-family: 'Inter', system-ui, sans-serif;
             background-color: #09090e;
             color: #f1f5f9;
-            overflow-x: hidden;
-            -webkit-user-select: none;
-            user-select: none;
         }
-
-        .font-display { font-family: 'Orbitron', sans-serif; }
-        .font-code { font-family: 'Fira Code', monospace; }
-
         .glass-panel {
             background: rgba(15, 14, 38, 0.75);
             backdrop-filter: blur(16px);
             border: 1px solid var(--color-border);
         }
-
-        .dynamic-bg-primary { background-color: var(--color-primary); }
-        .dynamic-bg-hover:hover { background-color: var(--color-hover); }
-        .dynamic-border { border-color: var(--color-border); }
-        .dynamic-text { color: var(--color-text); }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090e; }
-        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
-
-        video {
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
+        video { object-fit: cover; transform: scaleX(-1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
 
-    <!-- TOP HEADER -->
-    <header class="w-full border-b dynamic-border bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl dynamic-bg-primary flex items-center justify-center shadow-lg text-white">
-                    <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
-                </div>
-                <h1 class="font-display font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
-                    CONNECT
-                </h1>
+    <!-- HEADER -->
+    <header class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-satellite-dish text-lg animate-pulse"></i>
             </div>
-
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
-                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
-                <span class="font-bold">ONLINE</span>
-            </div>
+            <h1 class="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
+                CONNECT
+            </h1>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
+            <span id="network-status">ONLINE</span>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        <!-- LEFT COLUMN: CONTROLS & STATUS -->
+    <!-- MAIN BODY GRID -->
+    <main class="max-w-7xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- LEFT CONTROLS -->
         <section class="lg:col-span-3 flex flex-col gap-4">
-            <div class="glass-panel rounded-2xl p-3 flex items-center justify-between font-mono text-xs">
-                <div class="truncate mr-2">
-                    <div class="text-slate-400">User: <span id="display-user-handle" class="font-bold text-cyan-400">Guest</span></div>
-                    <div class="text-slate-500">Your ID: <span id="my-peer-id" class="dynamic-text font-bold">Initializing...</span></div>
-                </div>
+            <div class="glass-panel rounded-2xl p-3 text-xs font-mono">
+                <div class="text-slate-400">Device Tag: <span id="device-label" class="text-cyan-400 font-bold">Detecting...</span></div>
+                <div class="text-slate-500 mt-1">Your ID: <span id="my-peer-id" class="text-indigo-400 font-bold">Initializing...</span></div>
             </div>
 
             <div class="glass-panel rounded-2xl p-3 space-y-3">
-                <input id="target-peer-id" type="text" readonly placeholder="Select member from directory" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-300 outline-none font-mono">
+                <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-300 font-mono outline-none">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-start-video" class="w-full rounded-lg dynamic-bg-primary dynamic-bg-hover py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-video" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-video"></i> Video Call
                     </button>
-                    <button id="btn-start-voice" class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
+                    <button id="btn-start-voice" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-phone"></i> Voice Call
                     </button>
                 </div>
 
-                <button id="btn-start-chat" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-comments"></i> Chat Session
-                </button>
-
-                <p id="connection-status" class="text-[11px] text-amber-400 font-mono">Connecting to network...</p>
+                <p id="conn-log" class="text-[11px] text-amber-400 font-mono">Connecting discovery network...</p>
             </div>
         </section>
 
-        <!-- CENTER COLUMN: MAIN CALL SCREEN -->
+        <!-- CENTER VIDEO DISPLAY -->
         <section class="lg:col-span-6 flex flex-col gap-4">
-            <div class="relative glass-panel rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-center justify-center bg-slate-950">
-                <video id="main-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
+            <div class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center bg-slate-950">
+                <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
                 
                 <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 z-0">
-                    <div class="w-20 h-20 rounded-full bg-slate-900 border dynamic-border flex items-center justify-center mb-4 dynamic-text animate-pulse shadow-lg">
+                    <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
-                    <h3 class="font-display font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Click **Connect** on any active user in the Members tab to start instantly.</p>
+                    <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on your phone or laptop. Active members update automatically.</p>
                 </div>
 
-                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 dynamic-border bg-slate-900 shadow-2xl z-20">
+                <!-- PIP LOCAL PREVIEW -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-20">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
-                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-2">
-                        <i class="fa-solid fa-user-slash text-xl mb-1 text-slate-500"></i>
+                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-center p-2">
+                        <i class="fa-solid fa-user-slash text-xl mb-1"></i>
                         <span class="text-[9px] font-mono">Camera Off</span>
                     </div>
                 </div>
 
-                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30 shadow-2xl">
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
@@ -167,77 +111,69 @@
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: CHAT & MEMBERS DIRECTORY -->
+        <!-- RIGHT TAB NAVIGATION & ACTIVE MEMBERS LIST -->
         <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
-            <div class="grid grid-cols-2 bg-slate-950 border-b dynamic-border text-xs font-display font-bold">
-                <button id="tab-chat-btn" class="py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-900 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-comments"></i> Chat
-                </button>
-                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+            <div class="grid grid-cols-2 bg-slate-950 border-b border-indigo-500/30 text-xs font-bold">
+                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 bg-slate-900 transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-users"></i> Members
                 </button>
-            </div>
-
-            <!-- CHAT VIEW -->
-            <div id="view-chat" class="flex-1 flex flex-col overflow-hidden">
-                <div class="p-2 bg-slate-900/50 border-b dynamic-border flex items-center justify-between text-[11px] font-mono">
-                    <span id="chat-header-id" class="text-slate-500 font-bold">Select a member to chat</span>
-                    <span id="chat-status" class="text-slate-500 font-bold">OFFLINE</span>
-                </div>
-
-                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
-                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
-                        -- Select an active member from the Members tab --
-                    </div>
-                </div>
-
-                <form id="chat-form" class="p-2 bg-slate-950 border-t dynamic-border flex items-center gap-2">
-                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none font-mono">
-                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 dynamic-bg-primary dynamic-bg-hover text-white font-bold rounded-xl text-xs transition">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-comments"></i> Chat
+                </button>
             </div>
 
             <!-- MEMBERS DIRECTORY VIEW -->
-            <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
+            <div id="view-peers" class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
                 <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
                     <span>Available Active Members:</span>
                     <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
                 </div>
                 <div id="members-list-container" class="flex flex-col gap-2"></div>
             </div>
+
+            <!-- CHAT VIEW -->
+            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="p-2 bg-slate-900/50 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
+                    <span id="chat-header-id" class="text-slate-500 font-bold">No active session</span>
+                </div>
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
+                    <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-800">
+                        -- Connect to a member to start chat --
+                    </div>
+                </div>
+                <form id="chat-form" class="p-2 bg-slate-950 border-t border-indigo-500/30 flex items-center gap-2">
+                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none">
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
         </section>
+
     </main>
 
     <script>
-        // PUBLIC FIREBASE CONFIGURATION FOR GLOBAL CROSS-DEVICE PRESENCE
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForPublicDemoRoom99",
-            authDomain: "connect-app-demo.firebaseapp.com",
-            databaseURL: "https://connect-default-rtdb.firebaseio.com",
-            projectId: "connect-app-demo",
-        };
-        
-        // Initialize Firebase safely
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
-
         let peer = null;
         let myPeerId = null;
-        let activeDataConn = null;
-        let activeCallObj = null;
+        let mqttClient = null;
+        let activeConn = null;
+        let activeCall = null;
         let localStream = null;
+
+        const MQTT_TOPIC = "connect_suite_2026_room_global";
+        const activePeersMap = new Map();
+
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        const deviceType = isMobile ? 'Phone' : 'Laptop';
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('device-label').innerText = `${deviceType} Device`;
             initPeerJS();
-            setupUIEventListeners();
+            setupUIEvents();
         });
 
         function initPeerJS() {
@@ -246,23 +182,20 @@
                 host: '0.peerjs.com',
                 secure: true,
                 port: 443,
-                debug: 1,
                 config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
             });
 
             peer.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('my-peer-id').innerText = id;
-                document.getElementById('connection-status').innerText = 'Online & Connected.';
-                document.getElementById('connection-status').className = 'text-[11px] text-emerald-400 font-mono';
+                document.getElementById('conn-log').innerText = 'Connected to WebRTC.';
+                document.getElementById('conn-log').className = 'text-[11px] text-emerald-400 font-mono';
                 
-                // Register presence in Firebase Database globally across laptop & phone
-                registerGlobalPresence();
-                listenToGlobalPeers();
+                initMQTTDiscovery();
             });
 
             peer.on('connection', (conn) => {
-                activeDataConn = conn;
+                activeConn = conn;
                 setupDataConn(conn);
             });
 
@@ -270,196 +203,186 @@
                 const stream = await getLocalMediaStream(true);
                 if (stream) {
                     call.answer(stream);
-                    activeCallObj = call;
+                    activeCall = call;
                     call.on('stream', (remoteStream) => {
-                        const videoEl = document.getElementById('main-video');
-                        videoEl.srcObject = remoteStream;
-                        videoEl.classList.remove('hidden');
+                        const rv = document.getElementById('remote-video');
+                        rv.srcObject = remoteStream;
+                        rv.classList.remove('hidden');
                         document.getElementById('remote-placeholder').classList.add('hidden');
                     });
                 }
             });
         }
 
-        function registerGlobalPresence() {
-            if (!myPeerId) return;
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-            const deviceName = isMobile ? 'Phone User' : 'Laptop User';
-            const userRef = db.ref('active_rooms_2026/' + myPeerId);
+        // MQTT GLOBAL PRESENCE SYNC
+        function initMQTTDiscovery() {
+            mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
-            userRef.set({
-                peerId: myPeerId,
-                name: `${deviceName} (${myPeerId.slice(-3)})`,
-                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            mqttClient.on('connect', () => {
+                mqttClient.subscribe(MQTT_TOPIC);
+                broadcastPresence();
+
+                // Heartbeat every 4 seconds
+                setInterval(broadcastPresence, 4000);
             });
 
-            // Automatically clean up when tab closes or browser disconnects
-            userRef.onDisconnect().remove();
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    if (data.peerId && data.peerId !== myPeerId) {
+                        activePeersMap.set(data.peerId, { name: data.name, lastSeen: Date.now() });
+                        renderMembersList();
+                    }
+                } catch(e) {}
+            });
 
-            // Refresh presence ping every 5 seconds
+            // Prune stale peers every 3 seconds
             setInterval(() => {
-                userRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
-            }, 5000);
+                const now = Date.now();
+                activePeersMap.forEach((val, key) => {
+                    if (now - val.lastSeen > 10000) activePeersMap.delete(key);
+                });
+                renderMembersList();
+            }, 3000);
         }
 
-        function listenToGlobalPeers() {
-            const peersRef = db.ref('active_rooms_2026');
-            const now = Date.now();
+        function broadcastPresence() {
+            if (!mqttClient || !myPeerId) return;
+            const payload = JSON.stringify({
+                peerId: myPeerId,
+                name: `${deviceType} (${myPeerId.slice(-3)})`
+            });
+            mqttClient.publish(MQTT_TOPIC, payload);
+        }
 
-            peersRef.on('value', (snapshot) => {
-                const data = snapshot.val() || {};
-                const container = document.getElementById('members-list-container');
-                if (!container) return;
+        function renderMembersList() {
+            const container = document.getElementById('members-list-container');
+            if (!container) return;
 
-                container.innerHTML = `
-                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-slate-200 block">You (Active)</span>
-                            <span class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
-                        </div>
-                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+            container.innerHTML = `
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-slate-200 block">You (${deviceType})</span>
+                        <span class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Active</span>
+                </div>
+            `;
+
+            const otherPeers = Array.from(activePeersMap.entries());
+
+            if (otherPeers.length === 0) {
+                container.innerHTML += `
+                    <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl mt-2">
+                        <i class="fa-solid fa-users-slash text-xl mb-2 block text-slate-600"></i>
+                        No other active members online right now.<br>Open this link on your phone/laptop to connect!
                     </div>
                 `;
-
-                let activeCount = 1;
-                const serverTime = Date.now();
-
-                Object.values(data).forEach(peerObj => {
-                    if (peerObj.peerId === myPeerId) return;
-                    
-                    // Filter out stale connections older than 15 seconds
-                    if (serverTime - peerObj.lastSeen > 15000) return;
-
-                    activeCount++;
+                document.getElementById('online-counter').innerText = "1 Online (You)";
+            } else {
+                document.getElementById('online-counter').innerText = `${otherPeers.length + 1} Online`;
+                otherPeers.forEach(([pId, data]) => {
+                    const isConnected = activeConn && activeConn.peer === pId;
                     container.innerHTML += `
                         <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2 mt-2">
                             <div>
-                                <span class="font-bold text-slate-200 text-xs">${peerObj.name}</span>
-                                <span class="text-[10px] text-slate-400 font-mono block">Status: Active & Ready</span>
+                                <span class="font-bold text-slate-200 text-xs">${data.name}</span>
+                                <span class="text-[10px] text-slate-400 font-mono block">ID: ${pId}</span>
                             </div>
-                            <button onclick="connectToMember('${peerObj.peerId}', '${peerObj.name}')" class="px-3 py-1.5 rounded-lg dynamic-bg-primary text-white text-xs font-bold shadow-md hover:opacity-90">
-                                Connect
+                            <button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">
+                                ${isConnected ? 'Connected' : 'Connect'}
                             </button>
                         </div>
                     `;
                 });
-
-                if (activeCount === 1) {
-                    container.innerHTML += `
-                        <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl mt-3">
-                            <i class="fa-solid fa-users-slash text-xl mb-2 block text-slate-600"></i>
-                            No other active members online right now.<br>Open this link on your phone and laptop simultaneously!
-                        </div>
-                    `;
-                }
-
-                document.getElementById('online-counter').innerText = `${activeCount} Online`;
-            });
+            }
         }
 
-        // ONE-CLICK CONNECTION WITHOUT TYPING ID
-        function connectToMember(targetPeerId, targetName) {
-            document.getElementById('target-peer-id').value = targetPeerId;
-            const conn = peer.connect(targetPeerId);
-            activeDataConn = conn;
-            setupDataConn(conn);
+        // ONE-CLICK CONNECT HANDLER
+        function connectToPeer(targetId, targetName) {
+            document.getElementById('target-peer-id').value = targetId;
+            activeConn = peer.connect(targetId);
+            setupDataConn(activeConn);
 
-            // Switch automatically to the Chat tab
             document.getElementById('tab-chat-btn').click();
-            document.getElementById('chat-header-id').innerText = `Connected with: ${targetName}`;
+            document.getElementById('chat-header-id').innerText = `Session: ${targetName}`;
         }
 
         function setupDataConn(conn) {
             conn.on('open', () => {
-                enableChat();
+                document.getElementById('chat-input').removeAttribute('disabled');
+                document.getElementById('chat-send-btn').removeAttribute('disabled');
             });
-            conn.on('data', (data) => {
-                appendChatMessage(`Peer`, data, false);
-            });
+            conn.on('data', (msg) => appendMessage('Peer', msg, false));
         }
 
         async function getLocalMediaStream(video = true) {
             try {
                 if (localStream) return localStream;
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
-                const pipVideo = document.getElementById('pip-video');
-                pipVideo.srcObject = localStream;
-                pipVideo.classList.remove('hidden');
+                const pip = document.getElementById('pip-video');
+                pip.srcObject = localStream;
+                pip.classList.remove('hidden');
                 document.getElementById('pip-off-placeholder').classList.add('hidden');
                 return localStream;
             } catch (err) {
-                alert("Camera and microphone permission required for video/voice calls.");
+                alert("Camera and microphone permission required for calls.");
                 return null;
             }
         }
 
-        async function startCall(isVideo) {
+        async function startCall(video) {
             const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) { alert("Please click 'Connect' on a member from the Members tab first!"); return; }
+            if (!targetId) { alert("Click 'Connect' on an active member first!"); return; }
 
-            const stream = await getLocalMediaStream(isVideo);
+            const stream = await getLocalMediaStream(video);
             if (!stream) return;
 
-            const call = peer.call(targetId, stream);
-            activeCallObj = call;
-            call.on('stream', (remoteStream) => {
-                const videoEl = document.getElementById('main-video');
-                videoEl.srcObject = remoteStream;
-                videoEl.classList.remove('hidden');
+            activeCall = peer.call(targetId, stream);
+            activeCall.on('stream', (remoteStream) => {
+                const rv = document.getElementById('remote-video');
+                rv.srcObject = remoteStream;
+                rv.classList.remove('hidden');
                 document.getElementById('remote-placeholder').classList.add('hidden');
             });
         }
 
-        function enableChat() {
-            document.getElementById('chat-input').removeAttribute('disabled');
-            document.getElementById('chat-send-btn').removeAttribute('disabled');
-            document.getElementById('chat-status').innerText = "ONLINE";
-            document.getElementById('chat-status').className = "text-emerald-400 font-bold";
-        }
-
-        function appendChatMessage(sender, text, isSelf) {
+        function appendMessage(sender, text, isSelf) {
             const box = document.getElementById('chat-messages');
-            box.innerHTML += `
-                <div class="flex flex-col ${isSelf ? 'items-end' : 'items-start'}">
-                    <span class="text-[9px] text-slate-500 mb-0.5">${sender}</span>
-                    <div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'dynamic-bg-primary text-white' : 'bg-slate-900 border border-slate-800 text-slate-200'}">${text}</div>
-                </div>
-            `;
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-200'}">${text}</div>`;
+            box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
 
-        function setupUIEventListeners() {
+        function setupUIEvents() {
+            document.getElementById('tab-peers-btn').addEventListener('click', () => {
+                document.getElementById('view-peers').classList.remove('hidden');
+                document.getElementById('view-chat').classList.add('hidden');
+            });
             document.getElementById('tab-chat-btn').addEventListener('click', () => {
                 document.getElementById('view-chat').classList.remove('hidden');
                 document.getElementById('view-peers').classList.add('hidden');
             });
 
-            document.getElementById('tab-peers-btn').addEventListener('click', () => {
-                document.getElementById('view-peers').classList.remove('hidden');
-                document.getElementById('view-chat').classList.add('hidden');
-            });
-
             document.getElementById('btn-start-video').addEventListener('click', () => startCall(true));
             document.getElementById('btn-start-voice').addEventListener('click', () => startCall(false));
-            document.getElementById('btn-start-chat').addEventListener('click', () => {
-                if (!document.getElementById('target-peer-id').value) {
-                    alert("Please select a member from the Members tab first.");
-                }
-            });
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const input = document.getElementById('chat-input');
                 const msg = input.value.trim();
-                if (!msg || !activeDataConn) return;
-                activeDataConn.send(msg);
-                appendChatMessage("You", msg, true);
-                input.value = '';
+                if (msg && activeConn) {
+                    activeConn.send(msg);
+                    appendMessage("You", msg, true);
+                    input.value = '';
+                }
             });
 
             document.getElementById('btn-end-call').addEventListener('click', () => {
-                if (activeCallObj) activeCallObj.close();
-                document.getElementById('main-video').classList.add('hidden');
+                if (activeCall) activeCall.close();
+                document.getElementById('remote-video').classList.add('hidden');
                 document.getElementById('remote-placeholder').classList.remove('hidden');
             });
         }
