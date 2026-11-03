@@ -145,8 +145,8 @@
                         <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
                             <i class="fa-solid fa-user text-3xl"></i>
                         </div>
-                        <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                        <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member or use Quick Match.</p>
+                        <!-- Updated text with distinct accent color -->
+                        <h3 class="font-bold text-base text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 tracking-wide">Are you ready to engage</h3>
                     </div>
                 </div>
 
@@ -178,15 +178,12 @@
 
                 <!-- CALL ACTION BUTTONS -->
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
-                    <!-- MUTE MY MIC BUTTON -->
                     <button id="btn-mute-mic" onclick="toggleMyMic()" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg" title="Mute/Unmute My Microphone">
                         <i class="fa-solid fa-microphone" id="mic-icon"></i>
                     </button>
-                    <!-- END CALL BUTTON (Media Only) -->
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
-                    <!-- END ENTIRE CONNECTION BUTTON -->
                     <button id="btn-end-connection" onclick="endEntireConnection()" class="w-10 h-10 rounded-full bg-rose-700 hover:bg-rose-600 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Entire Connection">
                         <i class="fa-solid fa-unlink"></i>
                     </button>
@@ -352,7 +349,7 @@
         let isRemoteMuted = false;
         let isMyMicMuted = false;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v8";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v9";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -902,7 +899,6 @@
                 if (localStream) return localStream;
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
                 
-                // Apply current mic mute setting if muted before stream started
                 if (isMyMicMuted) {
                     localStream.getAudioTracks().forEach(track => track.enabled = false);
                 }
@@ -977,7 +973,6 @@
                 localStream = null;
             }
 
-            // Reset Mic Mute UI State
             isMyMicMuted = false;
             const micBtn = document.getElementById('btn-mute-mic');
             const micIcon = document.getElementById('mic-icon');
