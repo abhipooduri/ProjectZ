@@ -170,7 +170,7 @@
             <!-- MEMBERS DIRECTORY VIEW -->
             <div id="view-peers" class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
                 <div class="flex items-center justify-between mb-1">
-                    <span class="text-[11px] text-slate-500">Online Members:</span>
+                    <span class="text-[11px] text-slate-500">Available Members:</span>
                     <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
                 </div>
                 <button onclick="connectRandomPeer()" class="w-full py-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:opacity-90 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
@@ -304,8 +304,8 @@
         let peer = null;
         let myPeerId = null;
         let mqttClient = null;
-        let activeConns = []; // Supports multi-peer/group connections
-        let activeCalls = []; // Supports multi-person video calls
+        let activeConns = []; 
+        let activeCalls = []; 
         let localStream = null;
         let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
@@ -314,7 +314,7 @@
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
-        const MAX_GROUP_PARTICIPANTS = 3; // Max capacity limit for calls/rooms
+        const MAX_GROUP_PARTICIPANTS = 3;
 
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
@@ -392,7 +392,6 @@
             });
 
             peer.on('connection', (conn) => {
-                // Check if our room reached max capacity
                 if (activeConns.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
                     conn.on('open', () => {
                         conn.send(JSON.stringify({ type: 'BUSY_NOTICE', reason: 'MAX_CAPACITY' }));
@@ -401,7 +400,6 @@
                     return;
                 }
 
-                // Check if target is already in another call/session
                 const remotePeerId = conn.peer;
                 const peerData = activePeersMap.get(remotePeerId);
                 const pName = peerData ? peerData.name : 'Peer';
@@ -419,6 +417,9 @@
 
                 showToast("Connected!", `${pName} joined your session.`);
                 appendSystemMessage(`${pName} joined the session`);
+
+                // AUTOMATICALLY SWITCH TO CHAT VIEW WHEN CONNECTED
+                switchToChatTab();
             });
 
             peer.on('call', (call) => {
@@ -535,7 +536,6 @@
                 return;
             }
 
-            // Filter out peers that are already connected or in another call
             const availablePeers = Array.from(activePeersMap.entries()).filter(([pId, data]) => {
                 return !data.inCall && !activeConns.some(c => c.peer === pId);
             });
@@ -578,13 +578,26 @@
             log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
             showToast("Connected!", `You are now connected to ${targetName}`);
-            document.getElementById('tab-chat-btn').click();
+
+            // AUTOMATICALLY SWITCH TO CHAT VIEW WHEN CONNECTED
+            switchToChatTab();
 
             setTimeout(() => {
                 if (conn && conn.open) {
                     conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} joined the session` }));
                 }
             }, 500);
+        }
+
+        function switchToChatTab() {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('view-peers').classList.add('hidden');
+            document.getElementById('tab-chat-btn').className = "py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5 relative";
+            document.getElementById('tab-peers-btn').className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
+            unreadCount = 0;
+            const badge = document.getElementById('unread-badge');
+            badge.innerText = '0';
+            badge.classList.add('hidden');
         }
 
         function setupDataConn(conn) {
@@ -616,7 +629,6 @@
                         return;
                     }
                 } catch(e) {
-                    // Fallback plain text
                     appendMessage("Peer", packet, false);
                     checkUnread();
                 }
@@ -684,7 +696,6 @@
             const stream = await getLocalMediaStream(video);
             if (!stream) return;
 
-            // Call all connected peers in the room
             activeConns.forEach(conn => {
                 const call = peer.call(conn.peer, stream);
                 setupCallEvents(call);
@@ -844,15 +855,12 @@
             document.getElementById('tab-peers-btn').addEventListener('click', () => {
                 document.getElementById('view-peers').classList.remove('hidden');
                 document.getElementById('view-chat').classList.add('hidden');
+                document.getElementById('tab-peers-btn').className = "py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5";
+                document.getElementById('tab-chat-btn').className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 relative";
             });
             
             document.getElementById('tab-chat-btn').addEventListener('click', () => {
-                document.getElementById('view-chat').classList.remove('hidden');
-                document.getElementById('view-peers').classList.add('hidden');
-                unreadCount = 0;
-                const badge = document.getElementById('unread-badge');
-                badge.innerText = '0';
-                badge.classList.add('hidden');
+                switchToChatTab();
             });
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
