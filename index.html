@@ -107,9 +107,6 @@
             </h1>
         </div>
         <div class="flex items-center gap-3">
-            <button id="btn-toggle-notif-header" onclick="toggleNotificationsSetting()" class="px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/30 text-indigo-300 text-xs font-mono hover:bg-indigo-900/50 transition">
-                <i class="fa-solid fa-bell mr-1" id="header-notif-icon"></i> <span id="header-notif-text">Alerts On</span>
-            </button>
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
                 <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
                 <span id="network-status">ONLINE</span>
@@ -390,7 +387,6 @@
             if (toggleCheckbox) {
                 toggleCheckbox.checked = notificationsEnabled;
             }
-            updateHeaderNotificationButton();
         }
 
         function toggleNotificationsSetting(forceState) {
@@ -406,32 +402,12 @@
             if (toggleCheckbox) {
                 toggleCheckbox.checked = notificationsEnabled;
             }
-            
-            updateHeaderNotificationButton();
 
             if (notificationsEnabled) {
                 requestNotificationPermission();
                 showToast("Notifications Enabled", "You will receive popups and alerts.");
             } else {
                 showToast("Notifications Disabled", "Alert popups and browser notifications are muted.");
-            }
-        }
-
-        function updateHeaderNotificationButton() {
-            const headerBtn = document.getElementById('btn-toggle-notif-header');
-            const icon = document.getElementById('header-notif-icon');
-            const text = document.getElementById('header-notif-text');
-
-            if (!headerBtn) return;
-
-            if (notificationsEnabled) {
-                headerBtn.className = "px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/30 text-indigo-300 text-xs font-mono hover:bg-indigo-900/50 transition";
-                icon.className = "fa-solid fa-bell mr-1";
-                text.innerText = "Alerts On";
-            } else {
-                headerBtn.className = "px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-400 text-xs font-mono hover:bg-slate-800/70 transition";
-                icon.className = "fa-solid fa-bell-slash mr-1 text-red-400";
-                text.innerText = "Alerts Off";
             }
         }
 
