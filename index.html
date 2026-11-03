@@ -75,7 +75,6 @@
                 <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
                 <span id="network-status">ONLINE</span>
             </div>
-            <!-- SETTINGS BUTTON -->
             <button id="btn-open-settings" class="p-2 rounded-xl bg-slate-800/20 hover:bg-slate-700/30 text-indigo-400 transition" title="Settings">
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
@@ -150,7 +149,6 @@
 
             <!-- CHAT VIEW -->
             <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
-                <!-- Chat Header with Direct Name Connection Status & Call Options -->
                 <div class="p-2.5 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
                     <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[150px]">No active session</span>
                     <div class="flex items-center gap-1.5">
@@ -185,7 +183,7 @@
             <div class="w-14 h-14 rounded-full bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-2xl animate-bounce">
                 <i id="incoming-call-icon" class="fa-solid fa-video"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-100 dark:text-slate-100 text-slate-900" id="incoming-call-title">Incoming Video Call</h3>
+            <h3 class="text-base font-bold text-slate-100 dark:text-slate-100 text-slate-900" id="incoming-call-title">Incoming Call</h3>
             <p class="text-xs text-slate-400"><span id="caller-name" class="font-bold text-indigo-400">Someone</span> is calling you...</p>
             <div class="grid grid-cols-2 gap-3 pt-2">
                 <button onclick="rejectIncomingCall()" class="py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
@@ -205,9 +203,10 @@
                 <i class="fa-solid fa-user-plus"></i>
             </div>
             <h2 class="text-lg font-bold text-slate-100 dark:text-slate-100 text-slate-900">Welcome to CONNECT</h2>
-            <p class="text-xs text-slate-400">Please choose a display name so other members can recognize you.</p>
+            <p class="text-xs text-slate-400">Please choose a unique display name.</p>
             <form id="form-name-prompt" class="space-y-3">
                 <input id="input-username" type="text" required placeholder="Enter your name..." class="w-full px-3 py-2 text-sm rounded-xl border dark:bg-slate-950 bg-slate-50 border-indigo-500/40 text-slate-100 dark:text-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p id="name-error-msg" class="text-[11px] text-red-400 hidden"></p>
                 <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg">Save & Continue</button>
             </form>
         </div>
@@ -241,9 +240,12 @@
             <!-- CHANGE NAME SELECTION -->
             <div class="space-y-2 pt-2 border-t dark:border-slate-800 border-slate-200">
                 <label class="text-xs font-bold text-slate-400 block">Edit Display Name</label>
-                <div class="flex gap-2">
-                    <input id="settings-username-input" type="text" class="flex-1 px-3 py-1.5 text-xs rounded-xl border dark:bg-slate-950 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-100 text-slate-900 outline-none">
-                    <button id="btn-save-name-settings" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs">Save</button>
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <input id="settings-username-input" type="text" class="flex-1 px-3 py-1.5 text-xs rounded-xl border dark:bg-slate-950 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-100 text-slate-900 outline-none">
+                        <button id="btn-save-name-settings" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs">Save</button>
+                    </div>
+                    <p id="settings-name-error" class="text-[11px] text-red-400 hidden"></p>
                 </div>
             </div>
         </div>
@@ -258,7 +260,6 @@
         let localStream = null;
         let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
-        let currentTargetName = '';
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -329,7 +330,6 @@
                 setupDataConn(conn);
             });
 
-            // Handle incoming calls with prompt modal
             peer.on('call', (call) => {
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
@@ -378,6 +378,17 @@
             mqttClient.publish(MQTT_TOPIC, payload);
         }
 
+        // UNIQUE NAME CHECKER HELPER
+        function isNameTaken(newName) {
+            const trimmed = newName.trim().toLowerCase();
+            for (let [pId, data] of activePeersMap.entries()) {
+                if (data.name.toLowerCase() === trimmed) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function renderMembersList() {
             const container = document.getElementById('members-list-container');
             if (!container) return;
@@ -421,19 +432,15 @@
             }
         }
 
-        // ONE-CLICK CONNECT HANDLER -> Direct to chat with connected name display
         function connectToPeer(targetId, targetName) {
-            currentTargetName = targetName;
             document.getElementById('target-peer-id').value = targetId;
             activeConn = peer.connect(targetId);
             setupDataConn(activeConn);
 
-            // Update chat header to show connection status
             document.getElementById('chat-header-id').innerText = `Connected to ${targetName}`;
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
 
-            // Directly enter chat tab
             document.getElementById('tab-chat-btn').click();
         }
 
@@ -460,7 +467,6 @@
             }
         }
 
-        // OUTGOING CALL REQUEST
         async function requestCall(video) {
             const targetId = document.getElementById('target-peer-id').value.trim();
             if (!targetId) { alert("Please connect to a member first!"); return; }
@@ -477,11 +483,9 @@
             });
         }
 
-        // INCOMING CALL ACCEPT / REJECT
         async function acceptIncomingCall() {
             document.getElementById('modal-incoming-call').classList.add('hidden');
-            const hasVideo = true; // default accept with video/audio support
-            const stream = await getLocalMediaStream(hasVideo);
+            const stream = await getLocalMediaStream(true);
             if (stream && incomingCallObj) {
                 incomingCallObj.answer(stream);
                 activeCall = incomingCallObj;
@@ -512,10 +516,20 @@
         }
 
         function setupUIEvents() {
+            // First time login with unique name validation
             document.getElementById('form-name-prompt').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const inputVal = document.getElementById('input-username').value.trim();
+                const errorEl = document.getElementById('name-error-msg');
+
+                if (isNameTaken(inputVal)) {
+                    errorEl.innerText = "Username already exists. Please choose another name.";
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
                 if (inputVal) {
+                    errorEl.classList.add('hidden');
                     userName = inputVal;
                     localStorage.setItem('connect_user_name', userName);
                     document.getElementById('display-name').innerText = userName;
@@ -526,6 +540,7 @@
 
             document.getElementById('btn-open-settings').addEventListener('click', () => {
                 document.getElementById('settings-username-input').value = userName;
+                document.getElementById('settings-name-error').classList.add('hidden');
                 document.getElementById('modal-settings').classList.remove('hidden');
             });
 
@@ -533,9 +548,19 @@
                 document.getElementById('modal-settings').classList.add('hidden');
             });
 
+            // Settings name save with unique check
             document.getElementById('btn-save-name-settings').addEventListener('click', () => {
                 const updatedName = document.getElementById('settings-username-input').value.trim();
+                const errorEl = document.getElementById('settings-name-error');
+
+                if (updatedName.toLowerCase() !== userName.toLowerCase() && isNameTaken(updatedName)) {
+                    errorEl.innerText = "Username already exists. Please choose another name.";
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
                 if (updatedName) {
+                    errorEl.classList.add('hidden');
                     userName = updatedName;
                     localStorage.setItem('connect_user_name', userName);
                     document.getElementById('display-name').innerText = userName;
