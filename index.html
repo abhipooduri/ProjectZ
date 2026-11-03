@@ -136,7 +136,7 @@
         <section class="lg:col-span-6 flex flex-col gap-4">
             <div id="video-card-container" class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center dark:bg-slate-950 bg-slate-900 transition-all duration-300">
                 
-                <!-- PRIMARY VIDEO SLOT (Swappable: Remote or Local) -->
+                <!-- PRIMARY VIDEO SLOT -->
                 <div id="primary-video-slot" class="absolute inset-0 w-full h-full flex items-center justify-center">
                     <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
                     <video id="local-swapped-video" autoplay playsinline muted class="w-full h-full object-cover hidden absolute inset-0"></video>
@@ -150,7 +150,7 @@
                     </div>
                 </div>
 
-                <!-- TOP RIGHT VIDEO CONTROLS (Maximize, Swap, Resize PIP, Mute Remote) -->
+                <!-- TOP RIGHT VIDEO CONTROLS -->
                 <div class="absolute top-3 right-3 flex items-center gap-2 z-40 bg-slate-900/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700">
                     <button onclick="toggleRemoteAudioMute()" id="btn-mute-remote" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Mute/Unmute Other User Audio">
                         <i class="fa-solid fa-volume-high" id="mute-remote-icon"></i>
@@ -163,7 +163,7 @@
                     </button>
                 </div>
 
-                <!-- PIP SECONDARY PREVIEW SLOT (With Default Small View & Extensible Smaller Size toggle) -->
+                <!-- PIP SECONDARY PREVIEW SLOT -->
                 <div id="pip-container" class="absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     <video id="remote-swapped-pip" autoplay playsinline class="w-full h-full object-cover hidden"></video>
@@ -171,7 +171,6 @@
                         <i class="fa-solid fa-user-slash text-xl mb-1"></i>
                         <span class="text-[9px] font-mono">Camera Off</span>
                     </div>
-                    <!-- PIP SIZE TOGGLE BUTTON -->
                     <button onclick="cyclePipSize()" class="absolute top-1 left-1 bg-black/60 hover:bg-black text-white p-1 rounded text-[9px] z-40" title="Make Smaller / Normal">
                         <i class="fa-solid fa-compress-arrows-alt" id="pip-size-icon"></i>
                     </button>
@@ -179,9 +178,15 @@
 
                 <!-- CALL ACTION BUTTONS -->
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
+                    <!-- MUTE MY MIC BUTTON -->
+                    <button id="btn-mute-mic" onclick="toggleMyMic()" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg" title="Mute/Unmute My Microphone">
+                        <i class="fa-solid fa-microphone" id="mic-icon"></i>
+                    </button>
+                    <!-- END CALL BUTTON (Media Only) -->
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
+                    <!-- END ENTIRE CONNECTION BUTTON -->
                     <button id="btn-end-connection" onclick="endEntireConnection()" class="w-10 h-10 rounded-full bg-rose-700 hover:bg-rose-600 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Entire Connection">
                         <i class="fa-solid fa-unlink"></i>
                     </button>
@@ -343,10 +348,11 @@
         let attachedFile = null;
         let isMaximized = false;
         let isSwapped = false;
-        let pipSizeState = 0; // 0 = Normal Small, 1 = Extra Small, 2 = Hidden/Micro
+        let pipSizeState = 0;
         let isRemoteMuted = false;
+        let isMyMicMuted = false;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v7";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v8";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -406,6 +412,34 @@
             }, 4000);
         }
 
+        function toggleMyMic() {
+            if (!localStream) {
+                showToast("Notice", "Microphone is only active during a call.");
+                return;
+            }
+
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length === 0) return;
+
+            isMyMicMuted = !isMyMicMuted;
+            audioTracks.forEach(track => {
+                track.enabled = !isMyMicMuted;
+            });
+
+            const btn = document.getElementById('btn-mute-mic');
+            const icon = document.getElementById('mic-icon');
+
+            if (isMyMicMuted) {
+                btn.className = "w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center text-sm transition shadow-lg animate-pulse";
+                icon.className = "fa-solid fa-microphone-slash";
+                showToast("Mic Muted", "Your microphone is muted. Other users won't hear you.");
+            } else {
+                btn.className = "w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg";
+                icon.className = "fa-solid fa-microphone";
+                showToast("Mic Unmuted", "Your microphone is live.");
+            }
+        }
+
         function toggleMaximizeVideo() {
             const container = document.getElementById('video-card-container');
             const btnIcon = document.querySelector('#btn-maximize i');
@@ -426,16 +460,13 @@
             pipSizeState = (pipSizeState + 1) % 3;
 
             if (pipSizeState === 0) {
-                // Normal Small
                 pip.className = "absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
                 showToast("Screen View", "PIP screen set to normal size.");
             } else if (pipSizeState === 1) {
-                // Extra Small (More small)
                 pip.className = "absolute bottom-16 right-4 w-20 h-28 sm:w-24 sm:h-32 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
                 showToast("Screen View", "PIP screen resized to extra small.");
             } else {
-                // Micro / Compact
-                pip.className = "absolute bottom-16 right-4 w-14 h-20 sm:w-16 sm:h-22 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 opacity-7oha";
+                pip.className = "absolute bottom-16 right-4 w-14 h-20 sm:w-16 sm:h-22 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 opacity-70";
                 showToast("Screen View", "PIP screen minimized.");
             }
         }
@@ -870,6 +901,12 @@
             try {
                 if (localStream) return localStream;
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
+                
+                // Apply current mic mute setting if muted before stream started
+                if (isMyMicMuted) {
+                    localStream.getAudioTracks().forEach(track => track.enabled = false);
+                }
+
                 const pip = document.getElementById('pip-video');
                 const localSwapped = document.getElementById('local-swapped-video');
                 
@@ -938,6 +975,15 @@
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
+            }
+
+            // Reset Mic Mute UI State
+            isMyMicMuted = false;
+            const micBtn = document.getElementById('btn-mute-mic');
+            const micIcon = document.getElementById('mic-icon');
+            if (micBtn && micIcon) {
+                micBtn.className = "w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg";
+                micIcon.className = "fa-solid fa-microphone";
             }
 
             const rv = document.getElementById('remote-video');
