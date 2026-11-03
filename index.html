@@ -107,6 +107,9 @@
             </h1>
         </div>
         <div class="flex items-center gap-3">
+            <button onclick="requestNotificationPermission()" class="px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/30 text-indigo-300 text-xs font-mono hover:bg-indigo-900/50 transition">
+                <i class="fa-solid fa-bell mr-1"></i> Enable Alerts
+            </button>
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
                 <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
                 <span id="network-status">ONLINE</span>
@@ -136,17 +139,19 @@
         <section class="lg:col-span-6 flex flex-col gap-4">
             <div id="video-card-container" class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center dark:bg-slate-950 bg-slate-900 transition-all duration-300">
                 
-                <!-- PRIMARY VIDEO SLOT -->
+                <!-- PRIMARY VIDEO SLOT (Hidden until video/audio call starts) -->
                 <div id="primary-video-slot" class="absolute inset-0 w-full h-full flex items-center justify-center">
                     <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
                     <video id="local-swapped-video" autoplay playsinline muted class="w-full h-full object-cover hidden absolute inset-0"></video>
                     
-                    <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/90 bg-slate-900/90 z-0">
+                    <!-- Placeholder "Are you ready to engage🤔❓" shown ONLY when not in call -->
+                    <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/95 bg-slate-900/95 z-20">
                         <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
                             <i class="fa-solid fa-user text-3xl"></i>
                         </div>
-                        <!-- Updated text with distinct accent color -->
-                        <h3 class="font-bold text-base text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 tracking-wide">Are you ready to engage</h3>
+                        <h3 class="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 tracking-wide">
+                            Are you ready to engage🤔❓
+                        </h3>
                     </div>
                 </div>
 
@@ -163,8 +168,8 @@
                     </button>
                 </div>
 
-                <!-- PIP SECONDARY PREVIEW SLOT -->
-                <div id="pip-container" class="absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200">
+                <!-- PIP SECONDARY PREVIEW SLOT (Hidden until call active) -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 hidden">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
                     <video id="remote-swapped-pip" autoplay playsinline class="w-full h-full object-cover hidden"></video>
                     <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-center p-2">
@@ -349,7 +354,7 @@
         let isRemoteMuted = false;
         let isMyMicMuted = false;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v9";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v10";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -362,6 +367,50 @@
             checkUserIdentity();
             setupUIEvents();
         });
+
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showToast("Notifications Enabled", "You will receive desktop alerts for messages and calls.");
+                    }
+                });
+            }
+        }
+
+        function playSoundChime(type = 'msg') {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                if (type === 'call') {
+                    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                } else {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        function triggerDesktopNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/724/724715.png" });
+                } catch(e) {}
+            }
+        }
 
         function checkUserIdentity() {
             if (!userName) {
@@ -566,7 +615,9 @@
                 log.innerText = `Connected with ${pName}`;
                 log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
+                playSoundChime('call');
                 showToast("Connected!", `${pName} is connected with you.`);
+                triggerDesktopNotification("Connected", `${pName} is connected with you.`);
                 appendSystemMessage(`${pName} is connected with you`);
 
                 broadcastPresence();
@@ -586,6 +637,8 @@
 
                 document.getElementById('caller-name').innerText = callerName;
                 document.getElementById('modal-incoming-call').classList.remove('hidden');
+                playSoundChime('call');
+                triggerDesktopNotification("Incoming Call", `${callerName} is calling you...`);
             });
         }
 
@@ -630,7 +683,7 @@
             const payload = JSON.stringify({
                 peerId: myPeerId,
                 name: userName,
-                inCall: activeConns.length > 0,
+                inCall: (activeConns.length > 0 || activeCalls.length > 0),
                 connectedPeers: connectedPeerIds
             });
             mqttClient.publish(MQTT_TOPIC, payload);
@@ -720,6 +773,15 @@
         }
 
         function connectRandomPeer() {
+            // Check if already in an active connection or call
+            if (activeConns.length > 0) {
+                const connectedNames = getConnectedNamesList().join(', ');
+                const warningMsg = `You are already there in call with ${connectedNames || 'someone'}`;
+                showToast("Active Call", warningMsg);
+                alert(warningMsg);
+                return;
+            }
+
             if (activePeersMap.size === 0) {
                 showToast("Notice", "You are the only active member online right now!");
                 alert("You are the only active member online right now!");
@@ -773,7 +835,9 @@
             log.innerText = `Connected with ${targetName}`;
             log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
+            playSoundChime('call');
             showToast("Connected!", `${targetName} is connected with you`);
+            triggerDesktopNotification("Connected", `${targetName} is connected with you`);
 
             broadcastPresence();
             renderMembersList();
@@ -838,16 +902,21 @@
                     }
                     if (data.type === 'CHAT_MSG') {
                         appendMessage(data.sender, data.content, false);
+                        playSoundChime('msg');
+                        triggerDesktopNotification(`Message from ${data.sender}`, data.content);
                         checkUnread();
                         return;
                     }
                     if (data.type === 'FILE_MSG') {
                         appendFileMessage(data.sender, data.fileData, data.fileName, data.fileType, false);
+                        playSoundChime('msg');
+                        triggerDesktopNotification(`File from ${data.sender}`, data.fileName);
                         checkUnread();
                         return;
                     }
                 } catch(e) {
                     appendMessage("Peer", packet, false);
+                    playSoundChime('msg');
                     checkUnread();
                 }
             });
@@ -903,6 +972,10 @@
                     localStream.getAudioTracks().forEach(track => track.enabled = false);
                 }
 
+                // Show camera preview container when call stream starts
+                document.getElementById('pip-container').classList.remove('hidden');
+                document.getElementById('remote-placeholder').classList.add('hidden');
+
                 const pip = document.getElementById('pip-video');
                 const localSwapped = document.getElementById('local-swapped-video');
                 
@@ -950,6 +1023,10 @@
                 const rv = document.getElementById('remote-video');
                 const remotePip = document.getElementById('remote-swapped-pip');
 
+                // Reveal video display elements
+                document.getElementById('remote-placeholder').classList.add('hidden');
+                document.getElementById('pip-container').classList.remove('hidden');
+
                 if (isSwapped) {
                     remotePip.srcObject = remoteStream;
                     remotePip.muted = isRemoteMuted;
@@ -958,7 +1035,6 @@
                     rv.srcObject = remoteStream;
                     rv.muted = isRemoteMuted;
                     rv.classList.remove('hidden');
-                    document.getElementById('remote-placeholder').classList.add('hidden');
                 }
             });
             callObj.on('close', () => { stopCallMediaOnly(); });
@@ -984,7 +1060,6 @@
             const rv = document.getElementById('remote-video');
             rv.srcObject = null;
             rv.classList.add('hidden');
-            document.getElementById('remote-placeholder').classList.remove('hidden');
 
             const pip = document.getElementById('pip-video');
             pip.srcObject = null;
@@ -993,6 +1068,10 @@
 
             document.getElementById('local-swapped-video').classList.add('hidden');
             document.getElementById('remote-swapped-pip').classList.add('hidden');
+
+            // Hide camera previews and show "Are you ready to engage🤔❓" placeholder when call stops
+            document.getElementById('pip-container').classList.add('hidden');
+            document.getElementById('remote-placeholder').classList.remove('hidden');
         }
 
         function rejectIncomingCall() {
