@@ -41,6 +41,10 @@
     <!-- PeerJS CDN for WebRTC Video & Voice Calls -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
+    <!-- Firebase Compatibility SDKs for Real-time Global Presence Sync (Laptop <-> Phone) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --color-primary: #6366f1;
@@ -217,7 +221,7 @@
                         <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-base text-slate-200" data-i18n="readyToCall">READY TO CALL</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1" data-i18n="callInstructions">Enter a friend's Peer ID or start a Group Call with up to 5 online participants.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mt-1" data-i18n="callInstructions">Select an online user from the Members Directory or enter a friend's Peer ID.</p>
                 </div>
 
                 <div class="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
@@ -289,7 +293,7 @@
 
                 <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono">
                     <div class="text-[11px] text-slate-500 text-center py-4 border-b border-slate-300 dark:border-slate-800/60">
-                        -- CHAT READY: CONNECT TO A FRIEND ID --
+                        -- CHAT READY: SELECT OR CONNECT TO A FRIEND --
                     </div>
                 </div>
 
@@ -314,14 +318,22 @@
                     <span id="online-counter" class="text-emerald-400 font-bold">1 Online (You)</span>
                 </div>
                 
-                <div id="members-list-container" class="flex flex-col gap-2"></div>
+                <div id="members-list-container" class="flex flex-col gap-2">
+                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-200 block">You (Active)</span>
+                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ---</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
+                    </div>
+                </div>
             </div>
 
         </section>
 
     </main>
 
-    <!-- SETTINGS MODAL -->
+    <!-- SETTINGS & PROFILE MODAL -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-panel max-w-md w-full rounded-2xl p-6 border-indigo-500/50 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -419,6 +431,7 @@
         </div>
     </div>
 
+    <!-- INLINE APPLICATION LOGIC -->
     <script>
         const translations = {
             en: {
@@ -434,7 +447,7 @@
                 groupCall: "Group Call (Max 5)",
                 chatSession: "Chat Session",
                 readyToCall: "READY TO CALL",
-                callInstructions: "Enter a friend's Peer ID or start a Group Call with up to 5 online participants.",
+                callInstructions: "Select an online user from the Members Directory or enter a friend's Peer ID.",
                 awaitingToConnect: "Awaiting to connect",
                 cameraOff: "Camera Off",
                 you: "You",
@@ -455,7 +468,85 @@
                 uploadImage: "Upload Image",
                 emailId: "Email ID",
                 phoneNumber: "Phone Number",
-                saveChanges: "SAVE CHANGES"
+                saveChanges: "SAVE CHANGES",
+                noMembersOnline: "No active members online right now.",
+                noMembersTip: "Open another browser tab or invite a friend to connect!"
+            },
+            te: {
+                account: "ఖాతా",
+                selectNexusZone: "మీ నెక్సస్ జోన్ ఎంచుకోండి",
+                campusRegionHub: "క్యాంపస్ / ప్రాంతీయ హబ్",
+                selectCollege: "మీ కళాశాలను ఎంచుకోండి",
+                user: "వాడుకరి",
+                yourId: "మీ ID",
+                enterFriendId: "స్నేహితుడి Peer ID నమోదు చేయండి",
+                videoCall: "వీడియో కాల్",
+                voiceCall: "వాయిస్ కాల్",
+                groupCall: "గ్రూప్ కాల్ (గరిష్టం 5)",
+                chatSession: "చాట్ సెషన్",
+                readyToCall: "కాల్ చేయడానికి సిద్ధంగా ఉంది",
+                callInstructions: "సభ్యుల జాబితా నుండి సభ్యుడిని ఎంచుకోండి లేదా Peer ID నమోదు చేయండి.",
+                awaitingToConnect: "కనెక్ట్ కావడానికి వేచి ఉంది",
+                cameraOff: "కెమెరా ఆఫ్",
+                you: "మీరు",
+                add: "జోడించు",
+                chat: "చాట్",
+                members: "సభ్యులు",
+                offline: "ఆఫ్‌లైన్",
+                typeMessage: "సందేశాన్ని టైప్ చేయండి...",
+                availableOnlineMembers: "అందుబాటులో ఉన్న ఆన్‌లైన్ సభ్యులు:",
+                settings: "సెట్టింగ్‌లు",
+                language: "భాష",
+                fontStyle: "ఫాంట్ శైలి",
+                theme: "థీమ్",
+                dark: "డార్క్",
+                light: "లైట్",
+                accentColor: "యాక్సెంట్ కలర్ ఎంపిక",
+                profileDetails: "ప్రొఫైల్ వివరాలు",
+                uploadImage: "చిత్రాన్ని అప్‌లోడ్ చేయండి",
+                emailId: "ఇమెయిల్ ID",
+                phoneNumber: "ఫోన్ నంబర్",
+                saveChanges: "మార్పులను సేవ్ చేయండి",
+                noMembersOnline: "ప్రస్తుతం ఆన్‌లైన్‌లో ఉన్న సభ్యులు ఎవరూ లేరు.",
+                noMembersTip: "కనెక్ట్ కావడానికి మరొక ట్యాబ్‌ను తెరవండి లేదా స్నేహితుడిని ఆహ్వానించండి!"
+            },
+            hi: {
+                account: "खाता",
+                selectNexusZone: "अपना नेक्सस ज़ोन चुनें",
+                campusRegionHub: "कैम्पस / क्षेत्रीय हब",
+                selectCollege: "अपना कॉलेज चुनें",
+                user: "उपयोगकर्ता",
+                yourId: "आपकी ID",
+                enterFriendId: "मित्र की Peer ID दर्ज करें",
+                videoCall: "वीडियो कॉल",
+                voiceCall: "वॉयस कॉल",
+                groupCall: "ग्रुप कॉल (अधिकतम 5)",
+                chatSession: "चैट सत्र",
+                readyToCall: "कॉल के लिए तैयार",
+                callInstructions: "सदस्य निर्देशिका से किसी उपयोगकर्ता को चुनें या Peer ID दर्ज करें।",
+                awaitingToConnect: "कनेक्ट होने की प्रतीक्षा में",
+                cameraOff: "कैमरा बंद",
+                you: "आप",
+                add: "जोड़ें",
+                chat: "चैट",
+                members: "सदस्य",
+                offline: "ऑफ़लाइन",
+                typeMessage: "संदेश टाइप करें...",
+                availableOnlineMembers: "उपलब्ध ऑनलाइन सदस्य:",
+                settings: "सेटिंग्स",
+                language: "भाषा",
+                fontStyle: "फ़ॉन्ट स्टाइल",
+                theme: "थीम",
+                dark: "डार्क",
+                light: "लाइट",
+                accentColor: "रंग कस्टमाइज़ेशन",
+                profileDetails: "प्रोफ़ाइल विवरण",
+                uploadImage: "छवि अपलोड करें",
+                emailId: "ईमेल ID",
+                phoneNumber: "फ़ोन नंबर",
+                saveChanges: "बदलाव सहेजें",
+                noMembersOnline: "अभी कोई सक्रिय सदस्य ऑनलाइन नहीं है।",
+                noMembersTip: "कनेक्ट करने के लिए एक और टैब खोलें या किसी मित्र को आमंत्रित करें!"
             }
         };
 
@@ -464,11 +555,6 @@
         let myPeerId = null;
         let activeDataConn = null;
         let localStream = null;
-
-        // Global Active Peers Registry across all devices/phones
-        const globalActivePeers = new Map();
-        const relayConnections = new Map();
-        const RELAY_ROOM_ID = "CONNECT_RELAY_HUB_9999999";
 
         let appliedAccentColorKey = 'default';
         let appliedThemeMode = 'dark';
@@ -481,6 +567,60 @@
         let stagedFont = "'Inter', sans-serif";
         let stagedAvatarData = null;
 
+        // Firebase Initialization for Global Presence Sync across Laptop & Mobile
+        const firebaseConfig = {
+            databaseURL: "https://connect-webrtc-presence-default-rtdb.firebaseio.com"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const onlinePeersRef = db.ref('online_peers');
+
+        const themeColors = {
+            default: { primary: '#6366f1', hover: '#4f46e5', border: 'rgba(99, 102, 241, 0.3)', text: '#818cf8' },
+            cyan:    { primary: '#06b6d4', hover: '#0891b2', border: 'rgba(6, 182, 212, 0.3)', text: '#22d3ee' },
+            emerald: { primary: '#10b981', hover: '#059669', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
+            pink:    { primary: '#ec4899', hover: '#db2777', border: 'rgba(236, 72, 153, 0.3)', text: '#f472b6' },
+            amber:   { primary: '#f59e0b', hover: '#d97706', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
+            purple:  { primary: '#9333ea', hover: '#7e22ce', border: 'rgba(147, 51, 234, 0.3)', text: '#c084fc' },
+            crimson: { primary: '#e11d48', hover: '#be123c', border: 'rgba(225, 29, 72, 0.3)', text: '#fb7185' },
+            teal:    { primary: '#0d9488', hover: '#0f766e', border: 'rgba(13, 148, 136, 0.3)', text: '#2dd4bf' }
+        };
+
+        function updateLanguageUI(langKey) {
+            const lang = translations[langKey] ? langKey : 'en';
+            appliedLanguage = lang;
+            const dict = translations[lang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.innerText = dict[key];
+            });
+
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                if (dict[key]) el.placeholder = dict[key];
+            });
+        }
+
+        function updateFontUI(fontFamily) {
+            appliedFont = fontFamily;
+            document.documentElement.style.setProperty('--app-font', fontFamily);
+        }
+
+        function applyThemeAndAccent(themeMode, colorKey) {
+            appliedThemeMode = themeMode;
+            appliedAccentColorKey = colorKey;
+
+            document.documentElement.className = themeMode;
+            const config = themeColors[colorKey] || themeColors.default;
+            document.documentElement.style.setProperty('--color-primary', config.primary);
+            document.documentElement.style.setProperty('--color-hover', config.hover);
+            document.documentElement.style.setProperty('--color-border', config.border);
+            document.documentElement.style.setProperty('--color-text', config.text);
+        }
+
         function generate7DigitId() {
             return Math.floor(1000000 + Math.random() * 9000000).toString();
         }
@@ -489,170 +629,243 @@
             initPeerJS();
             setupUIEventListeners();
             loadSavedProfile();
-            refreshMembersList();
+            checkUserSession();
+            
+            // Storage sync across tabs/windows
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'active_peers_db' || e.key === 'presence_signal_pulse') {
+                    refreshLocalMembersDirectory();
+                }
+            });
+
+            if (presenceChannel) {
+                presenceChannel.onmessage = (event) => {
+                    if (event.data && event.data.type === 'PING') {
+                        // Respond with pong
+                        sendPresenceSignal('PONG');
+                    } else if (event.data && event.data.type === 'PONG') {
+                        registerPeerInDatabase(event.data.peerId, event.data.username, event.data.timestamp);
+                    } else if (event.data && event.data.type === 'UNREGISTER') {
+                        removePeerFromDatabase(event.data.peerId);
+                    }
+                };
+            }
         });
 
+        window.addEventListener('beforeunload', unregisterPeerFromLocalStorage);
+
+        function checkUserSession() {
+            const savedUser = JSON.parse(localStorage.getItem('connect_app_user') || 'null');
+            const authBtnText = document.getElementById('auth-btn-text');
+            const handleDisplay = document.getElementById('display-user-handle');
+
+            if (savedUser) {
+                currentUser = savedUser;
+                authBtnText.innerText = "Logout";
+                handleDisplay.innerText = savedUser.username;
+            } else {
+                currentUser = null;
+                authBtnText.innerText = translations[appliedLanguage]?.account || "Account";
+                handleDisplay.innerText = "Guest";
+            }
+        }
+
         function loadSavedProfile() {
+            const email = localStorage.getItem('user_email') || '';
+            const phone = localStorage.getItem('user_phone') || '';
+            const avatar = localStorage.getItem('user_avatar') || '';
             const savedColorKey = localStorage.getItem('user_accent_color') || 'default';
             const savedThemeMode = localStorage.getItem('user_theme_mode') || 'dark';
+            const savedLanguage = localStorage.getItem('user_language') || 'en';
             const savedFont = localStorage.getItem('user_font') || "'Inter', sans-serif";
 
             appliedThemeMode = savedThemeMode;
             appliedAccentColorKey = savedColorKey;
+            appliedLanguage = savedLanguage;
             appliedFont = savedFont;
 
-            document.documentElement.className = savedThemeMode;
-            document.documentElement.style.setProperty('--app-font', savedFont);
+            document.getElementById('user-email-input').value = email;
+            document.getElementById('user-phone-input').value = phone;
+
+            applyThemeAndAccent(savedThemeMode, savedColorKey);
+            updateLanguageUI(savedLanguage);
+            updateFontUI(savedFont);
+
+            const imgPreview = document.getElementById('profile-img-preview');
+            const placeholder = document.getElementById('profile-img-placeholder');
+            const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+
+            if (avatar) {
+                imgPreview.src = avatar;
+                imgPreview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                removeAvatarBtn.classList.remove('hidden');
+                removeAvatarBtn.classList.add('flex');
+            }
+        }
+
+        function setConnectionStatus(message, color = "text-amber-500 dark:text-amber-300") {
+            const el = document.getElementById('connection-status');
+            if (el) { el.textContent = message; el.className = `text-[11px] ${color} font-mono`; }
         }
 
         function initPeerJS() {
+            setConnectionStatus('Connecting to signaling server...', 'text-amber-500 dark:text-amber-300');
             const custom7DigitId = generate7DigitId();
-            peer = new Peer(custom7DigitId, {
-                host: '0.peerjs.com',
-                secure: true,
-                port: 443,
-                debug: 1,
-                config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-            });
-
-            peer.on('open', (id) => {
-                myPeerId = id;
-                document.getElementById('my-peer-id').innerText = id;
-                document.getElementById('connection-status').innerText = 'Online. Ready to connect.';
-                document.getElementById('connection-status').className = 'text-[11px] text-emerald-500 font-mono';
-                
-                joinGlobalRelayRoom();
-                refreshMembersList();
-            });
-
-            peer.on('connection', (conn) => {
-                conn.on('data', (data) => {
-                    if (data && data.type === 'PRESENCE_PING') {
-                        globalActivePeers.set(data.peerId, { username: data.username, lastSeen: Date.now() });
-                        refreshMembersList();
-                        
-                        // Send PONG response
-                        conn.send({
-                            type: 'PRESENCE_PONG',
-                            peerId: myPeerId,
-                            username: currentUser ? currentUser.username : ('User_' + myPeerId.slice(-3))
-                        });
-                    } else if (data && data.type === 'PRESENCE_PONG') {
-                        globalActivePeers.set(data.peerId, { username: data.username, lastSeen: Date.now() });
-                        refreshMembersList();
-                    } else if (typeof data === 'string') {
-                        appendChatMessage(`ID: ${conn.peer}`, data, false);
-                    }
+            try {
+                peer = new Peer(custom7DigitId, {
+                    host: '0.peerjs.com',
+                    secure: true,
+                    port: 443,
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
                 });
 
-                if (!activeDataConn) {
+                peer.on('open', (id) => {
+                    myPeerId = id;
+                    document.getElementById('my-peer-id').innerText = id;
+                    document.getElementById('member-self-id').innerText = `ID: ${id}`;
+                    document.getElementById('chat-header-id').innerText = `ID: ${id}`;
+                    setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
+                    
+                    // Register presence on global Firebase database & start listening
+                    registerPeerInFirebase();
+                    listenToGlobalOnlinePeers();
+                });
+
+                peer.on('connection', (conn) => {
                     activeDataConn = conn;
-                    enableChat();
-                }
-            });
+                    document.getElementById('target-peer-id').value = conn.peer;
+                    conn.on('open', () => {
+                        setConnectionStatus(`Connected to friend: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
+                        enableChat();
+                        setupDataConnectionListeners(conn);
+                    });
+                });
+            } catch (err) {
+                setConnectionStatus('Failed to initialize P2P network.', 'text-rose-500 dark:text-rose-400');
+            }
         }
 
-        function joinGlobalRelayRoom() {
-            // Attempt to connect to standard relay peer or announce presence
-            const relayConn = peer.connect(RELAY_ROOM_ID);
-            
-            const announcePresence = () => {
-                const payload = {
-                    type: 'PRESENCE_PING',
+        // Real-Time Cross-Device Presence Registration
+        function registerPeerInFirebase() {
+            if (!myPeerId) return;
+
+            const userRef = db.ref('online_peers/' + myPeerId);
+            const username = currentUser ? currentUser.username : ('User_' + myPeerId.slice(-3));
+
+            const updatePresence = () => {
+                userRef.set({
                     peerId: myPeerId,
-                    username: currentUser ? currentUser.username : ('User_' + myPeerId.slice(-3))
-                };
-                if (relayConn && relayConn.open) {
-                    relayConn.send(payload);
-                }
+                    username: username,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
             };
 
-            relayConn.on('open', () => {
-                announcePresence();
-            });
+            updatePresence();
+            
+            // Auto-clean on disconnect or browser close
+            userRef.onDisconnect().remove();
 
-            setInterval(() => {
-                announcePresence();
-                pruneStalePeers();
-            }, 4000);
+            // Heartbeat update every 4 seconds to maintain active status across mobile background tabs
+            setInterval(updatePresence, 4000);
         }
 
-        function pruneStalePeers() {
-            const now = Date.now();
-            globalActivePeers.forEach((data, peerId) => {
-                if (now - data.lastSeen > 12000) {
-                    globalActivePeers.delete(peerId);
-                }
-            });
-            refreshMembersList();
-        }
+        // Real-time Global Listener for Active Members Across Phone and Laptop
+        function listenToGlobalOnlinePeers() {
+            onlinePeersRef.on('value', (snapshot) => {
+                const container = document.getElementById('members-list-container');
+                if (!container) return;
 
-        function refreshMembersList() {
-            const container = document.getElementById('members-list-container');
-            if (!container) return;
+                const activePeers = snapshot.val() || {};
+                const now = Date.now();
 
-            const otherActivePeers = Array.from(globalActivePeers.entries()).filter(([pId]) => pId !== myPeerId);
-
-            container.innerHTML = `
-                <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
-                    <div>
-                        <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Active)'}</span>
-                        <span id="member-self-id" class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
-                    </div>
-                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
-                </div>
-            `;
-
-            if (otherActivePeers.length === 0) {
-                container.innerHTML += `
-                    <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl mt-2">
-                        <i class="fa-solid fa-users-slash text-lg mb-2 block text-slate-600"></i>
-                        No active members online right now.
+                container.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-200 block">${currentUser ? currentUser.username : 'You (Active)'}</span>
+                            <span id="member-self-id" class="text-[10px] text-slate-400">ID: ${myPeerId || '---'}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Online</span>
                     </div>
                 `;
-                document.getElementById('online-counter').innerText = `1 Online (You)`;
-            } else {
-                otherActivePeers.forEach(([pId, data]) => {
-                    const isConnected = activeDataConn && activeDataConn.peer === pId;
+
+                let otherOnlineCount = 0;
+
+                Object.values(activePeers).forEach(p => {
+                    if (p.peerId === myPeerId) return;
+
+                    // Prune stale peers inactive for more than 10 seconds
+                    if (p.timestamp && (now - p.timestamp > 10000)) {
+                        db.ref('online_peers/' + p.peerId).remove();
+                        return;
+                    }
+
+                    otherOnlineCount++;
+                    const isConnected = activeDataConn && activeDataConn.peer === p.peerId;
+
                     const div = document.createElement('div');
-                    div.className = "p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-2 mt-2";
+                    div.className = "p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-2 transition hover:border-indigo-500/50 mt-2";
                     div.innerHTML = `
                         <div class="truncate flex flex-col">
-                            <span class="font-bold text-slate-200 text-xs">${data.username}</span>
-                            <span class="text-[10px] text-slate-400 font-mono">ID: ${pId}</span>
+                            <span class="font-bold text-slate-200 text-xs">${p.username}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">ID: ${p.peerId}</span>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <button onclick="requestConnection('${pId}')" class="px-2.5 py-1 rounded-lg ${isConnected ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold transition">
+                            <button onclick="requestConnection('${p.peerId}', '${p.username}')" class="px-2.5 py-1 rounded-lg ${isConnected ? 'bg-emerald-600' : 'dynamic-bg-primary dynamic-bg-hover'} text-white text-[10px] font-bold transition shadow-sm">
                                 ${isConnected ? 'Connected' : 'Connect'}
                             </button>
                         </div>
                     `;
                     container.appendChild(div);
                 });
-                document.getElementById('online-counter').innerText = `${otherActivePeers.length + 1} Online`;
-            }
+
+                if (otherOnlineCount === 0) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = "p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 text-center flex flex-col items-center justify-center gap-1.5 my-2";
+                    
+                    const dict = translations[appliedLanguage] || translations.en;
+                    const noMembersTitle = dict.noMembersOnline || "No active members online right now.";
+                    const noMembersTip = dict.noMembersTip || "Open another browser tab or invite a friend to connect!";
+
+                    emptyDiv.innerHTML = `
+                        <i class="fa-solid fa-users-slash text-slate-600 text-xl mb-1"></i>
+                        <span class="font-bold text-slate-400 text-xs">${noMembersTitle}</span>
+                        <span class="text-[10px] text-slate-500 max-w-[200px] leading-tight">${noMembersTip}</span>
+                    `;
+                    container.appendChild(emptyDiv);
+                }
+
+                document.getElementById('online-counter').innerText = `${otherOnlineCount + 1} Online ${otherOnlineCount === 0 ? '(You)' : ''}`;
+            });
         }
 
-        function requestConnection(targetPeerId) {
+        // Clean up peer presence when tab or window closes
+        window.addEventListener('beforeunload', () => {
+            if (myPeerId) {
+                db.ref('online_peers/' + myPeerId).remove();
+            }
+        });
+
+        // One-click connection to active online members (Both Laptop to Phone and Phone to Laptop)
+        function requestConnection(targetPeerId, targetUsername) {
             if (!targetPeerId) return;
             document.getElementById('target-peer-id').value = targetPeerId;
             initiateCall('chat');
             document.getElementById('tab-chat-btn').click();
         }
 
-        function initiateCall(type) {
-            const targetId = document.getElementById('target-peer-id').value.trim();
-            if (!targetId) return;
-
-            const conn = peer.connect(targetId);
-            activeDataConn = conn;
-            conn.on('open', () => {
-                enableChat();
-                document.getElementById('chat-header-id').innerText = `ID: ${targetId}`;
-            });
+        function setupDataConnectionListeners(conn) {
             conn.on('data', (data) => {
-                appendChatMessage(`ID: ${conn.peer}`, data, false);
+                if (typeof data === 'object' && data.type === 'file') {
+                    appendFileMessage(`ID: ${conn.peer}`, data, false);
+                } else {
+                    appendChatMessage(`ID: ${conn.peer}`, data, false);
+                }
+            });
+            conn.on('close', () => {
+                setConnectionStatus('Chat connection closed.', 'text-amber-500 dark:text-amber-400');
+                disableChat();
             });
         }
 
@@ -661,7 +874,15 @@
             document.getElementById('chat-send-btn').removeAttribute('disabled');
             document.getElementById('file-attach-btn').removeAttribute('disabled');
             document.getElementById('chat-status').innerText = "ONLINE";
-            document.getElementById('chat-status').className = "text-emerald-500 font-bold";
+            document.getElementById('chat-status').className = "text-emerald-500 dark:text-emerald-400 font-bold";
+        }
+
+        function disableChat() {
+            document.getElementById('chat-input').setAttribute('disabled', 'true');
+            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
+            document.getElementById('file-attach-btn').setAttribute('disabled', 'true');
+            document.getElementById('chat-status').innerText = translations[appliedLanguage]?.offline || "OFFLINE";
+            document.getElementById('chat-status').className = "text-slate-500 font-bold";
         }
 
         function appendChatMessage(sender, text, isSelf) {
@@ -673,17 +894,54 @@
             box.scrollTop = box.scrollHeight;
         }
 
+        async function initiateCall(connectionType = 'video') {
+            const targetId = document.getElementById('target-peer-id').value.trim();
+            if (!targetId) { alert("Please select or enter a friend Peer ID."); return; }
+
+            if (connectionType === 'chat') {
+                setConnectionStatus(`Connecting to member: ${targetId}...`, 'text-cyan-500 dark:text-cyan-300');
+                const conn = peer.connect(targetId);
+                activeDataConn = conn;
+                conn.on('open', () => {
+                    setConnectionStatus(`Connected to member: ${conn.peer}`, 'text-emerald-500 dark:text-emerald-300');
+                    enableChat();
+                    setupDataConnectionListeners(conn);
+                    refreshLocalMembersDirectory();
+                });
+                return;
+            }
+        }
+
         function setupUIEventListeners() {
-            document.getElementById('tab-chat-btn').addEventListener('click', () => {
-                document.getElementById('view-chat').classList.remove('hidden');
-                document.getElementById('view-peers').classList.add('hidden');
+            const tabChatBtn = document.getElementById('tab-chat-btn');
+            const tabPeersBtn = document.getElementById('tab-peers-btn');
+            const viewChat = document.getElementById('view-chat');
+            const viewPeers = document.getElementById('view-peers');
+
+            tabChatBtn.addEventListener('click', () => {
+                viewChat.classList.remove('hidden');
+                viewPeers.classList.add('hidden');
+                tabChatBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
+                tabPeersBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
             });
 
-            document.getElementById('tab-peers-btn').addEventListener('click', () => {
-                document.getElementById('view-peers').classList.remove('hidden');
-                document.getElementById('view-chat').classList.add('hidden');
+            tabPeersBtn.addEventListener('click', () => {
+                viewPeers.classList.remove('hidden');
+                viewChat.classList.add('hidden');
+                tabPeersBtn.className = "py-2.5 px-2 text-center dynamic-text border-b-2 dynamic-border bg-slate-300/60 dark:bg-slate-900/60 transition flex items-center justify-center gap-1.5";
+                tabChatBtn.className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
+                refreshLocalMembersDirectory();
             });
 
+            document.getElementById('copy-id-btn').addEventListener('click', () => {
+                if (myPeerId) {
+                    navigator.clipboard.writeText(myPeerId);
+                    alert("Copied your Peer ID!");
+                }
+            });
+
+            document.getElementById('btn-start-video').addEventListener('click', () => initiateCall('video'));
+            document.getElementById('btn-start-voice').addEventListener('click', () => initiateCall('voice'));
             document.getElementById('btn-start-chat').addEventListener('click', () => initiateCall('chat'));
 
             document.getElementById('chat-form').addEventListener('submit', (e) => {
@@ -702,6 +960,25 @@
 
             document.getElementById('close-settings-btn').addEventListener('click', () => {
                 document.getElementById('settings-modal').classList.add('hidden');
+            });
+
+            document.getElementById('save-settings-btn').addEventListener('click', () => {
+                const email = document.getElementById('user-email-input').value.trim();
+                const phone = document.getElementById('user-phone-input').value.trim();
+
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('user_phone', phone);
+                localStorage.setItem('user_theme_mode', stagedThemeMode);
+                localStorage.setItem('user_accent_color', stagedAccentColorKey);
+                localStorage.setItem('user_language', stagedLanguage);
+                localStorage.setItem('user_font', stagedFont);
+
+                applyThemeAndAccent(stagedThemeMode, stagedAccentColorKey);
+                updateLanguageUI(stagedLanguage);
+                updateFontUI(stagedFont);
+
+                document.getElementById('settings-modal').classList.add('hidden');
+                alert("Settings saved successfully!");
             });
         }
     </script>
