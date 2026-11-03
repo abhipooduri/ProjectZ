@@ -78,15 +78,11 @@
     <header class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl overflow-hidden bg-indigo-600 flex items-center justify-center text-white shadow-lg border border-indigo-500/40">
-                <!-- Direct SVG / Icon representation of the Fire and Water Handshake -->
                 <svg viewBox="0 0 100 100" class="app-logo-icon">
                     <rect width="100" height="100" fill="#2b2623"/>
                     <circle cx="50" cy="50" r="42" stroke="#a38257" stroke-width="6" fill="none"/>
-                    <!-- Fire side (Left) -->
                     <path d="M 20,50 Q 35,35 50,50" stroke="#ff5500" stroke-width="8" stroke-linecap="round" fill="none"/>
-                    <!-- Water side (Right) -->
                     <path d="M 80,50 Q 65,65 50,50" stroke="#00aaff" stroke-width="8" stroke-linecap="round" fill="none"/>
-                    <!-- Central Handshake Node -->
                     <circle cx="50" cy="50" r="8" fill="#e5c158"/>
                 </svg>
             </div>
@@ -293,6 +289,8 @@
         let userName = localStorage.getItem('connect_user_name') || '';
         let currentTargetName = 'Peer';
         let unreadCount = 0;
+        
+        let connectedPartnerName = null; // Tracks who I am currently connected with
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -350,7 +348,7 @@
             setTimeout(() => {
                 toast.classList.remove('opacity-100', 'translate-y-0');
                 toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
-            }, 3500);
+            }, 4000);
         }
 
         function initPeerJS() {
@@ -371,6 +369,16 @@
             });
 
             peer.on('connection', (conn) => {
+                // Check if we are already connected to someone else
+                if (activeConn && activeConn.open) {
+                    // Send busy status message back to the 3rd person trying to connect
+                    conn.on('open', () => {
+                        conn.send(JSON.stringify({ type: 'BUSY_NOTICE', busyWith: connectedPartnerName || 'another user' }));
+                        setTimeout(() => { conn.close(); }, 500);
+                    });
+                    return;
+                }
+
                 activeConn = conn;
                 setupDataConn(conn);
                 
@@ -379,6 +387,7 @@
 
                 const pData = activePeersMap.get(callerPeerId);
                 currentTargetName = pData ? pData.name : 'Peer';
+                connectedPartnerName = currentTargetName;
                 
                 document.getElementById('chat-header-id').innerText = `Connected to ${currentTargetName}`;
                 document.getElementById('btn-chat-video').removeAttribute('disabled');
@@ -396,6 +405,10 @@
             });
 
             peer.on('call', (call) => {
+                if (activeConn && activeConn.open) {
+                    call.close();
+                    return;
+                }
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
                 document.getElementById('target-peer-id').value = callerPeerId;
@@ -506,6 +519,7 @@
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
             
+            connectedPartnerName = targetName;
             const log = document.getElementById('conn-log');
             log.innerText = `Connected to ${targetName}`;
             log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
@@ -525,12 +539,22 @@
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
             });
-            conn.on('data', (msg) => {
-                if (typeof msg === 'string' && msg.startsWith('[SYSTEM_MSG]:')) {
-                    const cleanMsg = msg.replace('[SYSTEM_MSG]:', '').trim();
+            conn.on('data', (rawMsg) => {
+                try {
+                    const parsed = JSON.parse(rawMsg);
+                    if (parsed.type === 'BUSY_NOTICE') {
+                        showToast("User Busy", `${currentTargetName} is currently connected to another user (${parsed.busyWith})`);
+                        alert(`${currentTargetName} is currently connected to another user (${parsed.busyWith}).`);
+                        conn.close();
+                        return;
+                    }
+                } catch(e) {}
+
+                if (typeof rawMsg === 'string' && rawMsg.startsWith('[SYSTEM_MSG]:')) {
+                    const cleanMsg = rawMsg.replace('[SYSTEM_MSG]:', '').trim();
                     appendSystemMessage(cleanMsg);
                 } else {
-                    appendMessage(currentTargetName, msg, false);
+                    appendMessage(currentTargetName, rawMsg, false);
                     if (document.getElementById('view-chat').classList.contains('hidden')) {
                         unreadCount++;
                         const badge = document.getElementById('unread-badge');
@@ -545,6 +569,7 @@
         }
 
         function handleDisconnection() {
+            connectedPartnerName = null;
             const log = document.getElementById('conn-log');
             log.innerText = `Connection ended from ${currentTargetName}`;
             log.className = 'text-[11px] text-red-400 font-mono font-bold';
@@ -689,7 +714,7 @@
 
                 if (updatedName.toLowerCase() !== userName.toLowerCase() && isNameTaken(updatedName)) {
                     errorEl.innerText = "Username already exists. Please choose another name.";
-                    errorEl.classList.remove('hidden');
+                    errorEl.classList.add('hidden');
                     return;
                 }
 
