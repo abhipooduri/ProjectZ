@@ -60,6 +60,19 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
 
+    <!-- NOTIFICATION TOAST POPUP -->
+    <div id="toast-notification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+        <div class="glass-panel px-4 py-3 rounded-2xl border border-indigo-500/50 shadow-2xl flex items-center gap-3 dark:bg-slate-900/95 bg-white/95">
+            <div id="toast-icon" class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h4 id="toast-title" class="text-xs font-bold text-slate-100 dark:text-slate-100 text-slate-900">Connected</h4>
+                <p id="toast-desc" class="text-[11px] text-slate-400">Successfully connected to user.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- HEADER -->
     <header class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -260,6 +273,7 @@
         let localStream = null;
         let incomingCallObj = null;
         let userName = localStorage.getItem('connect_user_name') || '';
+        let currentTargetName = 'Peer';
 
         const MQTT_TOPIC = "connect_suite_2026_room_global";
         const activePeersMap = new Map();
@@ -307,6 +321,19 @@
             localStorage.setItem('connect_theme', theme);
         }
 
+        function showToast(title, desc) {
+            const toast = document.getElementById('toast-notification');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+            }, 3500);
+        }
+
         function initPeerJS() {
             const customId = generate7DigitId();
             peer = new Peer(customId, {
@@ -328,15 +355,22 @@
             peer.on('connection', (conn) => {
                 activeConn = conn;
                 setupDataConn(conn);
+                const pData = activePeersMap.get(conn.peer);
+                currentTargetName = pData ? pData.name : 'Peer';
+                
+                document.getElementById('chat-header-id').innerText = `Connected to ${currentTargetName}`;
+                document.getElementById('btn-chat-video').removeAttribute('disabled');
+                document.getElementById('btn-chat-voice').removeAttribute('disabled');
+                showToast("Connected!", `You are now connected to ${currentTargetName}`);
             });
 
             peer.on('call', (call) => {
                 incomingCallObj = call;
                 const callerPeerId = call.peer;
                 const callerData = activePeersMap.get(callerPeerId);
-                const callerDisplayName = callerData ? callerData.name : `User (${callerPeerId.slice(-4)})`;
+                currentTargetName = callerData ? callerData.name : `User (${callerPeerId.slice(-4)})`;
                 
-                document.getElementById('caller-name').innerText = callerDisplayName;
+                document.getElementById('caller-name').innerText = currentTargetName;
                 document.getElementById('modal-incoming-call').classList.remove('hidden');
             });
         }
@@ -378,7 +412,6 @@
             mqttClient.publish(MQTT_TOPIC, payload);
         }
 
-        // UNIQUE NAME CHECKER HELPER
         function isNameTaken(newName) {
             const trimmed = newName.trim().toLowerCase();
             for (let [pId, data] of activePeersMap.entries()) {
@@ -433,6 +466,7 @@
         }
 
         function connectToPeer(targetId, targetName) {
+            currentTargetName = targetName;
             document.getElementById('target-peer-id').value = targetId;
             activeConn = peer.connect(targetId);
             setupDataConn(activeConn);
@@ -440,7 +474,8 @@
             document.getElementById('chat-header-id').innerText = `Connected to ${targetName}`;
             document.getElementById('btn-chat-video').removeAttribute('disabled');
             document.getElementById('btn-chat-voice').removeAttribute('disabled');
-
+            
+            showToast("Connected!", `You are now connected to ${targetName}`);
             document.getElementById('tab-chat-btn').click();
         }
 
@@ -449,7 +484,7 @@
                 document.getElementById('chat-input').removeAttribute('disabled');
                 document.getElementById('chat-send-btn').removeAttribute('disabled');
             });
-            conn.on('data', (msg) => appendMessage('Peer', msg, false));
+            conn.on('data', (msg) => appendMessage(currentTargetName, msg, false));
         }
 
         async function getLocalMediaStream(video = true) {
@@ -516,7 +551,6 @@
         }
 
         function setupUIEvents() {
-            // First time login with unique name validation
             document.getElementById('form-name-prompt').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const inputVal = document.getElementById('input-username').value.trim();
@@ -548,7 +582,6 @@
                 document.getElementById('modal-settings').classList.add('hidden');
             });
 
-            // Settings name save with unique check
             document.getElementById('btn-save-name-settings').addEventListener('click', () => {
                 const updatedName = document.getElementById('settings-username-input').value.trim();
                 const errorEl = document.getElementById('settings-name-error');
