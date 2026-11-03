@@ -312,7 +312,7 @@
         let unreadCount = 0;
         let attachedFile = null;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v2";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v3";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -484,7 +484,7 @@
         }
 
         function isNameTaken(newName) {
-            // Strictly case-sensitive check ("ab" and "Ab" are distinct)
+            // STRICT CASE-SENSITIVE CHECK: "ab" and "Ab" are treated as completely different users
             for (let [pId, data] of activePeersMap.entries()) {
                 if (data.name === newName) return true;
             }
@@ -519,13 +519,14 @@
                 otherPeers.forEach(([pId, data]) => {
                     const isConnectedDirectly = activeConns.some(c => c.peer === pId);
                     
-                    // If this peer is connected directly to us, show "Connected".
-                    // Otherwise, if they are busy with someone else, show "In another call".
+                    // Check if the remote user has US in their connected peers list
+                    const remoteConnectedToUs = data.connectedPeers && data.connectedPeers.includes(myPeerId);
+
                     let statusBadge = '';
                     let actionButton = '';
 
-                    if (isConnectedDirectly) {
-                        statusBadge = '<span class="block text-[9px] text-emerald-400 font-bold">Connected</span>';
+                    if (isConnectedDirectly || remoteConnectedToUs) {
+                        statusBadge = '<span class="block text-[9px] text-emerald-400 font-bold">Connected with you</span>';
                         actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md">Connected</button>`;
                     } else if (data.inCall) {
                         statusBadge = '<span class="block text-[9px] text-amber-400">In another call</span>';
@@ -555,7 +556,8 @@
             }
 
             const availablePeers = Array.from(activePeersMap.entries()).filter(([pId, data]) => {
-                return !data.inCall && !activeConns.some(c => c.peer === pId);
+                const isAlreadyConnected = activeConns.some(c => c.peer === pId) || (data.connectedPeers && data.connectedPeers.includes(myPeerId));
+                return !data.inCall && !isAlreadyConnected;
             });
 
             if (availablePeers.length === 0) {
