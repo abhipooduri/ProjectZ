@@ -312,7 +312,7 @@
             <div id="view-peers" class="hidden flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
                 <div class="text-[11px] text-slate-500 mb-1 flex items-center justify-between">
                     <span data-i18n="availableOnlineMembers">Available Online Members:</span>
-                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online (You)</span>
                 </div>
                 
                 <div id="members-list-container" class="flex flex-col gap-2">
@@ -564,8 +564,8 @@
         let stagedFont = "'Inter', sans-serif";
         let stagedAvatarData = null;
 
-        // REAL-TIME PRESENCE BROADCAST CHANNEL
-        const presenceChannel = window.BroadcastChannel ? new BroadcastChannel('connect_presence_mesh') : null;
+        // HIGH-FREQUENCY CROSS-TAB & CROSS-WINDOW PRESENCE MESH
+        const presenceChannel = window.BroadcastChannel ? new BroadcastChannel('connect_online_presence') : null;
 
         const themeColors = {
             default: { primary: '#6366f1', hover: '#4f46e5', border: 'rgba(99, 102, 241, 0.3)', text: '#818cf8' },
@@ -621,14 +621,22 @@
             loadSavedProfile();
             checkUserSession();
             
-            // Listen for changes from other tabs/windows
-            window.addEventListener('storage', refreshLocalMembersDirectory);
+            // Storage sync across tabs/windows
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'active_peers_db' || e.key === 'presence_signal_pulse') {
+                    refreshLocalMembersDirectory();
+                }
+            });
+
             if (presenceChannel) {
                 presenceChannel.onmessage = (event) => {
-                    if (event.data && event.data.type === 'PING_PRESENCE') {
-                        registerPeerInLocalStorage();
-                    } else if (event.data && event.data.type === 'UPDATE_MEMBERS') {
-                        refreshLocalMembersDirectory();
+                    if (event.data && event.data.type === 'PING') {
+                        // Respond with pong
+                        sendPresenceSignal('PONG');
+                    } else if (event.data && event.data.type === 'PONG') {
+                        registerPeerInDatabase(event.data.peerId, event.data.username, event.data.timestamp);
+                    } else if (event.data && event.data.type === 'UNREGISTER') {
+                        removePeerFromDatabase(event.data.peerId);
                     }
                 };
             }
@@ -709,9 +717,9 @@
                     document.getElementById('chat-header-id').innerText = `ID: ${id}`;
                     setConnectionStatus('Online. Ready to connect.', 'text-emerald-500 dark:text-emerald-300');
                     
-                    // Register & broadcast presence
+                    // Announce presence immediately
+                    sendPresenceSignal('PING');
                     registerPeerInLocalStorage();
-                    if (presenceChannel) presenceChannel.postMessage({ type: 'PING_PRESENCE' });
                 });
 
                 peer.on('connection', (conn) => {
@@ -729,34 +737,50 @@
             }
         }
 
+        function sendPresenceSignal(type) {
+            if (!myPeerId) return;
+            const username = currentUser ? currentUser.username : ('Guest_' + myPeerId.slice(-3));
+            const payload = { type, peerId: myPeerId, username, timestamp: Date.now() };
+
+            if (presenceChannel) presenceChannel.postMessage(payload);
+            
+            // LocalStorage trigger fallback for strict cross-origin/iframe environments
+            localStorage.setItem('presence_signal_pulse', JSON.stringify(payload));
+        }
+
+        function registerPeerInDatabase(pId, uName, tStamp) {
+            if (!pId) return;
+            const activePeers = JSON.parse(localStorage.getItem('active_peers_db') || '{}');
+            activePeers[pId] = { peerId: pId, username: uName, timestamp: tStamp || Date.now() };
+            localStorage.setItem('active_peers_db', JSON.stringify(activePeers));
+            refreshLocalMembersDirectory();
+        }
+
+        function removePeerFromDatabase(pId) {
+            if (!pId) return;
+            const activePeers = JSON.parse(localStorage.getItem('active_peers_db') || '{}');
+            delete activePeers[pId];
+            localStorage.setItem('active_peers_db', JSON.stringify(activePeers));
+            refreshLocalMembersDirectory();
+        }
+
         function registerPeerInLocalStorage() {
             if (!myPeerId) return;
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
             const username = currentUser ? currentUser.username : ('Guest_' + myPeerId.slice(-3));
-            
-            activePeers[myPeerId] = { 
-                peerId: myPeerId, 
-                username: username, 
-                timestamp: Date.now() 
-            };
-            
-            localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
-            refreshLocalMembersDirectory();
+            registerPeerInDatabase(myPeerId, username, Date.now());
         }
 
         function unregisterPeerFromLocalStorage() {
             if (!myPeerId) return;
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
-            delete activePeers[myPeerId];
-            localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
-            if (presenceChannel) presenceChannel.postMessage({ type: 'UPDATE_MEMBERS' });
+            sendPresenceSignal('UNREGISTER');
+            removePeerFromDatabase(myPeerId);
         }
 
         function refreshLocalMembersDirectory() {
             const container = document.getElementById('members-list-container');
             if (!container) return;
 
-            const activePeers = JSON.parse(localStorage.getItem('active_network_peers') || '{}');
+            const activePeers = JSON.parse(localStorage.getItem('active_peers_db') || '{}');
             const now = Date.now();
 
             container.innerHTML = `
@@ -774,8 +798,8 @@
             Object.values(activePeers).forEach(p => {
                 if (p.peerId === myPeerId) return;
                 
-                // Expire stale heartbeats after 10 seconds
-                if (now - p.timestamp > 10000) {
+                // Sweep stale heartbeats after 6 seconds
+                if (now - p.timestamp > 6000) {
                     delete activePeers[p.peerId];
                     return;
                 }
@@ -800,7 +824,7 @@
                 container.appendChild(div);
             });
 
-            // IF NO OTHER ONLINE MEMBERS ARE FOUND: DISPLAY EXPLICIT EMPTY STATE
+            // Display empty state only when 0 remote peers exist
             if (otherOnlineCount === 0) {
                 const emptyDiv = document.createElement('div');
                 emptyDiv.className = "p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 text-center flex flex-col items-center justify-center gap-1.5 my-2";
@@ -817,18 +841,19 @@
                 container.appendChild(emptyDiv);
             }
 
-            // Persist pruned peers list
-            localStorage.setItem('active_network_peers', JSON.stringify(activePeers));
+            // Persist pruned database
+            localStorage.setItem('active_peers_db', JSON.stringify(activePeers));
             
-            // Update counter UI
+            // Counter display
             const totalCount = otherOnlineCount + 1;
             document.getElementById('online-counter').innerText = `${totalCount} Online ${otherOnlineCount === 0 ? '(You)' : ''}`;
         }
 
-        // Heartbeat interval (updates presence every 3 seconds)
+        // Send high-frequency presence ping every 2 seconds
         setInterval(() => {
             registerPeerInLocalStorage();
-        }, 3000);
+            sendPresenceSignal('PING');
+        }, 2000);
 
         // One-click connection to active online members
         function requestConnection(targetPeerId, targetUsername) {
