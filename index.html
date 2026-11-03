@@ -448,53 +448,25 @@
             if (!notificationsEnabled) return;
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Enhanced volume gain amplifier
+                const osc = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 if (type === 'call') {
-                    // Loud multi-tone ring chime sequence
-                    gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime); // Louder amplitude
-
-                    const now = audioCtx.currentTime;
-                    const notes = [587.33, 783.99, 880, 1046.50]; // D5, G5, A5, C6
-                    
-                    notes.forEach((freq, idx) => {
-                        const osc = audioCtx.createOscillator();
-                        osc.type = 'triangle'; // Richer, louder harmonic sound
-                        osc.frequency.setValueAtTime(freq, now + (idx * 0.12));
-                        osc.connect(gainNode);
-                        osc.start(now + (idx * 0.12));
-                        osc.stop(now + (idx * 0.12) + 0.3);
-                    });
+                    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
                 } else {
-                    // Loud, bright dual-tone message chime
-                    gainNode.gain.setValueAtTime(0.35, audioCtx.currentTime);
-
-                    const now = audioCtx.currentTime;
-                    const osc1 = audioCtx.createOscillator();
-                    const osc2 = audioCtx.createOscillator();
-                    
-                    osc1.type = 'sine';
-                    osc2.type = 'triangle';
-
-                    osc1.frequency.setValueAtTime(523.25, now);       // C5
-                    osc1.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                    osc1.frequency.setValueAtTime(783.99, now + 0.2); // G5
-
-                    osc2.frequency.setValueAtTime(523.25, now);
-                    osc2.frequency.setValueAtTime(659.25, now + 0.1);
-                    osc2.frequency.setValueAtTime(783.99, now + 0.2);
-
-                    osc1.connect(gainNode);
-                    osc2.connect(gainNode);
-
-                    osc1.start(now);
-                    osc2.start(now);
-
-                    osc1.stop(now + 0.35);
-                    osc2.stop(now + 0.35);
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
                 }
             } catch(e) {}
         }
@@ -1261,7 +1233,7 @@
 
                 if (updatedName !== userName && isNameTaken(updatedName)) {
                     errorEl.innerText = "Username already exists. Please choose another name.";
-                    errorEl.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
                     return;
                 }
 
