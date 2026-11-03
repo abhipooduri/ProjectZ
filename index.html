@@ -252,7 +252,7 @@
                 </svg>
             </div>
             <h3 class="font-bold text-base text-slate-100 dark:text-slate-100 text-slate-900">Welcome to CONNECT</h3>
-            <p class="text-xs text-slate-400">Please choose a unique display name.</p>
+            <p class="text-xs text-slate-400">Please choose a unique display name (Case-sensitive).</p>
             <form id="form-name-prompt" class="space-y-3">
                 <input id="input-username" type="text" required placeholder="Enter your name..." class="w-full px-3 py-2 text-sm rounded-xl border dark:bg-slate-950 bg-slate-50 border-indigo-500/40 text-slate-100 dark:text-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <p id="name-error-msg" class="text-[11px] text-red-400 hidden"></p>
@@ -312,7 +312,7 @@
         let unreadCount = 0;
         let attachedFile = null;
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v2";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -412,13 +412,14 @@
                 document.getElementById('btn-chat-voice').removeAttribute('disabled');
 
                 const log = document.getElementById('conn-log');
-                log.innerText = `Connected with group`;
+                log.innerText = `Connected with ${pName}`;
                 log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
-                showToast("Connected!", `${pName} joined your session.`);
-                appendSystemMessage(`${pName} joined the session`);
+                showToast("Connected!", `${pName} is connected with you.`);
+                appendSystemMessage(`${pName} is connected with you`);
 
-                // AUTOMATICALLY SWITCH TO CHAT VIEW WHEN CONNECTED
+                broadcastPresence();
+                renderMembersList();
                 switchToChatTab();
             });
 
@@ -453,6 +454,7 @@
                         activePeersMap.set(data.peerId, { 
                             name: data.name, 
                             inCall: data.inCall || false, 
+                            connectedPeers: data.connectedPeers || [],
                             lastSeen: Date.now() 
                         });
                         renderMembersList();
@@ -471,18 +473,20 @@
 
         function broadcastPresence() {
             if (!mqttClient || !myPeerId) return;
+            const connectedPeerIds = activeConns.map(c => c.peer);
             const payload = JSON.stringify({
                 peerId: myPeerId,
                 name: userName,
-                inCall: activeConns.length > 0
+                inCall: activeConns.length > 0,
+                connectedPeers: connectedPeerIds
             });
             mqttClient.publish(MQTT_TOPIC, payload);
         }
 
         function isNameTaken(newName) {
-            const trimmed = newName.trim().toLowerCase();
+            // Strictly case-sensitive check ("ab" and "Ab" are distinct)
             for (let [pId, data] of activePeersMap.entries()) {
-                if (data.name.toLowerCase() === trimmed) return true;
+                if (data.name === newName) return true;
             }
             return false;
         }
@@ -513,16 +517,30 @@
             } else {
                 document.getElementById('online-counter').innerText = `${otherPeers.length + 1} Online`;
                 otherPeers.forEach(([pId, data]) => {
-                    const isConnected = activeConns.some(c => c.peer === pId);
+                    const isConnectedDirectly = activeConns.some(c => c.peer === pId);
+                    
+                    // If this peer is connected directly to us, show "Connected".
+                    // Otherwise, if they are busy with someone else, show "In another call".
+                    let statusBadge = '';
+                    let actionButton = '';
+
+                    if (isConnectedDirectly) {
+                        statusBadge = '<span class="block text-[9px] text-emerald-400 font-bold">Connected</span>';
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md">Connected</button>`;
+                    } else if (data.inCall) {
+                        statusBadge = '<span class="block text-[9px] text-amber-400">In another call</span>';
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">Connect</button>`;
+                    } else {
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">Connect</button>`;
+                    }
+
                     container.innerHTML += `
                         <div class="p-3 rounded-xl dark:bg-slate-900/80 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between gap-2 mt-2">
                             <div>
                                 <span class="font-bold dark:text-slate-200 text-slate-800 text-xs">${data.name}</span>
-                                ${data.inCall ? '<span class="block text-[9px] text-amber-400">In another call</span>' : ''}
+                                ${statusBadge}
                             </div>
-                            <button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">
-                                ${isConnected ? 'Connected' : 'Connect'}
-                            </button>
+                            ${actionButton}
                         </div>
                     `;
                 });
@@ -552,10 +570,15 @@
         }
 
         function connectToPeer(targetId, targetName) {
+            if (activeConns.some(c => c.peer === targetId)) {
+                switchToChatTab();
+                return;
+            }
+
             const targetData = activePeersMap.get(targetId);
             if (targetData && targetData.inCall) {
-                showToast("Busy", `${targetName} is in another call.`);
-                alert(`${targetName} is currently in another call.`);
+                showToast("Busy", `That person is in another call.`);
+                alert(`That person is in another call.`);
                 return;
             }
 
@@ -577,14 +600,15 @@
             log.innerText = `Connected with ${targetName}`;
             log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
 
-            showToast("Connected!", `You are now connected to ${targetName}`);
+            showToast("Connected!", `${targetName} is connected with you`);
 
-            // AUTOMATICALLY SWITCH TO CHAT VIEW WHEN CONNECTED
+            broadcastPresence();
+            renderMembersList();
             switchToChatTab();
 
             setTimeout(() => {
                 if (conn && conn.open) {
-                    conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} joined the session` }));
+                    conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} is connected with you` }));
                 }
             }, 500);
         }
@@ -609,7 +633,7 @@
                 try {
                     const data = typeof packet === 'string' ? JSON.parse(packet) : packet;
                     if (data.type === 'BUSY_NOTICE') {
-                        showToast("Busy", `That member is in another call.`);
+                        showToast("Busy", `That person is in another call.`);
                         alert(`That person is in another call.`);
                         conn.close();
                         return;
@@ -649,6 +673,9 @@
 
         function handleDisconnection(peerId) {
             activeConns = activeConns.filter(c => c.peer !== peerId);
+            broadcastPresence();
+            renderMembersList();
+
             if (activeConns.length === 0) {
                 const log = document.getElementById('conn-log');
                 log.innerText = `Connection ended`;
@@ -835,7 +862,7 @@
                 const updatedName = document.getElementById('settings-username-input').value.trim();
                 const errorEl = document.getElementById('settings-name-error');
 
-                if (updatedName.toLowerCase() !== userName.toLowerCase() && isNameTaken(updatedName)) {
+                if (updatedName !== userName && isNameTaken(updatedName)) {
                     errorEl.innerText = "Username already exists. Please choose another name.";
                     errorEl.classList.remove('hidden');
                     return;
