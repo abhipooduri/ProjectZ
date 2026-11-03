@@ -57,6 +57,14 @@
 
         video { object-fit: cover; transform: scaleX(-1); }
         .app-logo-icon { object-fit: cover; width: 100%; height: 100%; }
+
+        /* Theater Mode Expansion */
+        .video-wrapper-expanded {
+            position: fixed !important;
+            inset: 1rem !important;
+            z-index: 100 !important;
+            height: calc(100vh - 2rem) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
@@ -127,26 +135,43 @@
 
         <!-- CENTER VIDEO DISPLAY -->
         <section class="lg:col-span-6 flex flex-col gap-4">
-            <div class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center dark:bg-slate-950 bg-slate-900">
-                <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
+            <div id="video-card-container" class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center dark:bg-slate-950 bg-slate-900 transition-all duration-300">
                 
-                <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/90 bg-slate-900/90 z-0">
-                    <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
-                        <i class="fa-solid fa-user text-3xl"></i>
+                <!-- PRIMARY VIDEO SLOT (Swappable: Remote or Local) -->
+                <div id="primary-video-slot" class="absolute inset-0 w-full h-full flex items-center justify-center">
+                    <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
+                    <video id="local-swapped-video" autoplay playsinline muted class="w-full h-full object-cover hidden absolute inset-0"></video>
+                    
+                    <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/90 bg-slate-900/90 z-0">
+                        <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
+                            <i class="fa-solid fa-user text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
+                        <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member or use Quick Match.</p>
                     </div>
-                    <h3 class="font-bold text-base text-slate-200">READY TO CONNECT</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mt-1">Open this link on another device. Select a member or use Quick Match.</p>
                 </div>
 
-                <!-- PIP LOCAL PREVIEW -->
-                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-20">
+                <!-- TOP RIGHT VIDEO CONTROLS (Maximize & Swap) -->
+                <div class="absolute top-3 right-3 flex items-center gap-2 z-40 bg-slate-900/70 backdrop-blur-md p-1.5 rounded-xl border border-slate-700">
+                    <button onclick="swapVideos()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Swap Screens">
+                        <i class="fa-solid fa-right-left"></i>
+                    </button>
+                    <button onclick="toggleMaximizeVideo()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Expand / Increase Size" id="btn-maximize">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+
+                <!-- PIP SECONDARY PREVIEW SLOT (Swappable: Local PIP or Remote PIP) -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-32 h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30">
                     <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+                    <video id="remote-swapped-pip" autoplay playsinline class="w-full h-full object-cover hidden"></video>
                     <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-center p-2">
                         <i class="fa-solid fa-user-slash text-xl mb-1"></i>
                         <span class="text-[9px] font-mono">Camera Off</span>
                     </div>
                 </div>
 
+                <!-- CALL ACTION BUTTONS -->
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
                     <!-- END CALL BUTTON (Stops video/audio call only) -->
                     <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
@@ -312,8 +337,10 @@
         let userName = localStorage.getItem('connect_user_name') || '';
         let unreadCount = 0;
         let attachedFile = null;
+        let isMaximized = false;
+        let isSwapped = false; // false = Remote Main / Local PIP; true = Local Main / Remote PIP
 
-        const MQTT_TOPIC = "connect_suite_2026_room_global_v5";
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v6";
         const activePeersMap = new Map();
         const MAX_GROUP_PARTICIPANTS = 3;
 
@@ -371,6 +398,58 @@
                 toast.classList.remove('opacity-100', 'translate-y-0');
                 toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
             }, 4000);
+        }
+
+        function toggleMaximizeVideo() {
+            const container = document.getElementById('video-card-container');
+            const btnIcon = document.querySelector('#btn-maximize i');
+            isMaximized = !isMaximized;
+
+            if (isMaximized) {
+                container.classList.add('video-wrapper-expanded');
+                btnIcon.className = "fa-solid fa-compress";
+                showToast("Expanded", "Video display maximized to theater mode.");
+            } else {
+                container.classList.remove('video-wrapper-expanded');
+                btnIcon.className = "fa-solid fa-expand";
+            }
+        }
+
+        function swapVideos() {
+            isSwapped = !isSwapped;
+            const remoteVideo = document.getElementById('remote-video');
+            const localPipVideo = document.getElementById('pip-video');
+            const localSwappedVideo = document.getElementById('local-swapped-video');
+            const remoteSwappedPip = document.getElementById('remote-swapped-pip');
+
+            if (isSwapped) {
+                // Move Local video to Main Slot, Remote video to PIP slot
+                if (!remoteVideo.classList.contains('hidden')) {
+                    remoteVideo.classList.add('hidden');
+                    remoteSwappedPip.srcObject = remoteVideo.srcObject;
+                    remoteSwappedPip.classList.remove('hidden');
+                }
+                if (localStream) {
+                    localSwappedVideo.srcObject = localStream;
+                    localSwappedVideo.classList.remove('hidden');
+                    localPipVideo.classList.add('hidden');
+                }
+                showToast("Swapped", "Local screen moved to main view.");
+            } else {
+                // Restore Remote video to Main Slot, Local video to PIP slot
+                localSwappedVideo.classList.add('hidden');
+                remoteSwappedPip.classList.add('hidden');
+                if (localStream) {
+                    localPipVideo.srcObject = localStream;
+                    localPipVideo.classList.remove('hidden');
+                }
+                const rvStream = remoteVideo.srcObject || remoteSwappedPip.srcObject;
+                if (rvStream) {
+                    remoteVideo.srcObject = rvStream;
+                    remoteVideo.classList.remove('hidden');
+                }
+                showToast("Swapped", "Remote screen restored to main view.");
+            }
         }
 
         function initPeerJS() {
@@ -749,9 +828,16 @@
                 if (localStream) return localStream;
                 localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
                 const pip = document.getElementById('pip-video');
-                pip.srcObject = localStream;
-                pip.classList.remove('hidden');
-                document.getElementById('pip-off-placeholder').classList.add('hidden');
+                const localSwapped = document.getElementById('local-swapped-video');
+                
+                if (isSwapped) {
+                    localSwapped.srcObject = localStream;
+                    localSwapped.classList.remove('hidden');
+                } else {
+                    pip.srcObject = localStream;
+                    pip.classList.remove('hidden');
+                    document.getElementById('pip-off-placeholder').classList.add('hidden');
+                }
                 return localStream;
             } catch (err) {
                 alert("Camera and microphone permission required for calls.");
@@ -786,9 +872,16 @@
         function setupCallEvents(callObj) {
             callObj.on('stream', (remoteStream) => {
                 const rv = document.getElementById('remote-video');
-                rv.srcObject = remoteStream;
-                rv.classList.remove('hidden');
-                document.getElementById('remote-placeholder').classList.add('hidden');
+                const remotePip = document.getElementById('remote-swapped-pip');
+
+                if (isSwapped) {
+                    remotePip.srcObject = remoteStream;
+                    remotePip.classList.remove('hidden');
+                } else {
+                    rv.srcObject = remoteStream;
+                    rv.classList.remove('hidden');
+                    document.getElementById('remote-placeholder').classList.add('hidden');
+                }
             });
             callObj.on('close', () => { stopCallMediaOnly(); });
             callObj.on('error', () => { stopCallMediaOnly(); });
@@ -811,6 +904,9 @@
             pip.srcObject = null;
             pip.classList.add('hidden');
             document.getElementById('pip-off-placeholder').classList.remove('hidden');
+
+            document.getElementById('local-swapped-video').classList.add('hidden');
+            document.getElementById('remote-swapped-pip').classList.add('hidden');
         }
 
         function rejectIncomingCall() {
