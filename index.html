@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CONNECT - Cross Device WebRTC Suite</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- PeerJS CDN -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <!-- MQTT WebSocket Client for Global Cross-Device Presence Discovery -->
+    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-hover: #4f46e5;
+            --color-border: rgba(99, 102, 241, 0.3);
+        }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .dark body {
+            background-color: #09090e;
+            color: #f1f5f9;
+        }
+        .light body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .dark .glass-panel {
+            background: rgba(15, 14, 38, 0.75);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        video { object-fit: cover; transform: scaleX(-1); }
+        .app-logo-icon { object-fit: cover; width: 100%; height: 100%; }
+
+        /* Theater Mode Expansion */
+        .video-wrapper-expanded {
+            position: fixed !important;
+            inset: 1rem !important;
+            z-index: 100 !important;
+            height: calc(100vh - 2rem) !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
+
+    <!-- NOTIFICATION TOAST POPUP -->
+    <div id="toast-notification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+        <div class="glass-panel px-4 py-3 rounded-2xl border border-indigo-500/50 shadow-2xl flex items-center gap-3 dark:bg-slate-900/95 bg-white/95">
+            <div id="toast-icon" class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h4 id="toast-title" class="text-xs font-bold text-slate-100 dark:text-slate-100 text-slate-900">Connected</h4>
+                <p id="toast-desc" class="text-[11px] text-slate-400">Successfully connected to user.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL IMAGE LIGHTBOX MODAL -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-4xl max-h-[90vh]">
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl border border-slate-700">
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl overflow-hidden bg-indigo-600 flex items-center justify-center text-white shadow-lg border border-indigo-500/40">
+                <svg viewBox="0 0 100 100" class="app-logo-icon">
+                    <rect width="100" height="100" fill="#2b2623"/>
+                    <circle cx="50" cy="50" r="42" stroke="#a38257" stroke-width="6" fill="none"/>
+                    <path d="M 20,50 Q 35,35 50,50" stroke="#ff5500" stroke-width="8" stroke-linecap="round" fill="none"/>
+                    <path d="M 80,50 Q 65,65 50,50" stroke="#00aaff" stroke-width="8" stroke-linecap="round" fill="none"/>
+                    <circle cx="50" cy="50" r="8" fill="#e5c158"/>
+                </svg>
+            </div>
+            <h1 class="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-500 to-pink-500">
+                CONNECT
+            </h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="requestNotificationPermission()" class="px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/30 text-indigo-300 text-xs font-mono hover:bg-indigo-900/50 transition">
+                <i class="fa-solid fa-bell mr-1"></i> Enable Alerts
+            </button>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-400 text-xs font-mono">
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
+                <span id="network-status">ONLINE</span>
+            </div>
+            <button id="btn-open-settings" class="p-2 rounded-xl bg-slate-800/20 hover:bg-slate-700/30 text-indigo-400 transition" title="Settings">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN BODY GRID -->
+    <main class="max-w-7xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- LEFT CONTROLS -->
+        <section class="lg:col-span-3 flex flex-col gap-4">
+            <div class="glass-panel rounded-2xl p-3 text-xs font-mono">
+                <div class="text-slate-400">User: <span id="display-name" class="text-cyan-400 font-bold">Setting up...</span></div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-3 space-y-3">
+                <input id="target-peer-id" type="text" readonly placeholder="Click Connect on a member" class="hidden">
+                <p id="conn-log" class="text-[11px] text-slate-400 font-mono">Not connected</p>
+            </div>
+        </section>
+
+        <!-- CENTER VIDEO DISPLAY -->
+        <section class="lg:col-span-6 flex flex-col gap-4">
+            <div id="video-card-container" class="relative glass-panel rounded-2xl overflow-hidden h-[380px] sm:h-[450px] flex items-center justify-center dark:bg-slate-950 bg-slate-900 transition-all duration-300">
+                
+                <!-- PRIMARY VIDEO SLOT -->
+                <div id="primary-video-slot" class="absolute inset-0 w-full h-full flex items-center justify-center">
+                    <video id="remote-video" autoplay playsinline class="w-full h-full object-cover hidden absolute inset-0"></video>
+                    <video id="local-swapped-video" autoplay playsinline muted class="w-full h-full object-cover hidden absolute inset-0"></video>
+                    
+                    <!-- Placeholder "Are you ready to engage" shown ONLY when not in call -->
+                    <div id="remote-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center dark:bg-slate-950/95 bg-slate-900/95 z-20">
+                        <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center mb-4 text-indigo-400 animate-pulse shadow-lg">
+                            <i class="fa-solid fa-user text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 tracking-wide">
+                            Are you ready to engage
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- TOP RIGHT VIDEO CONTROLS -->
+                <div class="absolute top-3 right-3 flex items-center gap-2 z-40 bg-slate-900/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700">
+                    <button onclick="toggleRemoteAudioMute()" id="btn-mute-remote" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Mute/Unmute Other User Audio">
+                        <i class="fa-solid fa-volume-high" id="mute-remote-icon"></i>
+                    </button>
+                    <button onclick="swapVideos()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Swap Screens">
+                        <i class="fa-solid fa-right-left"></i>
+                    </button>
+                    <button onclick="toggleMaximizeVideo()" class="w-8 h-8 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white flex items-center justify-center text-xs transition" title="Expand / Theater Mode" id="btn-maximize">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+
+                <!-- PIP SECONDARY PREVIEW SLOT -->
+                <div id="pip-container" class="absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 hidden">
+                    <video id="pip-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+                    <video id="remote-swapped-pip" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                    <div id="pip-off-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-center p-2">
+                        <i class="fa-solid fa-user-slash text-xl mb-1"></i>
+                        <span class="text-[9px] font-mono">Camera Off</span>
+                    </div>
+                    <button onclick="cyclePipSize()" class="absolute top-1 left-1 bg-black/60 hover:bg-black text-white p-1 rounded text-[9px] z-40" title="Make Smaller / Normal">
+                        <i class="fa-solid fa-compress-arrows-alt" id="pip-size-icon"></i>
+                    </button>
+                </div>
+
+                <!-- CALL ACTION BUTTONS -->
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 dark:bg-slate-950/85 bg-slate-900/85 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-2xl z-30">
+                    <button id="btn-mute-mic" onclick="toggleMyMic()" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg" title="Mute/Unmute My Microphone">
+                        <i class="fa-solid fa-microphone" id="mic-icon"></i>
+                    </button>
+                    <button id="btn-end-call" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Call">
+                        <i class="fa-solid fa-phone-slash"></i>
+                    </button>
+                    <button id="btn-end-connection" onclick="endEntireConnection()" class="w-10 h-10 rounded-full bg-rose-700 hover:bg-rose-600 text-white flex items-center justify-center text-sm transition shadow-lg" title="End Entire Connection">
+                        <i class="fa-solid fa-unlink"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT TAB NAVIGATION & ACTIVE MEMBERS LIST -->
+        <section class="lg:col-span-3 flex flex-col h-[480px] lg:h-auto glass-panel rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-2 dark:bg-slate-950 bg-slate-200 border-b border-indigo-500/30 text-xs font-bold">
+                <button id="tab-peers-btn" class="py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-users"></i> Members
+                </button>
+                <button id="tab-chat-btn" class="py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 relative">
+                    <i class="fa-solid fa-comments"></i> Chat
+                    <span id="unread-badge" class="absolute top-1.5 right-4 bg-emerald-500 text-white rounded-full px-1.5 py-0.2 text-[9px] font-bold hidden">0</span>
+                </button>
+            </div>
+
+            <!-- MEMBERS DIRECTORY VIEW -->
+            <div id="view-peers" class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto text-xs font-mono">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] text-slate-500">Available Members:</span>
+                    <span id="online-counter" class="text-emerald-400 font-bold">1 Online</span>
+                </div>
+                <button onclick="connectRandomPeer()" class="w-full py-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:opacity-90 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-shuffle"></i> Quick Random Connect
+                </button>
+                <div id="members-list-container" class="flex flex-col gap-2 mt-2"></div>
+            </div>
+
+            <!-- CHAT VIEW -->
+            <div id="view-chat" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="p-2.5 dark:bg-slate-900/50 bg-slate-100 border-b border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
+                    <span id="chat-header-id" class="text-slate-400 font-bold truncate max-w-[140px]">No active session</span>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btn-chat-video" onclick="requestCall(true)" disabled class="p-1.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition" title="Video Call">
+                            <i class="fa-solid fa-video text-xs"></i>
+                        </button>
+                        <button id="btn-chat-voice" onclick="requestCall(false)" disabled class="p-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition" title="Voice Call">
+                            <i class="fa-solid fa-phone text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chat-messages" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2.5 text-xs font-mono"></div>
+                
+                <!-- FILE ATTACHMENT PREVIEW BAR -->
+                <div id="file-preview-bar" class="hidden px-3 py-1.5 bg-indigo-950/40 border-t border-indigo-500/30 flex items-center justify-between text-[11px] font-mono">
+                    <span id="file-preview-name" class="text-indigo-300 truncate max-w-[180px]">File attached</span>
+                    <button onclick="clearFileAttachment()" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <form id="chat-form" class="p-2 dark:bg-slate-950 bg-slate-100 border-t border-indigo-500/30 flex items-center gap-2">
+                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelected(this)">
+                    <button type="button" onclick="document.getElementById('file-input').click()" class="p-2 text-indigo-400 hover:text-indigo-300 transition" title="Attach file or image">
+                        <i class="fa-solid fa-paperclip text-sm"></i>
+                    </button>
+                    <input id="chat-input" type="text" placeholder="Type message..." disabled class="flex-1 dark:bg-slate-900 bg-white border dark:border-slate-700 border-slate-300 rounded-xl px-3 py-2 text-xs dark:text-slate-200 text-slate-800 outline-none">
+                    <button id="chat-send-btn" type="submit" disabled class="px-3.5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- INCOMING CALL REQUEST MODAL -->
+    <div id="modal-incoming-call" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-sm w-full space-y-4 text-center dark:bg-slate-900 bg-white border border-indigo-500/40 shadow-2xl">
+            <div class="w-14 h-14 rounded-full bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-2xl animate-bounce">
+                <i id="incoming-call-icon" class="fa-solid fa-video"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-100 dark:text-slate-100 text-slate-900" id="incoming-call-title">Incoming Call</h3>
+            <p class="text-xs text-slate-400"><span id="caller-name" class="font-bold text-indigo-400">Someone</span> is calling you...</p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="rejectIncomingCall()" class="py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-phone-slash"></i> Reject
+                </button>
+                <button onclick="acceptIncomingCall()" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-phone"></i> Accept
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIRST TIME USER LOGIN MODAL -->
+    <div id="modal-name-prompt" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-sm w-full space-y-4 text-center dark:bg-slate-900 bg-white border border-indigo-500/30">
+            <div class="w-12 h-12 rounded-full overflow-hidden bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-xl border border-indigo-500/40">
+                <svg viewBox="0 0 100 100" class="app-logo-icon">
+                    <rect width="100" height="100" fill="#2b2623"/>
+                    <circle cx="50" cy="50" r="42" stroke="#a38257" stroke-width="6" fill="none"/>
+                    <path d="M 20,50 Q 35,35 50,50" stroke="#ff5500" stroke-width="8" stroke-linecap="round" fill="none"/>
+                    <path d="M 80,50 Q 65,65 50,50" stroke="#00aaff" stroke-width="8" stroke-linecap="round" fill="none"/>
+                    <circle cx="50" cy="50" r="8" fill="#e5c158"/>
+                </svg>
+            </div>
+            <h3 class="font-bold text-base text-slate-100 dark:text-slate-100 text-slate-900">Welcome to CONNECT</h3>
+            <p class="text-xs text-slate-400">Please choose a unique display name (Case-sensitive).</p>
+            <form id="form-name-prompt" class="space-y-3">
+                <input id="input-username" type="text" required placeholder="Enter your name..." class="w-full px-3 py-2 text-sm rounded-xl border dark:bg-slate-950 bg-slate-50 border-indigo-500/40 text-slate-100 dark:text-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p id="name-error-msg" class="text-[11px] text-red-400 hidden"></p>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg">Save & Continue</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-sm w-full space-y-5 dark:bg-slate-900 bg-white border border-slate-700">
+            <div class="flex items-center justify-between border-b dark:border-slate-800 border-slate-200 pb-3">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-indigo-400">
+                    <i class="fa-solid fa-sliders"></i> Settings
+                </h3>
+                <button id="btn-close-settings" class="text-slate-400 hover:text-slate-200 text-xs">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- THEME SELECTION -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-slate-400 block">Appearance Theme</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-theme-dark" onclick="setTheme('dark')" class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-moon"></i> Dark Mode
+                    </button>
+                    <button id="btn-theme-light" onclick="setTheme('light')" class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-sun"></i> Light Mode
+                    </button>
+                </div>
+            </div>
+
+            <!-- CHANGE NAME SELECTION -->
+            <div class="space-y-2 pt-2 border-t dark:border-slate-800 border-slate-200">
+                <label class="text-xs font-bold text-slate-400 block">Edit Display Name</label>
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <input id="settings-username-input" type="text" class="flex-1 px-3 py-1.5 text-xs rounded-xl border dark:bg-slate-950 bg-slate-50 dark:border-slate-700 border-slate-300 dark:text-slate-100 text-slate-900 outline-none">
+                        <button id="btn-save-name-settings" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs">Save</button>
+                    </div>
+                    <p id="settings-name-error" class="text-[11px] text-red-400 hidden"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let peer = null;
+        let myPeerId = null;
+        let mqttClient = null;
+        let activeConns = []; 
+        let activeCalls = []; 
+        let localStream = null;
+        let incomingCallObj = null;
+        let userName = localStorage.getItem('connect_user_name') || '';
+        let unreadCount = 0;
+        let attachedFile = null;
+        let isMaximized = false;
+        let isSwapped = false;
+        let pipSizeState = 0;
+        let isRemoteMuted = false;
+        let isMyMicMuted = false;
+
+        const MQTT_TOPIC = "connect_suite_2026_room_global_v11";
+        const activePeersMap = new Map();
+        const MAX_GROUP_PARTICIPANTS = 3;
+
+        function generate7DigitId() {
+            return Math.floor(1000000 + Math.random() * 9000000).toString();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            checkUserIdentity();
+            setupUIEvents();
+        });
+
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showToast("Notifications Enabled", "You will receive desktop alerts for messages and calls.");
+                    }
+                });
+            }
+        }
+
+        function playSoundChime(type = 'msg') {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                if (type === 'call') {
+                    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                } else {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        function triggerDesktopNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/724/724715.png" });
+                } catch(e) {}
+            }
+        }
+
+        function checkUserIdentity() {
+            if (!userName) {
+                document.getElementById('modal-name-prompt').classList.remove('hidden');
+            } else {
+                document.getElementById('display-name').innerText = userName;
+                initPeerJS();
+            }
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('connect_theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        function setTheme(theme) {
+            const root = document.getElementById('html-root');
+            const darkBtn = document.getElementById('btn-theme-dark');
+            const lightBtn = document.getElementById('btn-theme-light');
+
+            if (theme === 'dark') {
+                root.classList.add('dark');
+                root.classList.remove('light');
+                darkBtn.className = "py-2 px-3 rounded-xl border-2 border-indigo-500 bg-indigo-600/20 text-indigo-400 text-xs font-bold flex items-center justify-center gap-2 transition";
+                lightBtn.className = "py-2 px-3 rounded-xl border border-slate-700 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 transition";
+            } else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+                lightBtn.className = "py-2 px-3 rounded-xl border-2 border-indigo-500 bg-indigo-600/20 text-indigo-600 text-xs font-bold flex items-center justify-center gap-2 transition";
+                darkBtn.className = "py-2 px-3 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold flex items-center justify-center gap-2 transition";
+            }
+            localStorage.setItem('connect_theme', theme);
+        }
+
+        function showToast(title, desc) {
+            const toast = document.getElementById('toast-notification');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+            }, 4000);
+        }
+
+        function toggleMyMic() {
+            if (!localStream) {
+                showToast("Notice", "Microphone is only active during a call.");
+                return;
+            }
+
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length === 0) return;
+
+            isMyMicMuted = !isMyMicMuted;
+            audioTracks.forEach(track => {
+                track.enabled = !isMyMicMuted;
+            });
+
+            const btn = document.getElementById('btn-mute-mic');
+            const icon = document.getElementById('mic-icon');
+
+            if (isMyMicMuted) {
+                btn.className = "w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center text-sm transition shadow-lg animate-pulse";
+                icon.className = "fa-solid fa-microphone-slash";
+                showToast("Mic Muted", "Your microphone is muted. Other users won't hear you.");
+            } else {
+                btn.className = "w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg";
+                icon.className = "fa-solid fa-microphone";
+                showToast("Mic Unmuted", "Your microphone is live.");
+            }
+        }
+
+        function toggleMaximizeVideo() {
+            const container = document.getElementById('video-card-container');
+            const btnIcon = document.querySelector('#btn-maximize i');
+            isMaximized = !isMaximized;
+
+            if (isMaximized) {
+                container.classList.add('video-wrapper-expanded');
+                btnIcon.className = "fa-solid fa-compress";
+                showToast("Expanded", "Video display maximized to theater mode.");
+            } else {
+                container.classList.remove('video-wrapper-expanded');
+                btnIcon.className = "fa-solid fa-expand";
+            }
+        }
+
+        function cyclePipSize() {
+            const pip = document.getElementById('pip-container');
+            pipSizeState = (pipSizeState + 1) % 3;
+
+            if (pipSizeState === 0) {
+                pip.className = "absolute bottom-16 right-4 w-28 h-40 sm:w-32 sm:h-44 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
+                showToast("Screen View", "PIP screen set to normal size.");
+            } else if (pipSizeState === 1) {
+                pip.className = "absolute bottom-16 right-4 w-20 h-28 sm:w-24 sm:h-32 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200";
+                showToast("Screen View", "PIP screen resized to extra small.");
+            } else {
+                pip.className = "absolute bottom-16 right-4 w-14 h-20 sm:w-16 sm:h-22 rounded-xl overflow-hidden border-2 border-indigo-500/40 bg-slate-900 shadow-2xl z-30 transition-all duration-200 opacity-70";
+                showToast("Screen View", "PIP screen minimized.");
+            }
+        }
+
+        function toggleRemoteAudioMute() {
+            isRemoteMuted = !isRemoteMuted;
+            const remoteVideo = document.getElementById('remote-video');
+            const remotePip = document.getElementById('remote-swapped-pip');
+            const icon = document.getElementById('mute-remote-icon');
+
+            remoteVideo.muted = isRemoteMuted;
+            remotePip.muted = isRemoteMuted;
+
+            if (isRemoteMuted) {
+                icon.className = "fa-solid fa-volume-xmark text-red-400";
+                showToast("Audio Muted", "Muted other user's audio.");
+            } else {
+                icon.className = "fa-solid fa-volume-high";
+                showToast("Audio Unmuted", "Unmuted other user's audio.");
+            }
+        }
+
+        function swapVideos() {
+            isSwapped = !isSwapped;
+            const remoteVideo = document.getElementById('remote-video');
+            const localPipVideo = document.getElementById('pip-video');
+            const localSwappedVideo = document.getElementById('local-swapped-video');
+            const remoteSwappedPip = document.getElementById('remote-swapped-pip');
+
+            if (isSwapped) {
+                if (!remoteVideo.classList.contains('hidden')) {
+                    remoteVideo.classList.add('hidden');
+                    remoteSwappedPip.srcObject = remoteVideo.srcObject;
+                    remoteSwappedPip.muted = isRemoteMuted;
+                    remoteSwappedPip.classList.remove('hidden');
+                }
+                if (localStream) {
+                    localSwappedVideo.srcObject = localStream;
+                    localSwappedVideo.classList.remove('hidden');
+                    localPipVideo.classList.add('hidden');
+                }
+                showToast("Swapped", "Local screen moved to main view.");
+            } else {
+                localSwappedVideo.classList.add('hidden');
+                remoteSwappedPip.classList.add('hidden');
+                if (localStream) {
+                    localPipVideo.srcObject = localStream;
+                    localPipVideo.classList.remove('hidden');
+                }
+                const rvStream = remoteVideo.srcObject || remoteSwappedPip.srcObject;
+                if (rvStream) {
+                    remoteVideo.srcObject = rvStream;
+                    remoteVideo.muted = isRemoteMuted;
+                    remoteVideo.classList.remove('hidden');
+                }
+                showToast("Swapped", "Remote screen restored to main view.");
+            }
+        }
+
+        function initPeerJS() {
+            const customId = generate7DigitId();
+            peer = new Peer(customId, {
+                host: '0.peerjs.com',
+                secure: true,
+                port: 443,
+                config: { iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ] }
+            });
+
+            peer.on('open', (id) => {
+                myPeerId = id;
+                document.getElementById('conn-log').innerText = 'Not connected';
+                document.getElementById('conn-log').className = 'text-[11px] text-slate-400 font-mono';
+                initMQTTDiscovery();
+            });
+
+            peer.on('connection', (conn) => {
+                if (activeConns.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
+                    conn.on('open', () => {
+                        conn.send(JSON.stringify({ type: 'BUSY_NOTICE', reason: 'MAX_CAPACITY' }));
+                        setTimeout(() => { conn.close(); }, 500);
+                    });
+                    return;
+                }
+
+                const remotePeerId = conn.peer;
+                const peerData = activePeersMap.get(remotePeerId);
+                const pName = peerData ? peerData.name : 'Peer';
+
+                activeConns.push(conn);
+                setupDataConn(conn);
+
+                updateConnectionStatusText();
+                document.getElementById('btn-chat-video').removeAttribute('disabled');
+                document.getElementById('btn-chat-voice').removeAttribute('disabled');
+
+                const log = document.getElementById('conn-log');
+                log.innerText = `Connected with ${pName}`;
+                log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
+
+                playSoundChime('call');
+                showToast("Connected!", `${pName} is connected with you.`);
+                triggerDesktopNotification("Connected", `${pName} is connected with you.`);
+                appendSystemMessage(`${pName} is connected with you`);
+
+                broadcastPresence();
+                renderMembersList();
+                switchToChatTab();
+            });
+
+            peer.on('call', (call) => {
+                if (activeCalls.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
+                    call.close();
+                    return;
+                }
+                incomingCallObj = call;
+                const callerPeerId = call.peer;
+                const callerData = activePeersMap.get(callerPeerId);
+                const callerName = callerData ? callerData.name : `User`;
+
+                document.getElementById('caller-name').innerText = callerName;
+                document.getElementById('modal-incoming-call').classList.remove('hidden');
+                playSoundChime('call');
+                triggerDesktopNotification("Incoming Call", `${callerName} is calling you...`);
+            });
+        }
+
+        function initMQTTDiscovery() {
+            mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+
+            mqttClient.on('connect', () => {
+                mqttClient.subscribe(MQTT_TOPIC);
+                broadcastPresence();
+                setInterval(broadcastPresence, 4000);
+            });
+
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    if (data.peerId && data.peerId !== myPeerId) {
+                        activePeersMap.set(data.peerId, { 
+                            name: data.name, 
+                            inCall: data.inCall || false, 
+                            connectedPeers: data.connectedPeers || [],
+                            lastSeen: Date.now() 
+                        });
+                        renderMembersList();
+                        updateConnectionStatusText();
+                    }
+                } catch(e) {}
+            });
+
+            setInterval(() => {
+                const now = Date.now();
+                activePeersMap.forEach((val, key) => {
+                    if (now - val.lastSeen > 10000) activePeersMap.delete(key);
+                });
+                renderMembersList();
+                updateConnectionStatusText();
+            }, 3000);
+        }
+
+        function broadcastPresence() {
+            if (!mqttClient || !myPeerId) return;
+            const connectedPeerIds = activeConns.map(c => c.peer);
+            const payload = JSON.stringify({
+                peerId: myPeerId,
+                name: userName,
+                inCall: (activeConns.length > 0 || activeCalls.length > 0),
+                connectedPeers: connectedPeerIds
+            });
+            mqttClient.publish(MQTT_TOPIC, payload);
+        }
+
+        function isNameTaken(newName) {
+            for (let [pId, data] of activePeersMap.entries()) {
+                if (data.name === newName) return true;
+            }
+            return false;
+        }
+
+        function getConnectedNamesList() {
+            let names = [];
+            activeConns.forEach(c => {
+                const pData = activePeersMap.get(c.peer);
+                if (pData) names.push(pData.name);
+            });
+            return names;
+        }
+
+        function updateConnectionStatusText() {
+            const names = getConnectedNamesList();
+            const headerEl = document.getElementById('chat-header-id');
+            if (names.length === 0) {
+                headerEl.innerText = "No active session";
+            } else if (names.length === 1) {
+                headerEl.innerText = `${names[0]} is connected with you`;
+            } else {
+                headerEl.innerText = `${names.join(', ')} are connected with you`;
+            }
+        }
+
+        function renderMembersList() {
+            const container = document.getElementById('members-list-container');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="p-3 rounded-xl dark:bg-slate-900 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold dark:text-slate-200 text-slate-800 block">${userName} (You)</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold">Active</span>
+                </div>
+            `;
+
+            const otherPeers = Array.from(activePeersMap.entries());
+
+            if (otherPeers.length === 0) {
+                container.innerHTML += `
+                    <div class="p-6 text-center text-slate-500 text-xs font-mono border border-dashed dark:border-slate-800 border-slate-300 rounded-xl mt-2">
+                        <i class="fa-solid fa-users-slash text-xl mb-2 block text-slate-600"></i>
+                        No other members online right now.
+                    </div>
+                `;
+                document.getElementById('online-counter').innerText = "1 Online (You)";
+            } else {
+                document.getElementById('online-counter').innerText = `${otherPeers.length + 1} Online`;
+                otherPeers.forEach(([pId, data]) => {
+                    const isConnectedDirectly = activeConns.some(c => c.peer === pId);
+                    const remoteConnectedToUs = data.connectedPeers && data.connectedPeers.includes(myPeerId);
+
+                    let statusBadge = '';
+                    let actionButton = '';
+
+                    if (isConnectedDirectly || remoteConnectedToUs) {
+                        statusBadge = `<span class="block text-[9px] text-emerald-400 font-bold">${data.name} is connected with you</span>`;
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md">Connected</button>`;
+                    } else if (data.inCall) {
+                        statusBadge = `<span class="block text-[9px] text-amber-400">${data.name} is in another call</span>`;
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">Connect</button>`;
+                    } else {
+                        actionButton = `<button onclick="connectToPeer('${pId}', '${data.name}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md">Connect</button>`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="p-3 rounded-xl dark:bg-slate-900/80 bg-slate-100 border dark:border-slate-800 border-slate-300 flex items-center justify-between gap-2 mt-2">
+                            <div>
+                                <span class="font-bold dark:text-slate-200 text-slate-800 text-xs">${data.name}</span>
+                                ${statusBadge}
+                            </div>
+                            ${actionButton}
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function connectRandomPeer() {
+            if (activeConns.length > 0) {
+                const connectedNames = getConnectedNamesList().join(', ');
+                const warningMsg = `You are already there in call with ${connectedNames || 'someone'}`;
+                showToast("Active Call", warningMsg);
+                alert(warningMsg);
+                return;
+            }
+
+            if (activePeersMap.size === 0) {
+                showToast("Notice", "You are the only active member online right now!");
+                alert("You are the only active member online right now!");
+                return;
+            }
+
+            const availablePeers = Array.from(activePeersMap.entries()).filter(([pId, data]) => {
+                const isAlreadyConnected = activeConns.some(c => c.peer === pId) || (data.connectedPeers && data.connectedPeers.includes(myPeerId));
+                return !data.inCall && !isAlreadyConnected;
+            });
+
+            if (availablePeers.length === 0) {
+                showToast("Notice", "No one is available now—all members are paired!");
+                alert("No one is available now—all members are paired or busy in calls!");
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * availablePeers.length);
+            const [randId, randData] = availablePeers[randomIndex];
+            connectToPeer(randId, randData.name);
+        }
+
+        function connectToPeer(targetId, targetName) {
+            if (activeConns.some(c => c.peer === targetId)) {
+                switchToChatTab();
+                return;
+            }
+
+            const targetData = activePeersMap.get(targetId);
+            if (targetData && targetData.inCall) {
+                showToast("Busy", `${targetName} is in another call.`);
+                alert(`${targetName} is in another call.`);
+                return;
+            }
+
+            if (activeConns.length >= (MAX_GROUP_PARTICIPANTS - 1)) {
+                showToast("Limit Reached", "Maximum participants reached for this session.");
+                alert("Room is at maximum capacity.");
+                return;
+            }
+
+            const conn = peer.connect(targetId);
+            activeConns.push(conn);
+            setupDataConn(conn);
+
+            updateConnectionStatusText();
+            document.getElementById('btn-chat-video').removeAttribute('disabled');
+            document.getElementById('btn-chat-voice').removeAttribute('disabled');
+            
+            const log = document.getElementById('conn-log');
+            log.innerText = `Connected with ${targetName}`;
+            log.className = 'text-[11px] text-emerald-400 font-mono font-bold';
+
+            playSoundChime('call');
+            showToast("Connected!", `${targetName} is connected with you`);
+            triggerDesktopNotification("Connected", `${targetName} is connected with you`);
+
+            broadcastPresence();
+            renderMembersList();
+            switchToChatTab();
+
+            setTimeout(() => {
+                if (conn && conn.open) {
+                    conn.send(JSON.stringify({ type: 'SYSTEM_MSG', text: `${userName} is connected with you` }));
+                }
+            }, 500);
+        }
+
+        function endEntireConnection() {
+            activeConns.forEach(c => { try { c.close(); } catch(e){} });
+            activeConns = [];
+            stopCallMediaOnly();
+            updateConnectionStatusText();
+
+            document.getElementById('chat-input').setAttribute('disabled', 'true');
+            document.getElementById('chat-send-btn').setAttribute('disabled', 'true');
+            document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
+            document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
+
+            const log = document.getElementById('conn-log');
+            log.innerText = `Connection ended`;
+            log.className = 'text-[11px] text-red-400 font-mono font-bold';
+
+            showToast("Disconnected", "You have ended the entire connection.");
+            broadcastPresence();
+            renderMembersList();
+            document.getElementById('tab-peers-btn').click();
+        }
+
+        function switchToChatTab() {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('view-peers').classList.add('hidden');
+            document.getElementById('tab-chat-btn').className = "py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5 relative";
+            document.getElementById('tab-peers-btn').className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5";
+            unreadCount = 0;
+            const badge = document.getElementById('unread-badge');
+            badge.innerText = '0';
+            badge.classList.add('hidden');
+        }
+
+        function setupDataConn(conn) {
+            conn.on('open', () => {
+                document.getElementById('chat-input').removeAttribute('disabled');
+                document.getElementById('chat-send-btn').removeAttribute('disabled');
+            });
+            conn.on('data', (packet) => {
+                try {
+                    const data = typeof packet === 'string' ? JSON.parse(packet) : packet;
+                    if (data.type === 'BUSY_NOTICE') {
+                        showToast("Busy", `That person is in another call.`);
+                        alert(`That person is in another call.`);
+                        conn.close();
+                        return;
+                    }
+                    if (data.type === 'SYSTEM_MSG') {
+                        appendSystemMessage(data.text);
+                        return;
+                    }
+                    if (data.type === 'CHAT_MSG') {
+                        appendMessage(data.sender, data.content, false);
+                        playSoundChime('msg');
+                        triggerDesktopNotification(`Message from ${data.sender}`, data.content);
+                        checkUnread();
+                        return;
+                    }
+                    if (data.type === 'FILE_MSG') {
+                        appendFileMessage(data.sender, data.fileData, data.fileName, data.fileType, false);
+                        playSoundChime('msg');
+                        triggerDesktopNotification(`File from ${data.sender}`, data.fileName);
+                        checkUnread();
+                        return;
+                    }
+                } catch(e) {
+                    appendMessage("Peer", packet, false);
+                    playSoundChime('msg');
+                    checkUnread();
+                }
+            });
+            conn.on('close', () => {
+                handleDisconnection(conn.peer);
+            });
+        }
+
+        function checkUnread() {
+            if (document.getElementById('view-chat').classList.contains('hidden')) {
+                unreadCount++;
+                const badge = document.getElementById('unread-badge');
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        function handleDisconnection(peerId) {
+            activeConns = activeConns.filter(c => c.peer !== peerId);
+            broadcastPresence();
+            renderMembersList();
+            updateConnectionStatusText();
+
+            if (activeConns.length === 0) {
+                const log = document.getElementById('conn-log');
+                log.innerText = `Connection ended`;
+                log.className = 'text-[11px] text-red-400 font-mono font-bold';
+                document.getElementById('btn-chat-video').setAttribute('disabled', 'true');
+                document.getElementById('btn-chat-voice').setAttribute('disabled', 'true');
+            }
+        }
+
+        function handleFileSelected(input) {
+            if (input.files && input.files[0]) {
+                attachedFile = input.files[0];
+                document.getElementById('file-preview-name').innerText = attachedFile.name;
+                document.getElementById('file-preview-bar').classList.remove('hidden');
+            }
+        }
+
+        function clearFileAttachment() {
+            attachedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-preview-bar').classList.add('hidden');
+        }
+
+        async function getLocalMediaStream(video = true) {
+            try {
+                if (localStream) return localStream;
+                localStream = await navigator.mediaDevices.getUserMedia({ video: video, audio: true });
+                
+                if (isMyMicMuted) {
+                    localStream.getAudioTracks().forEach(track => track.enabled = false);
+                }
+
+                document.getElementById('pip-container').classList.remove('hidden');
+                document.getElementById('remote-placeholder').classList.add('hidden');
+
+                const pip = document.getElementById('pip-video');
+                const localSwapped = document.getElementById('local-swapped-video');
+                
+                if (isSwapped) {
+                    localSwapped.srcObject = localStream;
+                    localSwapped.classList.remove('hidden');
+                } else {
+                    pip.srcObject = localStream;
+                    pip.classList.remove('hidden');
+                    document.getElementById('pip-off-placeholder').classList.add('hidden');
+                }
+                return localStream;
+            } catch (err) {
+                alert("Camera and microphone permission required for calls.");
+                return null;
+            }
+        }
+
+        async function requestCall(video) {
+            if (activeConns.length === 0) { alert("Please connect to a member first!"); return; }
+
+            const stream = await getLocalMediaStream(video);
+            if (!stream) return;
+
+            activeConns.forEach(conn => {
+                const call = peer.call(conn.peer, stream);
+                setupCallEvents(call);
+                activeCalls.push(call);
+            });
+            showToast("Calling", "Initiating video/audio call...");
+        }
+
+        async function acceptIncomingCall() {
+            document.getElementById('modal-incoming-call').classList.add('hidden');
+            const stream = await getLocalMediaStream(true);
+            if (stream && incomingCallObj) {
+                incomingCallObj.answer(stream);
+                activeCalls.push(incomingCallObj);
+                setupCallEvents(incomingCallObj);
+            }
+        }
+
+        function setupCallEvents(callObj) {
+            callObj.on('stream', (remoteStream) => {
+                const rv = document.getElementById('remote-video');
+                const remotePip = document.getElementById('remote-swapped-pip');
+
+                document.getElementById('remote-placeholder').classList.add('hidden');
+                document.getElementById('pip-container').classList.remove('hidden');
+
+                if (isSwapped) {
+                    remotePip.srcObject = remoteStream;
+                    remotePip.muted = isRemoteMuted;
+                    remotePip.classList.remove('hidden');
+                } else {
+                    rv.srcObject = remoteStream;
+                    rv.muted = isRemoteMuted;
+                    rv.classList.remove('hidden');
+                }
+            });
+            callObj.on('close', () => { stopCallMediaOnly(); });
+            callObj.on('error', () => { stopCallMediaOnly(); });
+        }
+
+        function stopCallMediaOnly() {
+            activeCalls.forEach(c => { try { c.close(); } catch(e){} });
+            activeCalls = [];
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            isMyMicMuted = false;
+            const micBtn = document.getElementById('btn-mute-mic');
+            const micIcon = document.getElementById('mic-icon');
+            if (micBtn && micIcon) {
+                micBtn.className = "w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-400 flex items-center justify-center text-sm transition shadow-lg";
+                micIcon.className = "fa-solid fa-microphone";
+            }
+
+            const rv = document.getElementById('remote-video');
+            rv.srcObject = null;
+            rv.classList.add('hidden');
+
+            const pip = document.getElementById('pip-video');
+            pip.srcObject = null;
+            pip.classList.add('hidden');
+            document.getElementById('pip-off-placeholder').classList.remove('hidden');
+
+            document.getElementById('local-swapped-video').classList.add('hidden');
+            document.getElementById('remote-swapped-pip').classList.add('hidden');
+
+            document.getElementById('pip-container').classList.add('hidden');
+            document.getElementById('remote-placeholder').classList.remove('hidden');
+        }
+
+        function rejectIncomingCall() {
+            document.getElementById('modal-incoming-call').classList.add('hidden');
+            if (incomingCallObj) {
+                incomingCallObj.close();
+                incomingCallObj = null;
+            }
+        }
+
+        function appendMessage(sender, text, isSelf) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="px-3 py-1.5 rounded-xl max-w-[85%] break-words ${isSelf ? 'bg-indigo-600 text-white' : 'dark:bg-slate-900 bg-slate-200 dark:border-slate-800 border-slate-300 border dark:text-slate-200 text-slate-900'}">${text}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function appendFileMessage(sender, dataUrl, fileName, fileType, isSelf) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isSelf ? 'items-end' : 'items-start'}`;
+            
+            let contentHtml = '';
+            if (fileType.startsWith('image/')) {
+                contentHtml = `<img src="${dataUrl}" class="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition border border-slate-700" onclick="openLightbox('${dataUrl}')">`;
+            } else {
+                contentHtml = `<div class="flex items-center gap-2 p-2 rounded-lg bg-slate-900 border border-slate-700">
+                    <i class="fa-solid fa-file-arrow-down text-indigo-400 text-lg"></i>
+                    <div class="overflow-hidden"><span class="text-xs font-bold block truncate max-w-[140px]">${fileName}</span><a href="${dataUrl}" download="${fileName}" class="text-[10px] text-cyan-400 underline">Download File</a></div>
+                </div>`;
+            }
+
+            div.innerHTML = `<span class="text-[9px] text-slate-500">${sender}</span><div class="p-1 rounded-xl max-w-[85%]">${contentHtml}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function appendSystemMessage(text) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex justify-center my-2`;
+            div.innerHTML = `<div class="px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono">${text}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox-modal').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+        }
+
+        function setupUIEvents() {
+            document.getElementById('form-name-prompt').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inputVal = document.getElementById('input-username').value.trim();
+                const errorEl = document.getElementById('name-error-msg');
+
+                if (isNameTaken(inputVal)) {
+                    errorEl.innerText = "Username already exists. Please choose another name.";
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (inputVal) {
+                    errorEl.classList.add('hidden');
+                    userName = inputVal;
+                    localStorage.setItem('connect_user_name', userName);
+                    document.getElementById('display-name').innerText = userName;
+                    document.getElementById('modal-name-prompt').classList.add('hidden');
+                    initPeerJS();
+                }
+            });
+
+            document.getElementById('btn-open-settings').addEventListener('click', () => {
+                document.getElementById('settings-username-input').value = userName;
+                document.getElementById('settings-name-error').classList.add('hidden');
+                document.getElementById('modal-settings').classList.remove('hidden');
+            });
+
+            document.getElementById('btn-close-settings').addEventListener('click', () => {
+                document.getElementById('modal-settings').classList.add('hidden');
+            });
+
+            document.getElementById('btn-save-name-settings').addEventListener('click', () => {
+                const updatedName = document.getElementById('settings-username-input').value.trim();
+                const errorEl = document.getElementById('settings-name-error');
+
+                if (updatedName !== userName && isNameTaken(updatedName)) {
+                    errorEl.innerText = "Username already exists. Please choose another name.";
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (updatedName) {
+                    errorEl.classList.add('hidden');
+                    userName = updatedName;
+                    localStorage.setItem('connect_user_name', userName);
+                    document.getElementById('display-name').innerText = userName;
+                    broadcastPresence();
+                    renderMembersList();
+                    document.getElementById('modal-settings').classList.add('hidden');
+                }
+            });
+
+            document.getElementById('tab-peers-btn').addEventListener('click', () => {
+                document.getElementById('view-peers').classList.remove('hidden');
+                document.getElementById('view-chat').classList.add('hidden');
+                document.getElementById('tab-peers-btn').className = "py-2.5 px-2 text-center text-indigo-400 border-b-2 border-indigo-500 dark:bg-slate-900 bg-white transition flex items-center justify-center gap-1.5";
+                document.getElementById('tab-chat-btn').className = "py-2.5 px-2 text-center text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 relative";
+            });
+            
+            document.getElementById('tab-chat-btn').addEventListener('click', () => {
+                switchToChatTab();
+            });
+
+            document.getElementById('chat-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('chat-input');
+                const msg = input.value.trim();
+
+                if (activeConns.length === 0) return;
+
+                if (attachedFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const fileData = evt.target.result;
+                        const packet = JSON.stringify({
+                            type: 'FILE_MSG',
+                            sender: userName,
+                            fileData: fileData,
+                            fileName: attachedFile.name,
+                            fileType: attachedFile.type
+                        });
+                        activeConns.forEach(c => c.send(packet));
+                        appendFileMessage("You", fileData, attachedFile.name, attachedFile.type, true);
+                        clearFileAttachment();
+                    };
+                    reader.readAsDataURL(attachedFile);
+                }
+
+                if (msg) {
+                    const packet = JSON.stringify({
+                        type: 'CHAT_MSG',
+                        sender: userName,
+                        content: msg
+                    });
+                    activeConns.forEach(c => c.send(packet));
+                    appendMessage("You", msg, true);
+                    input.value = '';
+                }
+            });
+
+            document.getElementById('btn-end-call').addEventListener('click', () => {
+                stopCallMediaOnly();
+                showToast("Call Ended", "Video/Audio call has ended.");
+            });
+        }
+    </script>
+</body>
+</html>
